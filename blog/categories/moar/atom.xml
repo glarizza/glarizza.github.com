@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: MOAR | Shit Gary Says]]></title>
+  <link href="http://garylarizza.com/blog/categories/moar/atom.xml" rel="self"/>
+  <link href="http://garylarizza.com/"/>
+  <updated>2014-10-22T15:38:49+02:00</updated>
+  <id>http://garylarizza.com/</id>
+  <author>
+    <name><![CDATA[Gary larizza]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[On Dependencies and Order]]></title>
+    <link href="http://garylarizza.com/blog/2014/10/19/on-dependencies-and-order/"/>
+    <updated>2014-10-19T15:09:53+02:00</updated>
+    <id>http://garylarizza.com/blog/2014/10/19/on-dependencies-and-order</id>
+    <content type="html"><![CDATA[<p>This blog post was born out of a number of conversations that I&rsquo;ve had about
+Puppet, its dependency model, and why &lsquo;ordering&rsquo; is not necessarily the way to
+think about dependencies when writing Puppet manifests. Like most everything on
+this site, I&rsquo;m getting it down in a file so I don&rsquo;t have to repeat this all over
+again the next time someone asks. Instead, I can point them to this page (and,
+when they don&rsquo;t actually <strong>READ</strong> this page, I can end up explaining everything
+I&rsquo;ve written here anyways&hellip;).</p>
+
+<p>Before we go any further, let me define a couple of terms:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>dependencies     &ndash; In a nutshell, what happens when you use the metaparameters of&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;pre>&lt;code>               'before', 'require', 'subscribe' or 'notify' on resources in a
+</span><span class='line'>               Puppet manifest: it's a chain of resources that are to be
+</span><span class='line'>               evaluted in a specific order every time Puppet runs. Any failure
+</span><span class='line'>               of a resource in this chain stops Puppet from evaluating the
+</span><span class='line'>               remaining resources in the chain.
+</span><span class='line'>&lt;/code>&lt;/pre>
+</span><span class='line'>
+</span><span class='line'>&lt;p>evaluate         &ndash; When Puppet determines the &lsquo;is&rsquo; value (or current state) of a&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;pre>&lt;code>               resource (i.e. for package resources, "is the package installed?")
+</span><span class='line'>&lt;/code>&lt;/pre>
+</span><span class='line'>
+</span><span class='line'>&lt;p>remediate        &ndash; When Puppet determines that the &lsquo;is&rsquo; value (or current state of&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;pre>&lt;code>               the resource) is different from the 'should' value (or the value
+</span><span class='line'>               entered into the Puppet manifest...the way the resource SHOULD
+</span><span class='line'>               end up looking on the system) and Puppet needs to make a change.
+</span><span class='line'>&lt;/code>&lt;/pre>
+</span><span class='line'>
+</span><span class='line'>&lt;p>declarative(ish) &ndash; When I use the word &lsquo;declarative(ish)&rsquo;, I mean that the order&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;pre>&lt;code>               by which Puppet evaluates resources that do not contain dependencies
+</span><span class='line'>               does not have a set procedure/order. The way Puppet EVALUATES
+</span><span class='line'>               resources does not have a set procedure/order, but the order
+</span><span class='line'>               that Puppet reads/parses manifest files IS from top-to-bottom
+</span><span class='line'>               (which is why variables in Puppet manifests need to be declared
+</span><span class='line'>               before they can be used).
+</span><span class='line'>&lt;/code>&lt;/pre>
+</span><span class='line'>
+</span><span class='line'>&lt;p></span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<h2>Why Puppet doesn&rsquo;t care about execution order (until it does)</h2>
+
+<p>The biggest shock to the system when getting started with a declarative (ish)
+configuration management tool like Puppet is understanding that Puppet describes
+the end-state of the machine, and NOT the order that it&rsquo;s (Puppet) going to
+take you to that state. To Puppet, the order that it chooses to affect change
+in any resource (be it a file to be corrected, a package to be installed, or
+any other resource type) is entirely arbitrary because resources that have no
+relationship to another resource shouldn&rsquo;t CARE about the order in which they&rsquo;re
+evaluated and remediated.</p>
+
+<p>For example, imagine Puppet is going to create both <code>/etc/sudoers</code> and update
+the system&rsquo;s authorized keys file to enter all the sysadmins' SSH keys. Which
+one should it do first? In an imperative system like shell scripts or
+a runbook-style system, you are forced to choose an order. So I ask again,
+which one goes first? If you try to update the <code>sudoers</code> file in your script
+first, and there&rsquo;s a problem with that update, then the script fails and the
+SSH keys aren&rsquo;t installed. If you switch the order and there&rsquo;s a problem with
+the SSH keys, then you can&rsquo;t <code>sudo</code> up because the <code>sudoers</code> file hasn&rsquo;t been
+touched.</p>
+
+<p>Because of this, Puppet has always taken the stance that if there are failures,
+we want to get as much of the system into a working state as possible (i.e. any
+resources that don&rsquo;t depend upon the failing resource are going to still be
+evaluated, or &lsquo;inspected&rsquo;, and remediated, or &lsquo;changed if need be&rsquo;). There are
+definitely philosophical differences here: the argument can be made that if there&rsquo;s
+a failure somewhere, the system is bad and you should cast it off until you&rsquo;ve
+fixed whatever the problem is (or the part of the code causing the problem). In
+virtualized or &lsquo;cloud&rsquo; environments where everything is automated, this is just
+fine, but in environments without complete and full automation, sometimes you
+have to fix and deal with what you have. Puppet &ldquo;believes in your system&rdquo;, which
+is borderline marketing-doubletalk for &ldquo;alert you of errors and give you time
+to fix the damn thing and do another Puppet run without having to spin up a whole
+new system.&rdquo;</p>
+
+<p>Once you know WHY Puppet takes the stance it does, you realize that Puppet does
+not give two shits about the order of resources without dependencies. If you
+write perfect Puppet code, you&rsquo;re fine. But the majority of the
+known-good-world does not do that. In fact, most of us write shit code. Which
+was the problem&hellip;</p>
+
+<h2>The history of Puppet&rsquo;s ordering choices</h2>
+
+<h3>&lsquo;Random&rsquo; random order</h3>
+
+<p>In the early days, the only resources that were guaranteed to have a consistent
+order were those resources with dependencies (i.e. as I stated above, resources
+that used the &lsquo;before&rsquo;, &lsquo;require&rsquo;, &lsquo;subscribe&rsquo;, or &lsquo;notify&rsquo; metaparameters to
+establish an evaluation order). Every other resource was evaluted at random
+every time that Puppet ran&hellip;which meant that you could run Puppet ten times
+and, theoretically, resources without dependencies could be evaluated in
+a different order between every Puppet run (we call this non-deterministic
+ordering). This made things REALLY hard to debug.  Take the case where you had
+a catalog of thousands of resources but you forgot a SINGLE dependency between
+a couple of file resources. If you roll that change out to 1000 nodes, you
+might have 10 or less of them fail (because Puppet chose an evaluation order
+that ordered these two resources incorrectly). Imagine trying to figure out
+what happened and replicate the problem. You could waste lots of time just
+trying to REPLICATE the issue, even if it was a small fix like this.</p>
+
+<p><strong>PROS</strong>:</p>
+
+<ul>
+<li>IS there a pro here?</li>
+</ul>
+
+
+<p><strong>CONS</strong>:</p>
+
+<ul>
+<li>Ordering could change between runs, and thus it was very hard to debug missing dependencies</li>
+</ul>
+
+
+<p>Philosophically, we were correct: resources that are to be evaluated in a certain
+order require dependencies. Practically, we were creating more work for ourselves.</p>
+
+<p>Incidentally, I&rsquo;d heard that Adam Jacob, who created Chef, had cited this reason
+as one of the main motivators for creating Chef. I&rsquo;d heard that as a Puppet
+consultant, he would run into these buried dependency errors and want to flip
+tables. Even if it&rsquo;s not a true STORY, it was absolutely true for tables where
+I used to work&hellip;</p>
+
+<h3>Title-hash, &lsquo;Predictable&rsquo; random order</h3>
+
+<p>Cut to Puppet version 2.7 where we introduced deterministic ordering with
+&lsquo;title-hash&rsquo; ordering. In a nutshell, resources that didn&rsquo;t have dependencies
+would still be executed in a random order, but the order Puppet chose could be
+replicated (it created a SHA1 hash based on the titles of the resources without
+dependencies, and ordered the hashes alphabetically). This meant that if you
+tested out a catalog on a node, and then ran that same catalog on 1000 other
+nodes, Puppet would choose the same order for all 1000 of the nodes. This
+gave you the ability to actually TEST whether your changes would successfully
+run in production. If you omitted a dependency, but Puppet managed to pick the
+correct evaluation order, you STILL had a missing dependency, but you didn&rsquo;t
+care about it because the code worked. The next change you made to the catalog
+(by adding or removing resources), the order might change, but you would
+discover and fix the dependency at that time.</p>
+
+<p><strong>PROS</strong>:</p>
+
+<ul>
+<li>&lsquo;Predictable&rsquo; and repeatable order made testing possible</li>
+</ul>
+
+
+<p><strong>CONS</strong>:</p>
+
+<ul>
+<li>Easy to miss dependency omissions if Puppet chose the right order (but do you really care?)</li>
+</ul>
+
+
+<h3>Manifest ordering, the &lsquo;bath salts&rsquo; of ordering</h3>
+
+<p>Title-hash ordering seemed like the best of both worlds &ndash; being opinionated about
+resource dependencies but also giving sysadmins a reliable, and repeatable, way
+to test evaluation order before it&rsquo;s pushed out to production.</p>
+
+<p>Buuuuuuuuuut, y'all JUST weren&rsquo;t happy enough, were you?</p>
+
+<p>When you move from an imperative solution like scripts to a declarative(ish)
+solution like Puppet, it is absolutely a new way to think about modeling your
+system. Frequently we heard that people were having issues with Puppet because
+the order that resources shows up in a Puppet master WASN&rsquo;T the order that Puppet
+would evaluate the resources. I just dropped a LOT of words explaining why this
+isn&rsquo;t the case, but who really has the time to read up on all of this? People
+were dismissing Puppet too quickly because their expectations of how the tool
+worked didn&rsquo;t align with reality. The assumption, then, was to align these
+expectations in the hopes that people wouldn&rsquo;t dismiss Puppet so quickly.</p>
+
+<p><a href="http://puppetlabs.com/blog/introducing-manifest-ordered-resources">Eric Sorenson wrote a blog post on our thesis and experimentation</a>
+around manifest ordering that is worth a read (and, incidentally, is shorter
+than this damn post), but the short version is that we tested this theory out
+and determined that Manifest Ordering would help new users to Puppet. Because
+of this work, we created a feature called &lsquo;Manifest Ordering&rsquo; that stated that
+resources that DID NOT HAVE DEPENDENCIES would be evaluated by Puppet in the
+order that they showed up in the Puppet manifest (when read top to bottom). If
+a resource truly does not have any dependencies, then you honestly should not
+care one bit what order it&rsquo;s evaluated (because it doesn&rsquo;t matter).  Manifest
+Ordering made ordering of resources without dependencies VERY predictable.</p>
+
+<p>But&hellip;.</p>
+
+<p>This doesn&rsquo;t mean I think it&rsquo;s the best thing in the world. In fact, I&rsquo;m really
+wary of how I feel people will come to use Manifest Ordering. There&rsquo;s a reason
+I called it the &ldquo;bath salts of ordering&rdquo; &ndash; because a little bit of it, when
+used correctly, can be a lovely thing, but too much of it, used in unintended
+circumstances, leads to hypothermia, paranoia, and the desire to gnaw someone
+else&rsquo;s face off. We were/are giving you a way to bypass our dependency model by
+using the mental-model you had with scripts, but ALSO telling you NOT to rely
+on that mental-model (and instead set dependencies explicitly using metaparameters).</p>
+
+<p>Seriously, what could go wrong?</p>
+
+<p>Manifest Ordering is not a substitution for setting dependencies &ndash; that IS NOT
+what it was created for. <strong>Puppet Labs still maintains that you should use
+dependencies to order resources and NOT simply rely on Manifest Ordering as
+a form of setting dependencies!</strong> Again, the problem is that you need to KNOW
+this&hellip;and if Manifest Ordering allows you to keep the same imperative
+&ldquo;mindset&rdquo; inside a declarative(ish) language, then eventually you&rsquo;re going to
+experience pain (if not today, but possibly later when you actually try to
+refactor code, or share code, or use this code on a system that ISN&rsquo;T using
+Manifest Ordering). A declarative(ish) language like Puppet requires seeing
+your systems according to the way their end-state will look and worrying about
+WHAT the system will look like, and not necessarily HOW it will get there. Any
+shortcut to understanding this process means you&rsquo;re going to miss key bits of
+what makes Puppet a good tool for modeling this state.</p>
+
+<p><strong>PROS:</strong></p>
+
+<ul>
+<li>Evaluation order of resources without dependencies is absolutely predictable</li>
+</ul>
+
+
+<p><strong>CONS:</strong></p>
+
+<ul>
+<li>If used as a substitution for setting dependencies, then refactoring code (moving around the order in which resources show up in a manifest) means changing the evaluation order</li>
+</ul>
+
+
+<h2>What should I actually take from this?</h2>
+
+<p>Okay, here&rsquo;s a list of things you SHOULD be doing if you don&rsquo;t want to create
+a problem for future-you or future-organization:</p>
+
+<ul>
+<li>Use dependency metaparameters like &lsquo;before&rsquo;, &lsquo;require&rsquo;, &lsquo;notify&rsquo;, and &lsquo;subscribe&rsquo; if resources in a catalog NEED to be evaluated in a particular order</li>
+<li>Do not use Manifest Ordering as a substitute for explicitly setting dependencies (disable it if this is too tempting)</li>
+<li>Use Roles and Profiles for a logical module layout (see: <a href="http://bit.ly/puppetworkflows2">http://bit.ly/puppetworkflows2</a> for information on Roles and Profiles)</li>
+<li>Order individual components inside the Profile</li>
+<li>Order Profiles (if necessary) inside the Role</li>
+</ul>
+
+
+<p>And, seriously, trust us with the explicit dependencies. It seems like a giant
+pain in the ass initially, but you&rsquo;re ultimately documenting your infrastructure,
+and a dependency (or, saying &lsquo;this thing MUST come before that thing&rsquo;) is a pretty
+important decision. There&rsquo;s a REASON behind it &ndash; treat it with some more weight
+other than having one line come before another line, ya know? The extra time
+right now is absolutely going to buy you the time you spend at home with your
+kids (and by &lsquo;kids&rsquo;, I mean &lsquo;XBox&rsquo;).</p>
+
+<p>And don&rsquo;t use bath salts, folks.</p>
+]]></content>
+  </entry>
+  
+</feed>

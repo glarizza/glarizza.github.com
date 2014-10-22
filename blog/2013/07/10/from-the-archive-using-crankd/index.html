@@ -1,0 +1,410 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>From the Archive: Using Crankd - Shit Gary Says</title>
+  <meta name="author" content="Gary larizza">
+
+  
+  <meta name="description" content="Supporting laptops in a managed environment is tricky (and doubly so if you allow them to be taken off your corporate network). While you can be &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://garylarizza.com/blog/2013/07/10/from-the-archive-using-crankd">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Shit Gary Says" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-37766331-2']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Shit Gary Says</a></h1>
+  
+    <h2>...things I don't want to forget</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:garylarizza.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+  <li><a href="/about">About</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">From the Archive: Using Crankd</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-07-10T09:51:00+02:00" pubdate data-updated="true">Jul 10<span>th</span>, 2013</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>Supporting laptops in a managed environment is tricky (and doubly so if you allow them to be taken off your corporate network).  While you can be reasonably assured that your desktops will remain on and connected during the workday, it&rsquo;s not uncommon for laptops to go to sleep, change wireless access points, and even change between an Ethernet or AirPort connection several times during the day.  It&rsquo;s important to have a tool that can &ldquo;tweak&rdquo; certain settings in response to these changes.</p>
+
+<p>This is where crankd comes in.</p>
+
+<p>Crankd is a cool utility that&rsquo;s part of the Pymacadmin (<a href="http://code.google.com/p/pymacadmin/">http://code.google.com/p/pymacadmin/</a>) suite of tools co-authored by Chris Adams and Nigel Kersten.  Specifically crankd is a Python daemon that lets you trigger shell scripts, or execute Python methods, based upon state changes in SystemConfiguration, NSWorkspace and FSEvents.</p>
+
+<h2>Use Cases</h2>
+
+<p>It&rsquo;s easier to see how crankd can help you with a couple of scenarios:</p>
+
+<ol>
+<li><p>Your laptops, like all of the other machines in your organization, are bound to your corporate LDAP servers.  When they&rsquo;re on network, they will query the LDAP servers for things like authentication information.  Unless your corporate LDAP directory is accessible outside your corporate network, your laptops may exhibit the &ldquo;spinning wheel of death&rdquo; when they attempt to contact a suddenly-unreachable LDAP directory at the neighborhood Starbucks.  A solution to this is to remove the LDAP servers from your Search (and Contacts) path whenever the laptop is taken off-network and add the LDAP servers when you come back on-network.</p></li>
+<li><p>Perhaps you&rsquo;re using Puppet, Munki, Chef, StarDeploy, Filewave, Absolute Manage, Casper, or any other configuration management system that needs to contact a centralized server for configuration information. Usually these tools will have your machine contact their servers once an hour or so, but this can be a problem if the machine is constantly sleeping and waking.  Plus if you take your machine off-network, you don&rsquo;t want it trying to contact a server that might not be reachable from the outside world. It would be nice to have your laptop &ldquo;phone home&rdquo; when it establishes a network connection on your corporate network, and skip this step when the laptop is taken outside your organization.</p></li>
+<li><p>OS X allows you to set a preferred order for your network connections, but it would be nice to disable the AirPort when your laptop establishes an Ethernet connection.</p></li>
+<li><p>Finally, maybe you have the need to perform an action whenever your laptop sleeps (or wakes), changes a network connection, mounts a volume, or runs a specific Application (whether it&rsquo;s located in the Applications directory or anywhere else on your machine).</p></li>
+</ol>
+
+
+<p>All of these situations can be made trivial through the help of crankd.</p>
+
+<h2>How do I get it working?</h2>
+
+<p>Crankd is a daemon, so it&rsquo;s running in the background while you work.  It uses an XML plist file that tells it which scripts (or which Python methods) to execute in response to specific state changes (like a network connection going up or down or a volume being mounted).  Since it&rsquo;s a small Python library, the files aren&rsquo;t huge and the entire finished installation is around 100 Kb (or larger with your custom code/scripts).  Lets download crankd and experiment with its settings:</p>
+
+<ol>
+<li><p><strong>Download the Pymacadmin source.</strong>  You can do this through Google Code or Github &ndash; I&rsquo;ll demonstrate the Github method.  Navigate to <a href="http://github.com/acdha/pymacadmin,">http://github.com/acdha/pymacadmin,</a> click the Downloads button, and download either the .tar.gz or the .zip version of the source code.  Drag it to your desktop and then double-click on the file to expand it.  It should open a folder named &ldquo;acdha-pymacadmin-<combination of 7 numbers and letters>&rdquo;</p></li>
+<li><p><strong>Install crankd</strong>  Upon opening the pymacadmin folder, you should see a series of folders, readme files, and an &ldquo;install-crankd.sh&rdquo; installation script.  Let&rsquo;s open Terminal.app and navigate to the pymacadmin folder that we expanded on our desktop (you can type &ldquo;cd&rdquo; into Terminal.app and then drag and drop the folder into the Terminal window.  Hit the Return button on your keyboard to change to the directory.).  The install-crankd.sh script is executable, so run it by typing &ldquo;sudo ./install-crankd.sh&rdquo; into the Terminal window and hitting Return.  Enter your password when it prompts you</p></li>
+<li><p><strong>Setup a plist file for crankd</strong>  If you&rsquo;ve never worked with crankd before, it&rsquo;s best to let it setup a configuration plist for you.  If you don&rsquo;t specify a configuration plist with the &ldquo;&mdash;config&rdquo; argument, or you don&rsquo;t have a com.googlecode.pymacadmin.crankd.plist file in your /Users/<username>/Library/Preferences folder, crankd will automatically create a sample plist for you.  Let&rsquo;s do that by typing &ldquo;/usr/local/sbin/crankd.py&rdquo; into Terminal and hitting the Return button.  Take a look at the sample configuration plist file:</p></li>
+</ol>
+
+
+<p>  &lt;?xml version=&ldquo;1.0&rdquo; encoding=&ldquo;UTF-8&rdquo;?>
+  &lt;!DOCTYPE plist PUBLIC &ldquo;&ndash;//Apple Computer//DTD PLIST 1.0//EN&rdquo; &ldquo;<a href="http://www.apple.com/DTDs/PropertyList-1.0.dtd">http://www.apple.com/DTDs/PropertyList-1.0.dtd</a>&rdquo;>
+  <plist version="1.0">
+  <dict></p>
+
+<pre><code>&lt;key&gt;NSWorkspace&lt;/key&gt;
+&lt;dict&gt;
+  &lt;key&gt;NSWorkspaceDidMountNotification&lt;/key&gt;
+  &lt;dict&gt;
+    &lt;key&gt;command&lt;/key&gt;
+    &lt;string&gt;/bin/echo "A new volume was mounted!"&lt;/string&gt;
+  &lt;/dict&gt;
+  &lt;key&gt;NSWorkspaceDidWakeNotification&lt;/key&gt;
+  &lt;dict&gt;
+    &lt;key&gt;command&lt;/key&gt;
+    &lt;string&gt;/bin/echo "The system woke from sleep!"&lt;/string&gt;
+  &lt;/dict&gt;
+  &lt;key&gt;NSWorkspaceWillSleepNotification&lt;/key&gt;
+  &lt;dict&gt;
+    &lt;key&gt;command&lt;/key&gt;
+    &lt;string&gt;/bin/echo "The system is about to go to sleep!"&lt;/string&gt;
+  &lt;/dict&gt;
+&lt;/dict&gt;
+&lt;key&gt;SystemConfiguration&lt;/key&gt;
+&lt;dict&gt;
+  &lt;key&gt;State:/Network/Global/IPv4&lt;/key&gt;
+  &lt;dict&gt;
+    &lt;key&gt;command&lt;/key&gt;
+    &lt;string&gt;/bin/echo "Global IPv4 config changed"&lt;/string&gt;
+  &lt;/dict&gt;
+&lt;/dict&gt;
+</code></pre>
+
+<p>  </dict>
+  </plist></p>
+
+<p>This XML file has two main keys &ndash; one for NSWorkspace events (such as mounted volumes and sleeping/waking your laptop), and one for SystemConfiguration events (such as network state changes).  Followed by a key for the specific event that we&rsquo;re monitoring, a key specifying whether we&rsquo;ll be executing a command or a Python method in response to this event, and a string (or an array of strings, as we&rsquo;ll see later) specifying the actual command that&rsquo;s to be executed.  For all of the events in the sample plist, we&rsquo;re going to be echoing a message to the console.</p>
+
+<ol>
+<li><strong>Start crankd</strong>  Once crankd has been installed and your configuration plist file is setup, you&rsquo;re ready to let crankd monitor for state changes. Let&rsquo;s start crankd with the sample plist that was created in the previous step by executing the following command in Terminal &ldquo;/usr/local/sbin/crankd.py &mdash;config=/Users/<username>/Library/Preferences/com.googlecode.pymacadmin.crankd.plist&rdquo;  Remember to substitute your username for <username> in that command (if you don&rsquo;t know your username, you can type &ldquo;whoami&rdquo; into Terminal and hit the Return button).  If everything was executed correctly, you should see the following lines displayed in Terminal:</li>
+</ol>
+
+
+<p>  Module directory /Users/<username>/Library/Application Support/crankd does not exist: Python handlers will need to use absolute pathnames
+  INFO: Loading configuration from /Users/<username>/Library/Preferences/com.googlecode.pymacadmin.crankd.plist
+  INFO: Listening for these NSWorkspace notifications: NSWorkspaceWillSleepNotification, NSWorkspaceDidWakeNotification, NSWorkspaceDidMountNotification
+  INFO: Listening for these SystemConfiguration events: State:/Network/Global/IPv4</p>
+
+<p>It might look like Terminal isn&rsquo;t doing anything, but in all actuality crankd is listening for changes.  You can make crankd come to life by either connecting to (or disconnecting from) an AirPort network, sleeping/waking your machine, or mounting a volume (by inserting a USB memory stick, for example).  Performing any of these actions will cause crankd to echo messages to your Terminal window.  Here&rsquo;s the message I received when I disconnected from an AirPort network:</p>
+
+<p>  INFO: SystemConfiguration: State:/Network/Global/IPv4: executing /bin/echo &ldquo;Global IPv4 config changed&rdquo;
+  Global IPv4 config changed</p>
+
+<p>To quit this sample configuration of crankd, simply hold down the control button on your keyboard and press the C key.  Congratulations, crankd is now up and running!</p>
+
+<h2>A more complex example</h2>
+
+<p>Let&rsquo;s look at one of our previous situations</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Gary larizza</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-07-10T09:51:00+02:00" pubdate data-updated="true">Jul 10<span>th</span>, 2013</time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://garylarizza.com/blog/2013/07/10/from-the-archive-using-crankd/" data-via="glarizza" data-counturl="http://garylarizza.com/blog/2013/07/10/from-the-archive-using-crankd/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013/02/15/puppet-plus-github-equals-laptop-love/" title="Previous Post: Puppet + Github = laptop <3">&laquo; Puppet + Github = laptop <3</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2013/11/25/fun-with-providers/" title="Next Post: Fun with Puppet Providers - Part 1 of Whatever">Fun with Puppet Providers - Part 1 of Whatever &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/10/19/on-dependencies-and-order/">On Dependencies and Order</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/08/31/r10k-plus-directory-environments/">R10k + Directory Environments</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/03/26/random-r10k-workflow-ideas/">On R10k and 'Environments'</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/03/12/when-yellow-ruled-the-world/">When Yellow Ruled the World</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/03/07/puppet-workflow-part-3b/">Building a Functional Puppet Workflow Part 3b: More R10k Madness</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/glarizza">@glarizza</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'glarizza',
+            count: 0,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+<section>
+  <h1>Twitter</h1>
+  <a class="twitter-timeline" href="https://twitter.com/glarizza" data-widget-id="406925439601348608">Tweets by @glarizza</a>
+  <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+"://platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
+</section>
+
+
+
+
+
+<section>
+  <h1>Coderwall Badges</h1>
+  <ul id="cw_badges">
+    <li class="loading">Status updating...</li>
+  </ul>
+  <p id="badges"></p>
+  <script type="text/javascript">
+    function show_achievements(args) {
+      var badges = args["data"]["badges"];
+      var achievements = "";
+      for (var i = 0; i < badges.length; i++) {
+        var alt_text = badges[i]["name"];
+        var title_text = badges[i]["name"] + ' - ' + badges[i]["description"];
+        achievements += '<a href="http://coderwall.com/glarizza/"><img src="'
+          + badges[i]["badge"]
+          + '" width="48" height="48" alt="' + alt_text
+          + '" title="' + title_text
+          + '" style="margin-top: 7px;margin-right: 4px;"'
+          + '"/></a>';
+      };
+      document.getElementById("cw_badges").style.display = "none";
+      document.getElementById("badges").innerHTML = achievements;
+    }
+  </script>
+  <script src="http://coderwall.com/glarizza.json?callback=show_achievements"></script>
+  
+</section>
+
+<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- Second Add -->
+<ins class="adsbygoogle"
+     style="display:inline-block;width:300px;height:250px"
+     data-ad-client="ca-pub-7679900559570586"
+     data-ad-slot="4934599358"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2014 - Gary larizza -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'shitgarysays';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://garylarizza.com/blog/2013/07/10/from-the-archive-using-crankd/';
+        var disqus_url = 'http://garylarizza.com/blog/2013/07/10/from-the-archive-using-crankd/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

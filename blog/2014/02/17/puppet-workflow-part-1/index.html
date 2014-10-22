@@ -1,0 +1,542 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Building a Functional Puppet Workflow Part 1: Module Structure - Shit Gary Says</title>
+  <meta name="author" content="Gary larizza">
+
+  
+  <meta name="description" content="Working as a professional services engineer for Puppet Labs,
+my life consists almost entirely of either correcting some of the worst code
+atrocities &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://garylarizza.com/blog/2014/02/17/puppet-workflow-part-1">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Shit Gary Says" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-37766331-2']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Shit Gary Says</a></h1>
+  
+    <h2>...things I don't want to forget</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:garylarizza.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+  <li><a href="/about">About</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Building a Functional Puppet Workflow Part 1: Module Structure</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-02-17T23:01:37+01:00" pubdate data-updated="true">Feb 17<span>th</span>, 2014</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>Working as a professional services engineer for <a href="http://www.puppetlabs.com">Puppet Labs</a>,
+my life consists almost entirely of either correcting some of the worst code
+atrocities you&rsquo;ve seen in your life, or helping people get started with Puppet
+so that they don&rsquo;t need to call us again due to: A.) Said code atrocities or
+B.) Refactor the work we JUST helped them start.  It wasn&rsquo;t ALWAYS like this &ndash;
+I can remember some of my earliest gigs, and I almost feel like I should go
+revisit them if only to correct some of the previous &lsquo;best practices&rsquo; that
+didn&rsquo;t quite pan out.</p>
+
+<p>This would be exactly why I&rsquo;m wary of &lsquo;Best Practices&rsquo; &ndash; because one person&rsquo;s
+&lsquo;Best Practice&rsquo; is another person&rsquo;s &lsquo;What the fuck did you just do?!&rsquo;</p>
+
+<p>Having said that, I&rsquo;m finding myself repeating a story over and over again when
+I train/consult, and that&rsquo;s the story of &lsquo;The Usable Puppet Workflow.&rsquo;  Everybody
+wants to know &lsquo;The Right Way™&rsquo;, and I feel like we finally have a way that survives
+a reasonable test of time. I&rsquo;ve been promoting this workflow for over a year (which
+is a HELL of a long time in Startup time), and I&rsquo;ve yet to really see an edge case
+it couldn&rsquo;t handle.</p>
+
+<p>(If you&rsquo;re already savvy: yes, this is the Roles and Profiles talk)</p>
+
+<p>I&rsquo;ll be breaking this workflow down into separate blog posts for every component,
+and, as always, your comments are welcome&hellip;</p>
+
+<h2>It all starts with the component module</h2>
+
+<p>The first piece of a functional Puppet deployment starts with what we call
+&lsquo;component modules&rsquo;.  Component modules are the lowest level in your
+deployment, and are modules that configure specific pieces of technology (like
+apache, ntp, mysql, and etc&hellip;).  Component modules are well-encapsulated, have
+a reasonable API, and focus on doing small, specific things really well (i.e.
+the *nix way).</p>
+
+<p>I don&rsquo;t want to write thousands of words on building component modules because
+I feel like others have done this better than I. As examples, check out
+<a href="http://www.devco.net/archives/2012/12/13/simple-puppet-module-structure-redux.php">RI&rsquo;s Post on a simple module structure</a>,
+<a href="http://docs.puppetlabs.com/guides/module_guides/bgtm.html">Puppet Labs&#8217; very own docs on the subject</a>,
+<a href="http://www.confreaks.com/videos/1651-puppetconf2012-puppet-modules-for-fun-and-profit">and even Alessandro&rsquo;s Puppetconf 2012 session.</a> Instead, I&rsquo;d like to
+provide some pointers on what I feel makes a good component module, and some
+&lsquo;gotchas&rsquo; we&rsquo;ve noticed.</p>
+
+<h3>Parameters are your API</h3>
+
+<p>In the current world of Puppet, you MUST define the parameters your module will
+accept in the Puppet DSL. Also, every parameter MUST ultimately have a value
+when Puppet compiles the catalog (whether by explicitly passing this parameter
+value when declaring the class, or by assuming a default value). Yes, it&rsquo;s
+funny that, when writing a Puppet class, if you typo a VARIABLE Puppet will
+not alert you to this (in a NON <code>use strict</code>-ian sort of approach) and will
+happily accept a variable in an undefined state, but the second you don&rsquo;t pass
+a value to your class parameter you&rsquo;re in for a rude compilation error.
+This is the way of Puppet classes at the time of this writing, so you&rsquo;re going
+to see Puppet classes with LINES of defined parameters. I expect this to change
+in the future (please let this change in the near future), but for now, it&rsquo;s
+a necessary evil.</p>
+
+<p>The parameters you expose to your top-level class (i.e. given class names like
+<code>apache</code> and <code>apache::install</code>, I&rsquo;m talking specifically about <code>apache</code>) should
+be treated as an API to your module. IDEALLY, they&rsquo;re the ONLY THING that
+a user needs to modify when using your module. Also, whenever possible, it
+should be the case that a user need ONLY interact with the top-level class when
+using your module (of course, defined resource types like <code>apache::vhost</code> are
+used on an ad-hoc basis, and thus are the exception here).</p>
+
+<h3>Inherit the <code>::params</code> class</h3>
+
+<p>We&rsquo;re starting to make enemies at this point. It&rsquo;s been a convention for modules
+to use a <code>::params</code> class to assign values to all variables that are going to
+be used for all classes inside the module. The idea is that the <code>::params</code> class
+is the one-stop-shop to see where a variable is set. Also, to get access to a
+variable that&rsquo;s set in a Puppet class, you have to declare the class (i.e. use
+the <code>include()</code> function or inherit from that class). When you declare a class
+that has both variables AND resources, those resources get put into the catalog,
+which means that Puppet ENFORCES THE STATE of those resources. What if you only
+needed a variable&rsquo;s value and didn&rsquo;t want to enforce the rest of the resources
+in that class? There&rsquo;s no good way in Puppet to do that. Finally, when you inherit
+from a class in Puppet that has assigned variable values, you ALSO get access
+to those variables in the parameter definition section of your class (i.e. the
+following section of the class:</p>
+
+<pre><code>class apache (
+  $port = $apache::params::port,
+  $user = $apache::params::user,
+) inherits apache::params {
+</code></pre>
+
+<p>See how I set the default value of <code>$apache::port</code> to <code>$apache::params::port</code>?
+I could only access the value of the variable <code>$apache::params::port</code> in that
+section by inheriting from the <code>apache::params</code> class.  I couldn&rsquo;t insert
+<code>include apache::params</code> below that section and be allowed access to the variable
+up in the parameter defaults section (due to the way that Puppet parses classes).</p>
+
+<p><strong>FOR THIS REASON, THIS IS THE </strong><em>ONLY</em><strong> RECOMMENDED USAGE OF INHERITANCE IN
+PUPPET!</strong></p>
+
+<p>We do NOT recommend using inheritance anywhere else in Puppet and for any other
+reason because there are better ways to achieve what you want to do INSTEAD of
+using inheritance.  Inheritance is a holdover from a scarier, more lawless time.</p>
+
+<p><strong>NOTE: Data in Modules</strong> &ndash; There&rsquo;s a &lsquo;Data in Modules&rsquo; pattern out there that
+attempts to eliminate the <code>::params</code> class.  <a href="http://garylarizza.com/blog/2013/12/08/when-to-hiera/">I wrote about it in a previous post</a>,
+and I recommend you read that post for more info (it&rsquo;s near the bottom).</p>
+
+<h3>Do <strong>NOT</strong> do Hiera lookups in your component modules!</h3>
+
+<p>This is something that&rsquo;s really only RECENTLY been pushed. When Hiera was
+released, we quickly recognized that it would be the answer to quite a few
+problems in Puppet. In the rush to adopt Hiera, many people started adding
+Hiera calls to their modules, and suddenly you had &lsquo;Hiera-compatible&rsquo; modules
+out there. This caused all kinds of compatibility problems, and it was largely
+because there wasn&rsquo;t a better module structure and workflow by which to integrate
+Hiera. The pattern that I&rsquo;ll be pushing DOES INDEED use Hiera, <strong>BUT</strong> it
+confines all Hiera calls to a higher-level wrapper class we call a &lsquo;profile&rsquo;.
+The reasons for NOT using Hiera in your module are:</p>
+
+<ul>
+<li>By doing Hiera calls at a higher level, you have a greater visibility on
+exactly what parameters were set by Hiera and which were set explicitly or by
+default values.</li>
+<li>By doing Hiera calls elsewhere, your module is backwards-compatible for
+those folks who are NOT using Hiera</li>
+</ul>
+
+
+<p>Remember &ndash; your module should just accept a value and use it somewhere. Don&rsquo;t
+get <strong>TOO</strong> smart with your component module &ndash; leave the logic for other
+places.</p>
+
+<h3>Keep your component modules generic</h3>
+
+<p>We always get asked &ldquo;How do I know if I&rsquo;m writing a good module?&rdquo; We USED to
+say &ldquo;Well, does it work?&rdquo; (and trust me, that was a BIG hurdle). Now, with
+data separation models out there like Hiera, I have a couple of other questions
+that I ask (you know, BEYOND asking if it compiles and actually installs the
+thing it&rsquo;s supposed to install). The best way I&rsquo;ve found to determine if your
+module is &lsquo;generic enough&rsquo; is if I asked you TODAY to give me your module,
+would you give it to me, or would you be worried that there was some
+company-specific data locked in there? If you have company-specific data in
+your module, then you need to refactor the module, store the data in Hiera, and
+make your module more generic/reusable. Also, does your module focus on installing
+one piece of technology, or are you declaring packages for shared libraries
+or other components (like gcc, apache, or other common components)? You&rsquo;re
+not going to win any prizes for having the biggest, most monolithic module
+out there. Rather, if your module is that large and that complex, you&rsquo;re
+going to have a hell of a time debugging it. Err on the side of making your
+modules smaller and more task-specific. So what if you end up needing to
+declare 4 classes where you previously declared 1? In the roles and profiles
+pattern we will show you in the next blog post, you can abstract that away
+ANYHOW.</p>
+
+<h3>Don&rsquo;t play the &ldquo;what if&rdquo; game</h3>
+
+<p>I&rsquo;ve had more than a couple of gigs where the customer says something along the
+lines of &ldquo;What if we need to introduce FreeBSD/Solaris/etc&hellip; nodes into our
+organization, shouldn&rsquo;t I account for them now?&rdquo; This leads more than a few
+people down a path of entirely too-complex modules that become bulky and
+unwieldy. Yes, your modules should be formatted so that you can simply add
+another case in your <code>::params</code> class for another OS&rsquo;s parameters, and yes,
+your module should be formatted so that your <code>::install</code> or <code>::config</code>
+class can handle another OS, but if you currently only manage Redhat, and
+you&rsquo;ve only EVER managed Redhat, then don&rsquo;t start adding Debian parameters
+RIGHT NOW just because you&rsquo;re afraid you might inherit Ubuntu machines. The
+goal of Puppet is to automate the tasks that eat up the MAJORITY of your time
+so you can focus on the edge cases that really demand your time. If you can
+eventually automate those edge cases, then AWESOME! Until then, don&rsquo;t spend
+the majority of your time trying to automate the edge cases only to drown
+under the weight of deadlines from simple work that you COULD have already
+automated (but didn&rsquo;t, because you were so worried about the exceptions)!</p>
+
+<h3>Store your modules in version control</h3>
+
+<p>This should go without saying, but your modules should be stored in version
+control (a la git, svn, hg, whatever). We tend to prefer git due to its lightweight
+branching and merging (most of our tooling and solutions will use git because
+we&rsquo;re big git users), but you&rsquo;re free to use whatever you want. The bigger
+question is HOW to store your modules in version control. There are usually
+two schools of thought:</p>
+
+<ul>
+<li>One repository per module</li>
+<li>All modules in a single repository</li>
+</ul>
+
+
+<p>Each model has its pros and cons, but we tend to recommend one module per
+repository for the following reasons:</p>
+
+<ul>
+<li>Individual repos mean individual module development histories</li>
+<li>Most VCS solutions don&rsquo;t have per-folder ACLs for a single repositories;
+having multiple repos allows per-module security settings.</li>
+<li>With the one-repository-per-module solution, modules you pull down from the
+Forge (or Github) must be committed to your repo. Having multiple
+repositories for each module allow you to keep everything separate</li>
+</ul>
+
+
+<p><strong>NOTE:</strong> This becomes important in the third blog post in the series when we
+talk about moving changes to each Puppet Environment, but it&rsquo;s important to
+introduce it NOW as a &lsquo;best practice&rsquo;. If you use our recommended module/environment
+solution, then one-module-per-repo is the best practice. If you DON&rsquo;T use our
+solution, then the single repository per for all modules will STILL work,
+but you&rsquo;ll have to manage the above issues. Also note that even if you currently
+have every module in a single repository, you can STILL use our solution in
+part 3 of the series (you&rsquo;ll just need to perform a couple of steps to conform).</p>
+
+<h2>Best practices are shit</h2>
+
+<p>In general, &lsquo;best practices&rsquo; are only recommended if they fit into your organizational
+workflow. The best and worst part of Puppet is that it&rsquo;s infinitely customizable,
+so &lsquo;best practices&rsquo; will invariably be left wanting for a certain subset of the
+community. As always, take what I say under consideration; it&rsquo;s quite possible
+that I could be entirely full of shit.</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Gary larizza</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-02-17T23:01:37+01:00" pubdate data-updated="true">Feb 17<span>th</span>, 2014</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/puppet/'>puppet</a>, <a class='category' href='/blog/categories/workflow/'>workflow</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://garylarizza.com/blog/2014/02/17/puppet-workflow-part-1/" data-via="glarizza" data-counturl="http://garylarizza.com/blog/2014/02/17/puppet-workflow-part-1/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013/12/15/seriously-what-is-this-provider-doing/" title="Previous Post: Seriously, what is this provider doing?">&laquo; Seriously, what is this provider doing?</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2014/02/17/puppet-workflow-part-2/" title="Next Post: Building a Functional Puppet Workflow Part 2: Roles and Profiles">Building a Functional Puppet Workflow Part 2: Roles and Profiles &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/10/19/on-dependencies-and-order/">On Dependencies and Order</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/08/31/r10k-plus-directory-environments/">R10k + Directory Environments</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/03/26/random-r10k-workflow-ideas/">On R10k and 'Environments'</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/03/12/when-yellow-ruled-the-world/">When Yellow Ruled the World</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/03/07/puppet-workflow-part-3b/">Building a Functional Puppet Workflow Part 3b: More R10k Madness</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/glarizza">@glarizza</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'glarizza',
+            count: 0,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+<section>
+  <h1>Twitter</h1>
+  <a class="twitter-timeline" href="https://twitter.com/glarizza" data-widget-id="406925439601348608">Tweets by @glarizza</a>
+  <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+"://platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
+</section>
+
+
+
+
+
+<section>
+  <h1>Coderwall Badges</h1>
+  <ul id="cw_badges">
+    <li class="loading">Status updating...</li>
+  </ul>
+  <p id="badges"></p>
+  <script type="text/javascript">
+    function show_achievements(args) {
+      var badges = args["data"]["badges"];
+      var achievements = "";
+      for (var i = 0; i < badges.length; i++) {
+        var alt_text = badges[i]["name"];
+        var title_text = badges[i]["name"] + ' - ' + badges[i]["description"];
+        achievements += '<a href="http://coderwall.com/glarizza/"><img src="'
+          + badges[i]["badge"]
+          + '" width="48" height="48" alt="' + alt_text
+          + '" title="' + title_text
+          + '" style="margin-top: 7px;margin-right: 4px;"'
+          + '"/></a>';
+      };
+      document.getElementById("cw_badges").style.display = "none";
+      document.getElementById("badges").innerHTML = achievements;
+    }
+  </script>
+  <script src="http://coderwall.com/glarizza.json?callback=show_achievements"></script>
+  
+</section>
+
+<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- Second Add -->
+<ins class="adsbygoogle"
+     style="display:inline-block;width:300px;height:250px"
+     data-ad-client="ca-pub-7679900559570586"
+     data-ad-slot="4934599358"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2014 - Gary larizza -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'shitgarysays';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://garylarizza.com/blog/2014/02/17/puppet-workflow-part-1/';
+        var disqus_url = 'http://garylarizza.com/blog/2014/02/17/puppet-workflow-part-1/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

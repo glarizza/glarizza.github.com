@@ -1,0 +1,1047 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>R10k + Directory Environments - Shit Gary Says</title>
+  <meta name="author" content="Gary larizza">
+
+  
+  <meta name="description" content="If you&rsquo;ve read anything I&rsquo;ve posted in the past year, you know my feelings about
+the word &lsquo;environments&rsquo; and about how well &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://garylarizza.com/blog/2014/08/31/r10k-plus-directory-environments">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Shit Gary Says" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-37766331-2']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Shit Gary Says</a></h1>
+  
+    <h2>...things I don't want to forget</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:garylarizza.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+  <li><a href="/about">About</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">R10k + Directory Environments</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-08-31T21:00:00+02:00" pubdate data-updated="true">Aug 31<span>st</span>, 2014</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>If you&rsquo;ve read anything I&rsquo;ve posted in the past year, you know my feelings about
+the word &lsquo;environments&rsquo; and about how well we tend to name things here at
+Puppet Labs (and if you don&rsquo;t, <a href="http://garylarizza.com/blog/2014/03/26/random-r10k-workflow-ideas/">you can check out that post here</a>).
+Since then, Puppet Labs has released a new feature called <a href="https://docs.puppetlabs.com/puppet/latest/reference/environments.html">directory
+environments (click this link for further reading)</a>
+that replace the older &lsquo;config file environments&rsquo; that we all used to use (i.e.
+stanzas in puppet.conf).  Directory environments weren&rsquo;t without their false
+starts and issues, but further releases of Puppet, and their inclusion in
+Puppet Enterprise 3.3.0, have allowed more people
+to ask about them.  SO, I thought I&rsquo;d do a quick writeup about them&hellip;</p>
+
+<h2>R10k had a child: Directory Environments</h2>
+
+<p>The Puppet platform team had a couple of problems with config file environments
+in puppet.conf &ndash; namely:</p>
+
+<ul>
+<li>Entering them in puppet.conf meant that you couldn&rsquo;t use environments named &lsquo;master&rsquo;, &lsquo;main&rsquo;, or &lsquo;agent&rsquo;</li>
+<li>There was no easy/reliable way to determine all the available/used Puppet environments without making assumptions (and hacky code) &ndash; especially if someone were using R10k + dynamic environments</li>
+<li>Adding more environments to <code>puppet.conf</code> made managing that file something of a nightmare (<code>environments.d</code> anyone?)</li>
+</ul>
+
+
+<p>Combine this with the fact that <a href="http://bit.ly/puppetworkflows3">most of the Professional Services team was
+rolling out R10k to create dynamic environments</a> (which meant we
+were abusing <code>$environment</code> inside <code>puppet.conf</code> and creating environments&hellip;well&hellip;
+dynamically and on-the-fly), and they knew something needed to be done.
+Because R10k was so popular and widely deployed, an environment solution that
+was a simple step-up from an R10k deployment was made the target, and directory
+environments were born.</p>
+
+<h2>How does it work?</h2>
+
+<p>Directory environments, essentially, are born out of a folder on the Puppet master
+(typically <code>$confdir/environments</code>, where <code>$confdir</code> is <code>/etc/puppetlabs/puppet</code>
+in Puppet Enterprise) wherein every subfolder is a new Puppet environment. Every
+subfolder contains a couple of key items:</p>
+
+<ul>
+<li>A <code>modules</code> folder containing all modules for that environment</li>
+<li>A <code>manifests/site.pp</code> file containing the site.pp file for that environment</li>
+<li>A new <code>environment.conf</code> file which can be used to set the <code>modulepath</code>, the <code>environment_timeout</code>, and, a new and often-requested feature, the ability to have environment-specific <code>config_version</code> settings</li>
+</ul>
+
+
+<p>Basically, it&rsquo;s everything that R10k ALREADY does with a couple of added goodies
+dropped into an <code>environment.conf</code> file. <a href="https://docs.puppetlabs.com/puppet/latest/reference/environments_configuring.html">Feel free to read the official docs
+on configuring directory environments</a> for further information
+on all of the goodies!</p>
+
+<h2>Cool, how do we set it up?</h2>
+
+<p>It wouldn&rsquo;t be one of my blog posts if it didn&rsquo;t include exact steps to configure
+shit, would it? For this walkthrough, I&rsquo;m using a Centos 6.5 vm with DNS working
+(i.e. the node can ping itself and knows its own hostname and FQDN), and I&rsquo;ve
+already installed an All-in-one installation of Puppet Enterprise 3.3.0. For
+the walkthrough, we&rsquo;re going to setup:</p>
+
+<ul>
+<li>Directory environments based on a control repo</li>
+<li>Hiera data inside a <code>hieradata</code> folder in the control repo</li>
+<li>Hiera to use the per-environment hieradata folder</li>
+</ul>
+
+
+<p>Let&rsquo;s start to break down the components:</p>
+
+<h3>The &lsquo;Control Repo&rsquo;?</h3>
+
+<p>Sometime between <a href="http://bit.ly/puppetworkflows3">my initial R10k post</a> and THIS post, the Puppet Labs PS
+team has come to call the repository that contains the Puppetfile and is used
+to track Puppet environments on all Puppet masters the &lsquo;Control Repo&rsquo; (because
+it &lsquo;Controls the creation of Puppet environments&rsquo;, ya dig?  Zack Smith and
+James Sweeny are actually pretty tickled about making that name stick). For
+the purpose of this demonstration, I&rsquo;m using a repository on Github:</p>
+
+<p><a href="https://github.com/glarizza/puppet_repository">https://github.com/glarizza/puppet_repository</a></p>
+
+<p>Everything you will need for this walkthrough is in that repository, and we
+will refer to it frequently. You DO NOT need to use my repository, and it&rsquo;s
+definitely going to be required that you create your OWN, but it&rsquo;s there
+for reference purposes (and to give you a couple of Puppet manifests to
+make setup a bit easier).</p>
+
+<h3>Configuring the Puppet master</h3>
+
+<p>We&rsquo;re going to first clone my control repo to <code>/tmp</code> so we can use it to
+configure R10k and the Puppet master itself:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>[root@master ~]# cd /tmp
+</span><span class='line'>
+</span><span class='line'>[root@master /tmp]# git clone https://github.com/glarizza/puppet_repository.git
+</span><span class='line'>Initialized empty Git repository in /tmp/puppet_repository/.git/
+</span><span class='line'>remote: Counting objects: 164, done.
+</span><span class='line'>remote: Compressing objects: 100% (134/134), done.
+</span><span class='line'>remote: Total 164 (delta 54), reused 81 (delta 16)
+</span><span class='line'>Receiving objects: 100% (164/164), 22.68 KiB, done.
+</span><span class='line'>Resolving deltas: 100% (54/54), done.
+</span><span class='line'>
+</span><span class='line'>[root@master /tmp]# cd puppet_repository</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Great, I&rsquo;ve cloned my repo. To configure R10k, we&rsquo;re going to need to pull
+down Zack Smith&rsquo;s R10k module from the forge with <code>puppet module install zack/r10k</code>
+and then use <code>puppet apply</code> on a manifest in my repo with
+<code>puppet apply configure_r10k.pp</code>.  <strong>DO NOTE: If you want to use YOUR Control
+Repo, and NOT the one I use on Github, then you need to modify the
+<code>configure_r10k.pp</code> file and replace the <code>remote</code> property with the URL to
+YOUR Control Repo that&rsquo;s housed on a git repository!</strong></p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>[root@master /tmp/puppet_repository:production]# puppet module install zack/r10k
+</span><span class='line'>
+</span><span class='line'>Notice: Preparing to install into /etc/puppetlabs/puppet/modules ...
+</span><span class='line'>Notice: Downloading from https://forgeapi.puppetlabs.com ...
+</span><span class='line'>Notice: Found at least one version of puppetlabs-stdlib compatible with PE (3.3.0);
+</span><span class='line'>Notice: Skipping versions which don't express PE compatibility. To install
+</span><span class='line'>the most recent version of the module regardless of compatibility
+</span><span class='line'>with PE, use the '--ignore-requirements' flag.
+</span><span class='line'>Notice: Found at least one version of puppetlabs-inifile compatible with PE (3.3.0);
+</span><span class='line'>Notice: Skipping versions which don't express PE compatibility. To install
+</span><span class='line'>the most recent version of the module regardless of compatibility
+</span><span class='line'>with PE, use the '--ignore-requirements' flag.
+</span><span class='line'>Notice: Found at least one version of puppetlabs-vcsrepo compatible with PE (3.3.0);
+</span><span class='line'>Notice: Skipping versions which don't express PE compatibility. To install
+</span><span class='line'>the most recent version of the module regardless of compatibility
+</span><span class='line'>with PE, use the '--ignore-requirements' flag.
+</span><span class='line'>Notice: Found at least one version of puppetlabs-concat compatible with PE (3.3.0);
+</span><span class='line'>Notice: Skipping versions which don't express PE compatibility. To install
+</span><span class='line'>the most recent version of the module regardless of compatibility
+</span><span class='line'>with PE, use the '--ignore-requirements' flag.
+</span><span class='line'>Notice: Installing -- do not interrupt ...
+</span><span class='line'>/etc/puppetlabs/puppet/modules
+</span><span class='line'>└─┬ zack-r10k (v2.2.7)
+</span><span class='line'>  ├─┬ gentoo-portage (v2.2.0)
+</span><span class='line'>  │ └── puppetlabs-concat (v1.0.3) [/opt/puppet/share/puppet/modules]
+</span><span class='line'>  ├── mhuffnagle-make (v0.0.2)
+</span><span class='line'>  ├── puppetlabs-gcc (v0.2.0)
+</span><span class='line'>  ├── puppetlabs-git (v0.2.0)
+</span><span class='line'>  ├── puppetlabs-inifile (v1.1.0) [/opt/puppet/share/puppet/modules]
+</span><span class='line'>  ├── puppetlabs-pe_gem (v0.0.1)
+</span><span class='line'>  ├── puppetlabs-ruby (v0.2.1)
+</span><span class='line'>  ├── puppetlabs-stdlib (v3.2.2) [/opt/puppet/share/puppet/modules]
+</span><span class='line'>  └── puppetlabs-vcsrepo (v1.1.0)
+</span><span class='line'>
+</span><span class='line'>[root@master /tmp/puppet_repository:production]# puppet apply configure_r10k.pp
+</span><span class='line'>
+</span><span class='line'>Notice: Compiled catalog for master.puppetlabs.vm in environment production in 0.71 seconds
+</span><span class='line'>Warning: The package type's allow_virtual parameter will be changing its default value from false to true in a future release. If you do not want to allow virtual packages, please explicitly set allow_virtual to false.
+</span><span class='line'>   (at /opt/puppet/lib/ruby/site_ruby/1.9.1/puppet/type.rb:816:in `set_default')
+</span><span class='line'>Notice: /Stage[main]/R10k::Install/Package[r10k]/ensure: created
+</span><span class='line'>Notice: /Stage[main]/R10k::Install::Pe_gem/File[/usr/bin/r10k]/ensure: created
+</span><span class='line'>Notice: /Stage[main]/R10k::Config/File[r10k.yaml]/ensure: defined content as '{md5}5cda58e8a01e7ff12544d30105d13a2a'
+</span><span class='line'>Notice: Finished catalog run in 11.24 seconds</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Performing those commands will successfully setup R10k to point to my Control
+Repo out on Github (and, again, if you don&rsquo;t WANT that, then you need to make
+the change to the <code>remote</code> property in <code>configure_r10k.pp</code>). We next need to
+configure Directory Environments in <code>puppet.conf</code> by setting two attributes:</p>
+
+<ul>
+<li><code>environmentpath</code> (Or the path to the folder containing environments)</li>
+<li><code>basemodulepath</code> (Or, the set of modules that will be shared across ALL ENVIRONMENTS)</li>
+</ul>
+
+
+<p>I have created a Puppet manifest that will set these attributes, and this
+manifest requires the <code>puppetlabs/inifile</code> module from the Puppet Forge.
+Fortunately, since I&rsquo;m using Puppet Enterprise, that module is already installed.
+If you&rsquo;re using open source Puppet and the module is NOT installed, feel free
+to install it by running <code>puppet module install puppetlabs/inifile</code>. Once
+this is done, go ahead and execute the manifest by running
+<code>puppet apply configure_directory_environments.pp</code>:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>[root@master /tmp/puppet_repository:production]# puppet apply configure_directory_environments.pp
+</span><span class='line'>
+</span><span class='line'>Notice: Compiled catalog for master.puppetlabs.vm in environment production in 0.05 seconds
+</span><span class='line'>Notice: /Stage[main]/Main/Ini_setting[Configure environmentpath]/ensure: created
+</span><span class='line'>Notice: /Stage[main]/Main/Ini_setting[Configure basemodulepath]/value: value changed '/etc/puppetlabs/puppet/modules:/opt/puppet/share/puppet/modules' to '$confdir/modules:/opt/puppet/share/puppet/modules'
+</span><span class='line'>Notice: Finished catalog run in 0.20 seconds</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The last step to configuring the Puppet master is to execute an R10k run.
+We can do that by running <code>r10k deploy environment -pv</code>:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>[root@master /tmp/puppet_repository:production]# r10k deploy environment -pv
+</span><span class='line'>
+</span><span class='line'>[R10K::Source::Git - INFO] Determining current branches for "https://github.com/glarizza/puppet_repository.git"
+</span><span class='line'>[R10K::Task::Environment::Deploy - NOTICE] Deploying environment production
+</span><span class='line'>[R10K::Task::Puppetfile::Sync - INFO] Loading modules from Puppetfile into queue
+</span><span class='line'>[R10K::Task::Module::Sync - INFO] Deploying profiles into /etc/puppetlabs/puppet/environments/production/modules
+</span><span class='line'>[R10K::Task::Module::Sync - INFO] Deploying notifyme into /etc/puppetlabs/puppet/environments/production/modules
+</span><span class='line'>[R10K::Task::Module::Sync - INFO] Deploying ntp into /etc/puppetlabs/puppet/environments/production/modules
+</span><span class='line'>[R10K::Task::Module::Sync - INFO] Deploying apache into /etc/puppetlabs/puppet/environments/production/modules
+</span><span class='line'>[R10K::Task::Module::Sync - INFO] Deploying profiles into /etc/puppetlabs/puppet/environments/production/modules
+</span><span class='line'>[R10K::Task::Module::Sync - INFO] Deploying notifyme into /etc/puppetlabs/puppet/environments/production/modules
+</span><span class='line'>[R10K::Task::Module::Sync - INFO] Deploying ntp into /etc/puppetlabs/puppet/environments/production/modules
+</span><span class='line'>[R10K::Task::Module::Sync - INFO] Deploying apache into /etc/puppetlabs/puppet/environments/production/modules
+</span><span class='line'>[R10K::Task::Environment::Deploy - NOTICE] Deploying environment webinar_env
+</span><span class='line'>[R10K::Task::Puppetfile::Sync - INFO] Loading modules from Puppetfile into queue
+</span><span class='line'>[R10K::Task::Module::Sync - INFO] Deploying profiles into /etc/puppetlabs/puppet/environments/webinar_env/modules
+</span><span class='line'>[R10K::Task::Module::Sync - INFO] Deploying notifyme into /etc/puppetlabs/puppet/environments/webinar_env/modules
+</span><span class='line'>[R10K::Task::Module::Sync - INFO] Deploying haproxy into /etc/puppetlabs/puppet/environments/webinar_env/modules
+</span><span class='line'>[R10K::Task::Module::Sync - INFO] Deploying mysql into /etc/puppetlabs/puppet/environments/webinar_env/modules
+</span><span class='line'>[R10K::Task::Module::Sync - INFO] Deploying ntp into /etc/puppetlabs/puppet/environments/webinar_env/modules
+</span><span class='line'>[R10K::Task::Module::Sync - INFO] Deploying apache into /etc/puppetlabs/puppet/environments/webinar_env/modules
+</span><span class='line'>[R10K::Task::Module::Sync - INFO] Deploying profiles into /etc/puppetlabs/puppet/environments/webinar_env/modules
+</span><span class='line'>[R10K::Task::Module::Sync - INFO] Deploying notifyme into /etc/puppetlabs/puppet/environments/webinar_env/modules
+</span><span class='line'>[R10K::Task::Module::Sync - INFO] Deploying haproxy into /etc/puppetlabs/puppet/environments/webinar_env/modules
+</span><span class='line'>[R10K::Task::Module::Sync - INFO] Deploying mysql into /etc/puppetlabs/puppet/environments/webinar_env/modules
+</span><span class='line'>[R10K::Task::Module::Sync - INFO] Deploying ntp into /etc/puppetlabs/puppet/environments/webinar_env/modules
+</span><span class='line'>[R10K::Task::Module::Sync - INFO] Deploying apache into /etc/puppetlabs/puppet/environments/webinar_env/modules
+</span><span class='line'>[R10K::Task::Deployment::PurgeEnvironments - INFO] Purging stale environments from /etc/puppetlabs/puppet/environments</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Great!  Everything should be setup (if you&rsquo;re using my repo)!  My repository has
+a production branch, which is what Puppet&rsquo;s default environment is named,
+so we can test that everything works by listing out all modules in the main
+production environment with the <code>puppet module list</code> command:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>[root@master /tmp/puppet_repository:production]# puppet module list
+</span><span class='line'>
+</span><span class='line'>Warning: Module 'puppetlabs-stdlib' (v3.2.2) fails to meet some dependencies:
+</span><span class='line'>  'puppetlabs-ntp' (v3.1.2) requires 'puppetlabs-stdlib' (&gt;= 4.0.0)
+</span><span class='line'>/etc/puppetlabs/puppet/environments/production/modules
+</span><span class='line'>├── notifyme (???)
+</span><span class='line'>├── profiles (???)
+</span><span class='line'>├── puppetlabs-apache (v1.1.1)
+</span><span class='line'>└── puppetlabs-ntp (v3.1.2)
+</span><span class='line'>/etc/puppetlabs/puppet/modules
+</span><span class='line'>├── gentoo-portage (v2.2.0)
+</span><span class='line'>├── mhuffnagle-make (v0.0.2)
+</span><span class='line'>├── puppetlabs-gcc (v0.2.0)
+</span><span class='line'>├── puppetlabs-git (v0.2.0)
+</span><span class='line'>├── puppetlabs-pe_gem (v0.0.1)
+</span><span class='line'>├── puppetlabs-ruby (v0.2.1)
+</span><span class='line'>├── puppetlabs-vcsrepo (v1.1.0)
+</span><span class='line'>└── zack-r10k (v2.2.7)
+</span><span class='line'>/opt/puppet/share/puppet/modules
+</span><span class='line'>├── puppetlabs-apt (v1.5.0)
+</span><span class='line'>├── puppetlabs-auth_conf (v0.2.2)
+</span><span class='line'>├── puppetlabs-concat (v1.0.3)
+</span><span class='line'>├── puppetlabs-firewall (v1.1.2)
+</span><span class='line'>├── puppetlabs-inifile (v1.1.0)
+</span><span class='line'>├── puppetlabs-java_ks (v1.2.4)
+</span><span class='line'>├── puppetlabs-pe_accounts (v2.0.2-3-ge71b5a0)
+</span><span class='line'>├── puppetlabs-pe_console_prune (v0.1.1-4-g293f45b)
+</span><span class='line'>├── puppetlabs-pe_mcollective (v0.2.10-15-gb8343bb)
+</span><span class='line'>├── puppetlabs-pe_postgresql (v1.0.4-4-g0bcffae)
+</span><span class='line'>├── puppetlabs-pe_puppetdb (v1.1.1-7-g8cb11bf)
+</span><span class='line'>├── puppetlabs-pe_razor (v0.2.1-1-g80acb4d)
+</span><span class='line'>├── puppetlabs-pe_repo (v0.7.7-32-gfd1c97f)
+</span><span class='line'>├── puppetlabs-pe_staging (v0.3.3-2-g3ed56f8)
+</span><span class='line'>├── puppetlabs-postgresql (v2.5.0-pe2)
+</span><span class='line'>├── puppetlabs-puppet_enterprise (v3.2.1-27-g8f61956)
+</span><span class='line'>├── puppetlabs-reboot (v0.1.4)
+</span><span class='line'>├── puppetlabs-request_manager (v0.1.1)
+</span><span class='line'>└── puppetlabs-stdlib (v3.2.2)  invalid</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Notice a couple of things:</p>
+
+<ul>
+<li>First, I&rsquo;ve got some dependency issues&hellip;oh well, nothing that&rsquo;s a game-stopper</li>
+<li>Second, the path to the production environment&rsquo;s module is correct at: <code>/etc/puppetlabs/puppet/environments/production/modules</code></li>
+</ul>
+
+
+<h3>Configuring Hiera</h3>
+
+<p>The last dinghy to be configured on this dreamboat is Hiera. Hiera is Puppet&rsquo;s
+data lookup mechanism, and is used to gather specific bits of data (such
+as versions of packages, hostnames, passwords, and other business-specific
+data). Explaining HOW Hiera works is beyond the scope of this article, but
+configuring Hiera data on a per-environment basis IS absolutely a worthwhile
+endeavor.</p>
+
+<p>In this example, I&rsquo;m going to demonstrate coupling Hiera data with the Control
+Repo for simple replication of Hiera data across environments. You COULD also
+choose to put your Hiera data in a separate repository and set it up in
+<code>/etc/r10k.yaml</code> as another source, but that exercise is left to the reader
+<a href="http://bit.ly/puppetworkflows3b">(and if you&rsquo;re interested, I talk about it in this post).</a></p>
+
+<p>You&rsquo;ll notice that my demonstration repository ALREADY includes Hiera data,
+and so that data is automatically being replicated to all environments. By
+default, Hiera&rsquo;s configuration file (<code>hiera.yaml</code>) has no YAML data directory
+specified, so we&rsquo;ll need to make that change.  <a href="https://github.com/glarizza/puppet_repository/blob/production/hiera.yaml">In my demonstration control
+repository, I&rsquo;ve included a sample <code>hiera.yaml</code>,</a> but let&rsquo;s take a look at
+one below:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="c1">## /etc/puppetlabs/puppet/hiera.yaml</span>
+</span><span class='line'>
+</span><span class='line'><span class="nn">---</span>
+</span><span class='line'><span class="l-Scalar-Plain">:backends</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">yaml</span>
+</span><span class='line'><span class="l-Scalar-Plain">:hierarchy</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="p-Indicator">-</span> <span class="s">&quot;%{clientcert}&quot;</span>
+</span><span class='line'>  <span class="p-Indicator">-</span> <span class="s">&quot;%{application_tier}&quot;</span>
+</span><span class='line'>  <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">common</span>
+</span><span class='line'>
+</span><span class='line'><span class="l-Scalar-Plain">:yaml</span><span class="p-Indicator">:</span>
+</span><span class='line'><span class="c1"># datadir is empty here, so hiera uses its defaults:</span>
+</span><span class='line'><span class="c1"># - /var/lib/hiera on *nix</span>
+</span><span class='line'><span class="c1"># - %CommonAppData%\PuppetLabs\hiera\var on Windows</span>
+</span><span class='line'><span class="c1"># When specifying a datadir, make sure the directory exists.</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">:datadir</span><span class="p-Indicator">:</span> <span class="s">&quot;/etc/puppetlabs/puppet/environments/%{environment}/hieradata&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This hiera.yaml file specifies a hierarchy with three levels &ndash; a node-specific,
+level, a level for different application tiers (like &lsquo;dev&rsquo;, &lsquo;test&rsquo;, &lsquo;prod&rsquo;, and
+etc), and finally makes the change we need: mapping the data directory to each
+environment&rsquo;s hieradata folder.  The path to <code>hiera.yaml</code> is Puppet&rsquo;s
+configuration directory (which is <code>/etc/puppetlabs/puppet</code> for Puppet
+Enterprise, or <code>/etc/puppet</code> for the open source version of Puppet), so open
+the file there, make your changes, and finally you&rsquo;ll need to need to restart
+the Puppet master service to have the changes picked up.</p>
+
+<p>Next, let&rsquo;s perform a test by executing the <code>hiera</code> binary from the command
+line before running puppet:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="p-Indicator">[</span><span class="nv">root@master /etc/puppetlabs/puppet/environments</span><span class="p-Indicator">]</span><span class="c1"># hiera message environment=production</span>
+</span><span class='line'><span class="l-Scalar-Plain">This node is using common data</span>
+</span><span class='line'>
+</span><span class='line'><span class="l-Scalar-Plain">[root@master /etc/puppetlabs/puppet/environments]# hiera message environment=webinar_env -d</span>
+</span><span class='line'><span class="l-Scalar-Plain">DEBUG</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">2014-08-31 19:55:44 +0000</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">Hiera YAML backend starting</span>
+</span><span class='line'><span class="l-Scalar-Plain">DEBUG</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">2014-08-31 19:55:44 +0000</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">Looking up message in YAML backend</span>
+</span><span class='line'><span class="l-Scalar-Plain">DEBUG</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">2014-08-31 19:55:44 +0000</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">Looking for data source common</span>
+</span><span class='line'><span class="l-Scalar-Plain">DEBUG</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">2014-08-31 19:55:44 +0000</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">Found message in common</span>
+</span><span class='line'><span class="l-Scalar-Plain">This node is using common data</span>
+</span><span class='line'>
+</span><span class='line'><span class="p-Indicator">[</span><span class="nv">root@master /etc/puppetlabs/puppet/environments</span><span class="p-Indicator">]</span><span class="c1"># hiera message environment=bad_env -d</span>
+</span><span class='line'><span class="l-Scalar-Plain">DEBUG</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">2014-08-31 19:58:22 +0000</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">Hiera YAML backend starting</span>
+</span><span class='line'><span class="l-Scalar-Plain">DEBUG</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">2014-08-31 19:58:22 +0000</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">Looking up message in YAML backend</span>
+</span><span class='line'><span class="l-Scalar-Plain">DEBUG</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">2014-08-31 19:58:22 +0000</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">Looking for data source common</span>
+</span><span class='line'><span class="l-Scalar-Plain">DEBUG</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">2014-08-31 19:58:22 +0000</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">Cannot find datafile /etc/puppetlabs/puppet/environments/bad_env/hieradata/common.yaml, skipping</span>
+</span><span class='line'><span class="l-Scalar-Plain">nil</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>You can see that for the first example, I passed the environment of <code>production</code>
+and did a simple lookup for a key called <code>message</code> &ndash; Hiera then returned me
+the value of out that environment&rsquo;s <code>common.yaml</code> file.  Next, I did another
+lookup, but added <code>-d</code> to enable debug mode (debug mode on the <code>hiera</code>
+binary is REALLY handy for debugging problems with Hiera &ndash; combine it with
+specifying values from the command line, and you can pretty quickly simulate
+what value a node is going to get).  Notice the last example where I specified
+an invalid environment &ndash; Hiera logged that it couldn&rsquo;t find the datafile
+requested and ultimately returned a nil, or empty, value.</p>
+
+<p>Since we&rsquo;re working on the Puppet master machine, we can even check for a value
+using <code>puppet apply</code> combined with the notice function:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="p-Indicator">[</span><span class="nv">root@master /etc/puppetlabs/puppet/environments</span><span class="p-Indicator">]</span><span class="c1"># puppet apply -e &quot;notice(hiera(&#39;message&#39;))&quot;</span>
+</span><span class='line'><span class="l-Scalar-Plain">Notice</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">Scope(Class[main])</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">This node is using common data</span>
+</span><span class='line'><span class="l-Scalar-Plain">Notice</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">Compiled catalog for master.puppetlabs.vm in environment production in 0.09 seconds</span>
+</span><span class='line'><span class="l-Scalar-Plain">Notice</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">Finished catalog run in 0.19 seconds</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Great, it&rsquo;s working, but let&rsquo;s look at pulling data from a higher level in the
+hierarchy &ndash; like from the <code>application_tier</code> level. We haven&rsquo;t defined an
+<code>application_tier</code> fact, however, so we&rsquo;ll need to fake it. First, let&rsquo;s do
+that with the <code>hiera</code> binary:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="p-Indicator">[</span><span class="nv">root@master /etc/puppetlabs/puppet/environments</span><span class="p-Indicator">]</span><span class="c1"># hiera message environment=production application_tier=dev -d</span>
+</span><span class='line'><span class="l-Scalar-Plain">DEBUG</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">2014-08-31 20:04:12 +0000</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">Hiera YAML backend starting</span>
+</span><span class='line'><span class="l-Scalar-Plain">DEBUG</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">2014-08-31 20:04:12 +0000</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">Looking up message in YAML backend</span>
+</span><span class='line'><span class="l-Scalar-Plain">DEBUG</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">2014-08-31 20:04:12 +0000</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">Looking for data source dev</span>
+</span><span class='line'><span class="l-Scalar-Plain">DEBUG</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">2014-08-31 20:04:12 +0000</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">Found message in dev</span>
+</span><span class='line'><span class="l-Scalar-Plain">You are in the development application tier</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>And then also with <code>puppet apply</code>:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="p-Indicator">[</span><span class="nv">root@master /etc/puppetlabs/puppet/environments</span><span class="p-Indicator">]</span><span class="c1"># FACTER_application_tier=dev puppet apply -e &quot;notice(hiera(&#39;message&#39;))&quot;</span>
+</span><span class='line'><span class="l-Scalar-Plain">Notice</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">Scope(Class[main])</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">You are in the development application tier</span>
+</span><span class='line'><span class="l-Scalar-Plain">Notice</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">Compiled catalog for master.puppetlabs.vm in environment production in 0.09 seconds</span>
+</span><span class='line'><span class="l-Scalar-Plain">Notice</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">Finished catalog run in 0.18 seconds</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Tuning <code>environment.conf</code></h2>
+
+<p>The brand-new, per-environment  <code>environment.conf</code> file is meant to be (for
+the most part) a one-stop-shop for your Puppet environment tuning needs. Right
+now, the only things you&rsquo;ll need to tune will be the <code>modulepath</code>,
+<code>config_version</code>, and possibly the <code>environment_timeout</code>.</p>
+
+<h3>Module path</h3>
+
+<p>Before directory environments, every environment had its own <code>modulepath</code> that
+needed to be tuned to allow for modules that were to be used by this
+machine/environment, as well as shared modules.  That <code>modulepath</code> worked like
+<code>$PATH</code> in that it was a priority-based lookup for modules (i.e. the first
+directory in <code>modulepath</code> that had a module matching the module name you wanted
+won).  It also previously required the FULL path to be used for every path in
+<code>modulepath</code>.</p>
+
+<p>Those days are over.</p>
+
+<p>As I mentioned before, the main <code>puppet.conf</code> configuration file has a new
+parameter called <code>basemodulepath</code> that can be used to specify modules that are
+to be shared across ALL modules in ALL environments. Paths defined here
+(typically <code>$confdir/modules</code> and <code>/opt/puppet/share/puppet/modules</code>) are
+usually put at the END of a <code>modulepath</code> so Puppet can search for any
+overridden modules that show up in earlier <code>modulepath</code> paths. In the previous
+configuration steps, we executed a manifest that setup <code>basemodulepath</code> to
+look like:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">basemodulepath = $confdir/modules:/opt/puppet/share/puppet/modules</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Again, feel free to add or remove paths (except don&rsquo;t remove
+<code>/opt/puppet/share/puppet/modules</code> if you&rsquo;re using Puppet Enterprise, because
+that&rsquo;s where all Puppet Enterprise modules are located), especially if you&rsquo;re
+using a giant monolithic repo of modules (which was typically done before things
+like R10k evolved).</p>
+
+<p>With <code>basemodulepath</code> configured, it&rsquo;s now time to configure the <code>modulepath</code>
+to be defined for every environment. My demonstration control repo contains
+a sample <code>environment.conf</code> that defines a <code>modulepath</code> like so:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">modulepath = modules:$basemodulepath</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>You&rsquo;ll notice, now, that there are relative paths in <code>modulepath</code>. This is
+possible because now each environment contains an <code>environment.conf</code>, and thus
+relative paths make sense. In this example, nodes in the production environment
+(<code>/etc/puppetlabs/puppet/environments/production</code>) will look for a module by its
+name FIRST by looking in a folder called <code>modules</code> inside the current
+environment folder (i.e. <code>/etc/puppetlabs/puppet/environments/production/modules/&lt;module_name&gt;</code>).
+If the module wasn&rsquo;t found there, it looks for the module in the order that
+paths are defined for <code>basemodulepath</code> above. If Puppet fails to find a module
+in ANY of the paths, a compile error is raised.</p>
+
+<h3>Per-environment <code>config_version</code></h3>
+
+<p><a href="https://docs.puppetlabs.com/references/stable/configuration.html#configversion">Setting <code>config_version</code> has been around for awhile</a> &ndash; hell,
+I remember video of Jeff McCune talking about it at the first Puppetcamp Europe
+in like 2010 &ndash; but the new directory environments implementation has fine
+tuned it a bit. Previously, <code>config_version</code> was a command executed on the
+Puppet master at compile time to determine a string used for versioning the
+configuration enforced during that Puppet run. When it&rsquo;s not set it defaults
+to something of a time/date stamp off the parser, but it&rsquo;s way more useful to
+make it do something like determine the most recent commit hash from a repository.</p>
+
+<p>In the past when we used a giant monolithic repository containing all Puppet
+modules, it was SUPER easy to get a single commit hash and be done. As everyone
+moved their modules into individual repositories, determining <em>WHAT</em> you were
+enforcing became harder. With the birth of R10k an the control repo, we
+suddenly had something we could query for the state of our modules being
+enforced. The problem existed, though, that with multiple dynamic environments
+using multiple git branches, <code>config_version</code> wasn&rsquo;t easily tuned to be able
+to grab the most recent commit from every branch.</p>
+
+<p>Now that <code>config_version</code> is set in a per-environment <code>environment.conf</code>, we
+can make <code>config_version</code> much smarter. Again, looking in the <code>environment.conf</code>
+defined in my demonstration control repo produces this:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">config_version = &#39;/usr/bin/git --git-dir $confdir/environments/$environment/.git rev-parse HEAD&#39;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This setting will cause the Puppet master to produce the most recent commit ID
+for whatever environment you&rsquo;re in and embed it in the catalog and the report
+that is sent back to the Puppet master after a Puppet run.</p>
+
+<p><a href="https://tickets.puppetlabs.com/browse/PUP-3150">I actually discovered a bug in <code>config_version</code> while writing this post</a>,
+and it&rsquo;s that <code>config_version</code> is subject to the relative pathing fun that other
+<code>environment.conf</code> settings are subject to. Relative pathing is great for things like
+<code>modulepath</code>, and it&rsquo;s even good for <code>config_version</code> if you&rsquo;re including the
+script you want to run to gather the <code>config_version</code> string inside the control
+repo, but using a one-line command that tries to execute a binary on the system
+that DOESN&rsquo;T include the full path to the binary causes an error (because Puppet
+attempts to look for that binary in the current environment path, and NOT by
+searching <code>$PATH</code> on the system).  Feel free to follow or comment on the bug
+if the mood hits you.</p>
+
+<h3>Caching and environment_timeout</h3>
+
+<p>The Puppet master loads environments on-request, but it also caches data associated
+with each environment to make things faster. This caching is finally tunable on a
+per-environment basis by defining the <code>environment_timeout</code> setting in
+<code>environment.conf</code>.  The default setting is 3 minutes, which means the Puppet master
+will invalidate its caches and reload environment data every 3 minutes, but that&rsquo;s
+now tunable. <a href="https://docs.puppetlabs.com/puppet/3.6/reference/environments_configuring.html#environmenttimeout">Definitely read up on this setting before making changes.</a></p>
+
+<h2>Classification</h2>
+
+<p>One of the last new features of directory environments is the ability to include
+an environment-specific <code>site.pp</code> file for classification. You could ALWAYS do
+this by modifying the <code>manifest</code> configuration item in <code>puppet.conf</code>, but now
+each environment can have its own <code>manifest</code> setting. The default behavior is
+to have the Puppet master look for <code>manifests/site.pp</code> in every environment
+directory, and I really wouldn&rsquo;t change that unless you have a good reason. DO
+NOTE, however, that if you&rsquo;re using Puppet Enterprise, you&rsquo;ll need to be careful
+with your <code>site.pp</code> file.  Puppet Enterprise defines things like the Filebucket
+and overrides for the File resource in <code>site.pp</code>, so if you&rsquo;re using Puppet Enterprise,
+you&rsquo;ll need to copy those changes into the <code>site.pp</code> file you add into your control
+repo (as I did).</p>
+
+<p>It may take you a couple of times to change your thinking from looking at the main
+<code>site.pp</code> in <code>$confdir/manifests</code> to looking at each environment-specific <code>site.pp</code>
+file, but definitely take advantage of Puppet&rsquo;s commandline tool to help you track
+which <code>site.pp</code> Puppet is monitoring:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="p-Indicator">[</span><span class="nv">root@master /etc/puppetlabs/puppet/environments</span><span class="p-Indicator">]</span><span class="c1"># puppet config print manifest</span>
+</span><span class='line'><span class="l-Scalar-Plain">/etc/puppetlabs/puppet/environments/production/manifests</span>
+</span><span class='line'>
+</span><span class='line'><span class="l-Scalar-Plain">[root@master /etc/puppetlabs/puppet/environments]# puppet config print manifest --environment webinar_env</span>
+</span><span class='line'><span class="l-Scalar-Plain">/etc/puppetlabs/puppet/environments/webinar_env/manifests</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>You can see that <code>puppet config print</code> can be used to get the path to the
+directory that contains <code>site.pp</code>.  Even cooler is what happens when you
+specify an environment that doesn&rsquo;t exist:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="p-Indicator">[</span><span class="nv">root@master /etc/puppetlabs/puppet/environments</span><span class="p-Indicator">]</span><span class="c1"># puppet config print manifest --environment bad_env</span>
+</span><span class='line'><span class="l-Scalar-Plain">no_manifest</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Yep, Puppet tells you if it can&rsquo;t find the manifest file.  That&rsquo;s pretty cool.</p>
+
+<h2>Wrapping Up</h2>
+
+<p>Even though the new implementation of directory environments is meant to map
+closely to a workflow most of us have been using (if you&rsquo;ve been using R10k, that is),
+there are still some new features that may take you by surprise. Hopefully this
+post gets you started with just enough information to setup your own test
+environment and start playing. PLEASE DO make sure to file bugs on any behavior
+that comes as unexpected or stops you from using your existing workflow. Cheers!</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Gary larizza</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-08-31T21:00:00+02:00" pubdate data-updated="true">Aug 31<span>st</span>, 2014</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/puppet/'>puppet</a>, <a class='category' href='/blog/categories/r10k/'>r10k</a>, <a class='category' href='/blog/categories/workflow/'>workflow</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://garylarizza.com/blog/2014/08/31/r10k-plus-directory-environments/" data-via="glarizza" data-counturl="http://garylarizza.com/blog/2014/08/31/r10k-plus-directory-environments/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2014/03/26/random-r10k-workflow-ideas/" title="Previous Post: On R10k and 'Environments'">&laquo; On R10k and 'Environments'</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2014/10/19/on-dependencies-and-order/" title="Next Post: On Dependencies and Order">On Dependencies and Order &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/10/19/on-dependencies-and-order/">On Dependencies and Order</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/08/31/r10k-plus-directory-environments/">R10k + Directory Environments</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/03/26/random-r10k-workflow-ideas/">On R10k and 'Environments'</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/03/12/when-yellow-ruled-the-world/">When Yellow Ruled the World</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/03/07/puppet-workflow-part-3b/">Building a Functional Puppet Workflow Part 3b: More R10k Madness</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/glarizza">@glarizza</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'glarizza',
+            count: 0,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+<section>
+  <h1>Twitter</h1>
+  <a class="twitter-timeline" href="https://twitter.com/glarizza" data-widget-id="406925439601348608">Tweets by @glarizza</a>
+  <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+"://platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
+</section>
+
+
+
+
+
+<section>
+  <h1>Coderwall Badges</h1>
+  <ul id="cw_badges">
+    <li class="loading">Status updating...</li>
+  </ul>
+  <p id="badges"></p>
+  <script type="text/javascript">
+    function show_achievements(args) {
+      var badges = args["data"]["badges"];
+      var achievements = "";
+      for (var i = 0; i < badges.length; i++) {
+        var alt_text = badges[i]["name"];
+        var title_text = badges[i]["name"] + ' - ' + badges[i]["description"];
+        achievements += '<a href="http://coderwall.com/glarizza/"><img src="'
+          + badges[i]["badge"]
+          + '" width="48" height="48" alt="' + alt_text
+          + '" title="' + title_text
+          + '" style="margin-top: 7px;margin-right: 4px;"'
+          + '"/></a>';
+      };
+      document.getElementById("cw_badges").style.display = "none";
+      document.getElementById("badges").innerHTML = achievements;
+    }
+  </script>
+  <script src="http://coderwall.com/glarizza.json?callback=show_achievements"></script>
+  
+</section>
+
+<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- Second Add -->
+<ins class="adsbygoogle"
+     style="display:inline-block;width:300px;height:250px"
+     data-ad-client="ca-pub-7679900559570586"
+     data-ad-slot="4934599358"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2014 - Gary larizza -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'shitgarysays';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://garylarizza.com/blog/2014/08/31/r10k-plus-directory-environments/';
+        var disqus_url = 'http://garylarizza.com/blog/2014/08/31/r10k-plus-directory-environments/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

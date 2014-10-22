@@ -1,0 +1,473 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>On R10k and 'Environments' - Shit Gary Says</title>
+  <meta name="author" content="Gary larizza">
+
+  
+  <meta name="description" content="There have been more than a couple of moments where I&rsquo;m on-site with a customer
+who asks a seemingly simple question and I&rsquo;ve gone &ldquo &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://garylarizza.com/blog/2014/03/26/random-r10k-workflow-ideas">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Shit Gary Says" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-37766331-2']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Shit Gary Says</a></h1>
+  
+    <h2>...things I don't want to forget</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:garylarizza.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+  <li><a href="/about">About</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">On R10k and 'Environments'</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-03-26T09:00:00+01:00" pubdate data-updated="true">Mar 26<span>th</span>, 2014</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>There have been more than a couple of moments where I&rsquo;m on-site with a customer
+who asks a seemingly simple question and I&rsquo;ve gone &ldquo;Oh shit; that&rsquo;s a great
+question and I&rsquo;ve never thought of that&hellip;&rdquo;  Usually that&rsquo;s followed by me
+changing up the workflow and immediately regretting things I&rsquo;ve done on prior
+gigs. Some people call that &lsquo;agile&rsquo;; I call it &lsquo;me not having the
+forethought to consider conditions properly&rsquo;.</p>
+
+<h2>&lsquo;Environment&rsquo;, like &lsquo;scaling&rsquo;, &lsquo;agent&rsquo;, and &lsquo;test&rsquo;, has many meanings</h2>
+
+<p>It&rsquo;s not a secret that we&rsquo;ve made some shitty decisions in the past with regard
+to naming things in Puppet (and anyone who asks me what <code>puppet agent -t</code>
+stands for usually gets a heavy sigh, a shaken head, and an explanation emitted
+in dulcet, apologetic tones). It&rsquo;s also very easy to conflate certain concepts
+that unfortunately share very common labels (quick &ndash; what&rsquo;s the difference
+between properties and parameters, and give me the lowdown on MCollective
+agents versus Puppet agents!).</p>
+
+<p>And then we have &lsquo;environments&rsquo; + Hiera + R10k.</p>
+
+<h3>Puppet &lsquo;environments&rsquo;</h3>
+
+<p>Puppet has the concept of &lsquo;environments&rsquo;, which, to me, exist to provide a
+means of compiling a catalog using different paths to Puppet modules on the
+Puppet master. Using a Puppet environment is the same as saying &ldquo;I made some
+changes to my tomcat class, but I don&rsquo;t want to push it DIRECTLY to my production
+machines yet because I don&rsquo;t drink Dos Equis. It would be great if I could stick
+this code somewhere and have a couple of my nodes test how it works before
+merging it in!&rdquo;</p>
+
+<p>Puppet environments suffer some &lsquo;seepage&rsquo; issues,
+<a href="http://projects.puppetlabs.com/issues/12173">which you can read about here,</a> but do a reasonable job of quickly
+testing out changes you&rsquo;ve made to the Puppet DSL (as opposed to custom
+plugins, as detailed in the bug). Puppet environments work well when you
+need a pipeline for testing your Puppet code (again, when you&rsquo;re refactoring
+or adding new functionality), and using them for that purpose is great.</p>
+
+<h3>Internal &lsquo;environments&rsquo;</h3>
+
+<p>What I consider &lsquo;internal environments&rsquo; have a couple of names &ndash; sometimes
+they&rsquo;re referred to as application or deployment gateways, sometimes as &lsquo;tiers&rsquo;, but
+in general they&rsquo;re long-term groupings that machines/nodes are attached to
+(usually for the purpose of phased-out application deployments). They
+frequently have names such as &lsquo;dev&rsquo;, &lsquo;test&rsquo;, &lsquo;prod&rsquo;, &lsquo;qa&rsquo;, &lsquo;uat&rsquo;, and the
+like.</p>
+
+<p>For the purpose of distinguishing them from Puppet environments, I&rsquo;m going to
+refer to them as &lsquo;application tiers&rsquo; or just &lsquo;tiers&rsquo; because, fuck it, it&rsquo;s a
+word.</p>
+
+<h3>Making both of them work</h3>
+
+<p>The problems with having Puppet environments and application tiers are:</p>
+
+<ul>
+<li>Puppet environments are usually assigned to a node for short periods of time,
+while application tiers are usually assigned to a node for the life of the node.</li>
+<li>Application tiers usually need different bits of data (i.e. NTP server
+addresses, versions of packages, etc), while Puppet environments usually
+use/involve differences to the Puppet DSL.</li>
+<li>Similarly to the first point, the goal of Puppet environments is to eventually
+merge code differences into the main production Puppet environment. Application
+tiers, however, may always have differences about them and never become unified.</li>
+</ul>
+
+
+<p>You can see where this would be problematic &ndash; especially when you might want to
+do things like use different Hiera values between different application tiers,
+but you want to TEST out those values before applying them to all nodes in an
+application tier. If you previously didn&rsquo;t have a way to separate Puppet
+environments from application tiers, and you used R10k to generate Puppet
+environments, you would have things like long-term branches in your repositories
+that would make it difficult/annoying to manage.</p>
+
+<p><strong>NOTE: This is all assuming you&rsquo;re managing component modules, Hiera data,
+and Puppet environments using R10k.</strong></p>
+
+<p>The first step in making both monikers work together is to have two separate
+variables in Puppet &ndash; namely <code>$environment</code> for Puppet environments, and
+something ELSE (say, <code>$tier</code>) for the application tier. The &ldquo;something else&rdquo; is
+going to depend on how your workflow works. For example, do you have something
+centrally that can correlate nodes to the tier in which they belong? If so, you
+can write a custom fact that will query that service. If you don&rsquo;t have this
+magical service, you can always just attach an application tier to a node in
+your classification service (i.e. the Puppet Enterprise Console or Foreman).
+Failing both of those, <a href="http://docs.puppetlabs.com/guides/custom_facts.html#external-facts">you can look to external facts.</a> External Fact
+support was introduced into Facter 1.7 (but Puppet Enterprise has supported
+them through the standard lib for quite awhile). External facts give you the
+ability to create a text file inside the facts.d directory in the format of:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>tier=qa
+</span><span class='line'>location=portland</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Facter will read this text file and store the values as facts for a Puppet run,
+so <code>$tier</code> will be <code>qa</code> and <code>$location</code> will be <code>portland</code>. This is handy for
+when you have arbitrary information that can&rsquo;t be easily discovered by the
+node, but DOES need to be assigned for the node on a reasonably consistent
+basis.  Usually these files are created during the provisioning process, but
+can also be managed by Puppet.  At any rate, having <code>$environment</code> and <code>$tier</code>
+available allow us to start to make decisions based on the values.</p>
+
+<h3>Branch with $environment, Hiera with $tier</h3>
+
+<p>Like we said above, Puppet environments are frequently short-term assignments,
+while application tiers are usually long-term residencies. Relating those back
+to the R10k workflow: branches to the main puppet repo (containing the
+<code>Puppetfile</code>) are usually short-lived, while data in Hiera is usually
+longer-lived. It would then make sense that the name of the branches to the
+main puppet repo would resolve to being <code>$environment</code> (and thus the Puppet
+environment name), and <code>$tier</code> (and thus the application tier) would be used
+in the Hiera hierarchy for lookups of values that would remain different across
+application tiers (like package versions, credentials, and etc&hellip;).</p>
+
+<p>Wins:</p>
+
+<ul>
+<li>Puppet environment names (like repository branch names) become relatively
+meaningless and are the &ldquo;means&rdquo; to the end of getting Puppet code merged into
+the PUPPET CODE&rsquo;s production branch (i.e. code that has been tested to work
+across all application tiers)</li>
+<li>Puppet environments become short lived and thus have less opportunity to
+deviate from the main production codebase</li>
+<li>Differences across application tiers are locked in one place (Hiera)</li>
+<li>Differences to Puppet DSL code (i.e. in Manifests) can be pushed up to the
+profile level, and you have a fact (<code>$tier</code>) to catch those differences.</li>
+</ul>
+
+
+<p>The ultimate reason why I&rsquo;m writing about this is because I&rsquo;ve seen people try
+to incorporate both the Puppet environment and application tier into both the
+environment name and/or the Hiera hierarchy. Many times, they run into all
+kinds of unscalable issues (large hierarchies, many Puppet environments,
+confusing testing paths to &lsquo;production&rsquo;). I tend to prefer this workflow
+choice, but, like everything I write about, take it and model it toward what
+works for you (because what works now may not work 6 months from now).</p>
+
+<h2>Thoughts?</h2>
+
+<p>Like I said before, I tend to discover new corner cases that change my mind
+on things like this, so it&rsquo;s quite possible that this theory isn&rsquo;t the most
+solid in the world. It HAS helped out some customers to clean up their code
+and make for a cleaner pipeline, though, and that&rsquo;s always a good thing. Feel
+free to comment below &ndash; I look forward to making the process better for all!</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Gary larizza</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-03-26T09:00:00+01:00" pubdate data-updated="true">Mar 26<span>th</span>, 2014</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/hiera/'>hiera</a>, <a class='category' href='/blog/categories/puppet/'>puppet</a>, <a class='category' href='/blog/categories/r10k/'>r10k</a>, <a class='category' href='/blog/categories/workflow/'>workflow</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://garylarizza.com/blog/2014/03/26/random-r10k-workflow-ideas/" data-via="glarizza" data-counturl="http://garylarizza.com/blog/2014/03/26/random-r10k-workflow-ideas/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2014/03/12/when-yellow-ruled-the-world/" title="Previous Post: When yellow ruled the world">&laquo; When yellow ruled the world</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2014/08/31/r10k-plus-directory-environments/" title="Next Post: R10k + Directory Environments">R10k + Directory Environments &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/10/19/on-dependencies-and-order/">On Dependencies and Order</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/08/31/r10k-plus-directory-environments/">R10k + Directory Environments</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/03/26/random-r10k-workflow-ideas/">On R10k and 'Environments'</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/03/12/when-yellow-ruled-the-world/">When Yellow Ruled the World</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/03/07/puppet-workflow-part-3b/">Building a Functional Puppet Workflow Part 3b: More R10k Madness</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/glarizza">@glarizza</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'glarizza',
+            count: 0,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+<section>
+  <h1>Twitter</h1>
+  <a class="twitter-timeline" href="https://twitter.com/glarizza" data-widget-id="406925439601348608">Tweets by @glarizza</a>
+  <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+"://platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
+</section>
+
+
+
+
+
+<section>
+  <h1>Coderwall Badges</h1>
+  <ul id="cw_badges">
+    <li class="loading">Status updating...</li>
+  </ul>
+  <p id="badges"></p>
+  <script type="text/javascript">
+    function show_achievements(args) {
+      var badges = args["data"]["badges"];
+      var achievements = "";
+      for (var i = 0; i < badges.length; i++) {
+        var alt_text = badges[i]["name"];
+        var title_text = badges[i]["name"] + ' - ' + badges[i]["description"];
+        achievements += '<a href="http://coderwall.com/glarizza/"><img src="'
+          + badges[i]["badge"]
+          + '" width="48" height="48" alt="' + alt_text
+          + '" title="' + title_text
+          + '" style="margin-top: 7px;margin-right: 4px;"'
+          + '"/></a>';
+      };
+      document.getElementById("cw_badges").style.display = "none";
+      document.getElementById("badges").innerHTML = achievements;
+    }
+  </script>
+  <script src="http://coderwall.com/glarizza.json?callback=show_achievements"></script>
+  
+</section>
+
+<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- Second Add -->
+<ins class="adsbygoogle"
+     style="display:inline-block;width:300px;height:250px"
+     data-ad-client="ca-pub-7679900559570586"
+     data-ad-slot="4934599358"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2014 - Gary larizza -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'shitgarysays';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://garylarizza.com/blog/2014/03/26/random-r10k-workflow-ideas/';
+        var disqus_url = 'http://garylarizza.com/blog/2014/03/26/random-r10k-workflow-ideas/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>
