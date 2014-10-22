@@ -4,7 +4,7 @@
   <title><![CDATA[Category: providers | Shit Gary Says]]></title>
   <link href="http://garylarizza.com/blog/categories/providers/atom.xml" rel="self"/>
   <link href="http://garylarizza.com/"/>
-  <updated>2014-10-22T15:41:25+02:00</updated>
+  <updated>2014-10-22T15:59:07+02:00</updated>
   <id>http://garylarizza.com/</id>
   <author>
     <name><![CDATA[Gary larizza]]></name>
@@ -121,74 +121,41 @@ provider called <code>self.instances</code>.</p>
 <p>The <code>self.instances</code> method is pretty sparsely documented, so let&rsquo;s go straight
 to the source&hellip;code, that is:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>lib/puppet/provider.rb </span></figcaption>
-<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'>  <span class="c1"># Returns a list of system resources (entities) this provider may/can manage.</span>
-</span><span class='line'>  <span class="c1"># This is a query mechanism that lists entities that the provider may manage on a given system. It is</span>
-</span><span class='line'>  <span class="c1"># is directly used in query services, but is also the foundation for other services; prefetching, and</span>
-</span><span class='line'>  <span class="c1"># purging.</span>
-</span><span class='line'>  <span class="c1">#</span>
-</span><span class='line'>  <span class="c1"># As an example, a package provider lists all installed packages. (In contrast, the File provider does</span>
-</span><span class='line'>  <span class="c1"># not list all files on the file-system as that would make execution incredibly slow). An implementation</span>
-</span><span class='line'>  <span class="c1"># of this method should be made if it is possible to quickly (with a single system call) provide all</span>
-</span><span class='line'>  <span class="c1"># instances.</span>
-</span><span class='line'>  <span class="c1">#</span>
-</span><span class='line'>  <span class="c1"># An implementation of this method should only cache the values of properties</span>
-</span><span class='line'>  <span class="c1"># if they are discovered as part of the process for finding existing resources.</span>
-</span><span class='line'>  <span class="c1"># Resource properties that require additional commands (than those used to determine existence/identity)</span>
-</span><span class='line'>  <span class="c1"># should be implemented in their respective getter method. (This is important from a performance perspective;</span>
-</span><span class='line'>  <span class="c1"># it may be expensive to compute, as well as wasteful as all discovered resources may perhaps not be managed).</span>
-</span><span class='line'>  <span class="c1">#</span>
-</span><span class='line'>  <span class="c1"># An implementation may return an empty list (naturally with the effect that it is not possible to query</span>
-</span><span class='line'>  <span class="c1"># for manageable entities).</span>
-</span><span class='line'>  <span class="c1">#</span>
-</span><span class='line'>  <span class="c1"># By implementing this method, it is possible to use the `resources´ resource type to specify purging</span>
-</span><span class='line'>  <span class="c1"># of all non managed entities.</span>
-</span><span class='line'>  <span class="c1">#</span>
-</span><span class='line'>  <span class="c1"># @note The returned instances are instance of some subclass of Provider, not resources.</span>
-</span><span class='line'>  <span class="c1"># @return [Array&amp;lt;Puppet::Provider&gt;] a list of providers referencing the system entities</span>
-</span><span class='line'>  <span class="c1"># @abstract this method must be implemented by a subclass and this super method should never be called as it raises an exception.</span>
-</span><span class='line'>  <span class="c1"># @raise [Puppet::DevError] Error indicating that the method should have been implemented by subclass.</span>
-</span><span class='line'>  <span class="c1"># @see prefetch</span>
-</span><span class='line'>  <span class="k">def</span> <span class="nc">self</span><span class="o">.</span><span class="nf">instances</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;raise Puppet::DevError, &quot;Provider </span><span class="si">#{</span><span class="nb">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="sr"> has not defined the &#39;instances&#39; class method&quot;</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:ruby lib/puppet/provider.rb %}
+  # Returns a list of system resources (entities) this provider may/can manage.
+  # This is a query mechanism that lists entities that the provider may manage on a given system. It is
+  # is directly used in query services, but is also the foundation for other services; prefetching, and
+  # purging.
+  #
+  # As an example, a package provider lists all installed packages. (In contrast, the File provider does
+  # not list all files on the file-system as that would make execution incredibly slow). An implementation
+  # of this method should be made if it is possible to quickly (with a single system call) provide all
+  # instances.
+  #
+  # An implementation of this method should only cache the values of properties
+  # if they are discovered as part of the process for finding existing resources.
+  # Resource properties that require additional commands (than those used to determine existence/identity)
+  # should be implemented in their respective getter method. (This is important from a performance perspective;
+  # it may be expensive to compute, as well as wasteful as all discovered resources may perhaps not be managed).
+  #
+  # An implementation may return an empty list (naturally with the effect that it is not possible to query
+  # for manageable entities).
+  #
+  # By implementing this method, it is possible to use the `resources´ resource type to specify purging
+  # of all non managed entities.
+  #
+  # @note The returned instances are instance of some subclass of Provider, not resources.
+  # @return [Array&lt;Puppet::Provider>] a list of providers referencing the system entities
+  # @abstract this method must be implemented by a subclass and this super method should never be called as it raises an exception.
+  # @raise [Puppet::DevError] Error indicating that the method should have been implemented by subclass.
+  # @see prefetch
+  def self.instances</p>
+
+<pre><code>raise Puppet::DevError, "Provider #{self.name} has not defined the 'instances' class method"
+</code></pre>
+
+<p>  end
+{% endcodeblock %}</p>
 
 <p>You&rsquo;ll find that method around lines 348 &ndash; 377 of the <code>lib/puppet/provider.rb</code>
 file in Puppet&rsquo;s source code (as of this writing, which is a Friday&hellip;
@@ -218,29 +185,25 @@ the ability to access other methods of the provider directly (i.e. other
 methods prefixed with <code>self.</code>).  This means that if you were to define a
 method like:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nc">self</span><span class="o">.</span><span class="nf">proxy_type</span>
-</span><span class='line'>  <span class="o">&amp;</span><span class="n">lsquo</span><span class="p">;</span><span class="n">web</span><span class="o">&amp;</span><span class="n">rsquo</span><span class="p">;</span>
-</span><span class='line'><span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:ruby %}
+def self.proxy_type
+  &lsquo;web&rsquo;
+end
+{% endcodeblock %}</p>
 
 <p>You could access that directly from <code>self.instances</code> by simply calling it:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">type_of_proxy</span> <span class="o">=</span> <span class="n">proxy_type</span><span class="p">()</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:ruby %}
+type_of_proxy = proxy_type()
+{% endcodeblock %}</p>
 
 <p>Let&rsquo;s say you had a method of the INSTANCE of the provider, like so:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">system_type</span>
-</span><span class='line'>  <span class="o">&amp;</span><span class="n">lsquo</span><span class="p">;</span><span class="no">OS</span> <span class="n">X</span><span class="o">&amp;</span><span class="n">rsquo</span><span class="p">;</span>
-</span><span class='line'><span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:ruby %}
+def system_type
+  &lsquo;OS X&rsquo;
+end
+{% endcodeblock %}</p>
 
 <p>You COULD NOT access this method from <code>self.instances</code> directly (there are
 always hacky ways around EVERYTHING in Ruby, sure, but there is no easy/straightforward
@@ -252,15 +215,12 @@ way to access this method).</p>
 Given our previous example, what if the <code>system_type</code> method wanted to access
 <code>self.proxy_type</code> for some reason?  It could be done like so:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">system_type</span>
-</span><span class='line'>  <span class="n">type_of_proxy</span> <span class="o">=</span> <span class="nb">self</span><span class="o">.</span><span class="n">class</span><span class="o">.</span><span class="n">proxy_type</span><span class="p">()</span>
-</span><span class='line'>  <span class="o">&amp;</span><span class="n">lsquo</span><span class="p">;</span><span class="no">OS</span> <span class="n">X</span><span class="o">&amp;</span><span class="n">rsquo</span><span class="p">;</span>
-</span><span class='line'><span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:ruby %}
+def system_type
+  type_of_proxy = self.class.proxy_type()
+  &lsquo;OS X&rsquo;
+end
+{% endcodeblock %}</p>
 
 <p>A method of the instance of the provider can access provider methods by simply
 calling the <code>class</code> method on itself (which returns the provider object). This
@@ -275,118 +235,63 @@ create a provider for actually MANAGING the proxy settings for a given
 network interface.  Here&rsquo;s a quick type for managing a web proxy on a network
 interface on OS X:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>puppet-mac_proxy/lib/puppet/type/mac_web_proxy.rb </span></figcaption>
-<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-<span class='line-number'>49</span>
-<span class='line-number'>50</span>
-<span class='line-number'>51</span>
-<span class='line-number'>52</span>
-<span class='line-number'>53</span>
-<span class='line-number'>54</span>
-<span class='line-number'>55</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="ss">Puppet</span><span class="p">:</span><span class="ss">:Type</span><span class="o">.</span><span class="n">newtype</span><span class="p">(</span><span class="ss">:mac_web_proxy</span><span class="p">)</span> <span class="k">do</span>
-</span><span class='line'>  <span class="n">desc</span> <span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;</span><span class="no">Puppet</span> <span class="n">type</span> <span class="n">that</span> <span class="n">models</span> <span class="n">a</span> <span class="n">network</span> <span class="n">interface</span> <span class="n">on</span> <span class="no">OS</span> <span class="n">X</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="p">;</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  ensurable&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="n">newparam</span><span class="p">(</span><span class="ss">:name</span><span class="p">,</span> <span class="ss">:namevar</span> <span class="o">=&gt;</span> <span class="kp">true</span><span class="p">)</span> <span class="k">do</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;desc &quot;Interface name - currently must be &#39;friendly&#39; name (e.g. Ethernet)&quot;</span>
-</span><span class='line'><span class="sr">munge do |value|</span>
-</span><span class='line'><span class="sr">  value.downcase</span>
-</span><span class='line'><span class="sr">end</span>
-</span><span class='line'><span class="sr">def insync?(is)</span>
-</span><span class='line'><span class="sr">  is.downcase == should.downcase</span>
-</span><span class='line'><span class="sr">end</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="n">newproperty</span><span class="p">(</span><span class="ss">:proxy_server</span><span class="p">)</span> <span class="k">do</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;desc &quot;Proxy Server setting for the interface&quot;</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="n">newparam</span><span class="p">(</span><span class="ss">:authenticated_username</span><span class="p">)</span> <span class="k">do</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;desc &quot;Username for proxy authentication&quot;</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="n">newparam</span><span class="p">(</span><span class="ss">:authenticated_password</span><span class="p">)</span> <span class="k">do</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;desc &quot;Password for proxy authentication&quot;</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="n">newproperty</span><span class="p">(</span><span class="ss">:proxy_authenticated</span><span class="p">)</span> <span class="k">do</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;desc &quot;Proxy Server setting for the interface&quot;</span>
-</span><span class='line'><span class="sr">newvalues(:true, :false)</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="n">newproperty</span><span class="p">(</span><span class="ss">:proxy_port</span><span class="p">)</span> <span class="k">do</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;desc &quot;Proxy Server setting for the interface&quot;</span>
-</span><span class='line'><span class="sr">newvalues(/</span><span class="o">^</span><span class="p">\</span><span class="n">d</span><span class="o">+</span><span class="vg">$/</span><span class="p">)</span>
-</span><span class='line'><span class="o">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">end</span>
-</span><span class='line'><span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:ruby puppet-mac_proxy/lib/puppet/type/mac_web_proxy.rb %}
+Puppet::Type.newtype(:mac_web_proxy) do
+  desc &ldquo;Puppet type that models a network interface on OS X&rdquo;</p>
+
+<p>  ensurable</p>
+
+<p>  newparam(:name, :namevar => true) do</p>
+
+<pre><code>desc "Interface name - currently must be 'friendly' name (e.g. Ethernet)"
+munge do |value|
+  value.downcase
+end
+def insync?(is)
+  is.downcase == should.downcase
+end
+</code></pre>
+
+<p>  end</p>
+
+<p>  newproperty(:proxy_server) do</p>
+
+<pre><code>desc "Proxy Server setting for the interface"
+</code></pre>
+
+<p>  end</p>
+
+<p>  newparam(:authenticated_username) do</p>
+
+<pre><code>desc "Username for proxy authentication"
+</code></pre>
+
+<p>  end</p>
+
+<p>  newparam(:authenticated_password) do</p>
+
+<pre><code>desc "Password for proxy authentication"
+</code></pre>
+
+<p>  end</p>
+
+<p>  newproperty(:proxy_authenticated) do</p>
+
+<pre><code>desc "Proxy Server setting for the interface"
+newvalues(:true, :false)
+</code></pre>
+
+<p>  end</p>
+
+<p>  newproperty(:proxy_port) do</p>
+
+<pre><code>desc "Proxy Server setting for the interface"
+newvalues(/^\d+$/)
+</code></pre>
+
+<p>  end
+end
+{% endcodeblock %}</p>
 
 <p>This type has three properties, is ensurable, and a namevar called &lsquo;name&rsquo;. As
 for the provider, let&rsquo;s start with <code>self.instances</code> and get the web proxy
@@ -422,17 +327,13 @@ they will be provider methods.</p>
 
 <p>The first method will simply return an array of network interfaces:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nc">self</span><span class="o">.</span><span class="nf">get_list_of_interfaces</span>
-</span><span class='line'>  <span class="n">interfaces</span> <span class="o">=</span> <span class="n">networksetup</span><span class="p">(</span><span class="o">&amp;</span><span class="n">lsquo</span><span class="p">;</span><span class="o">-</span><span class="n">listallnetworkservices</span><span class="o">&amp;</span><span class="n">rsquo</span><span class="p">;)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;\</span><span class="n">n</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="p">;)</span>
-</span><span class='line'>  <span class="n">interfaces</span><span class="o">.</span><span class="n">shift</span>
-</span><span class='line'>  <span class="n">interfaces</span><span class="o">.</span><span class="n">sort</span>
-</span><span class='line'><span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:ruby %}
+def self.get_list_of_interfaces
+  interfaces = networksetup(&lsquo;-listallnetworkservices&rsquo;).split(&ldquo;\n&rdquo;)
+  interfaces.shift
+  interfaces.sort
+end
+{% endcodeblock %}</p>
 
 <p>Remember from above that the <code>networksetup -listallnetworkservices</code> command
 returns an info line before each interface, so this code strips that line
@@ -447,83 +348,46 @@ proxy settings and whether the proxy is enabled, which means the resource
 is ensured as &lsquo;present&rsquo;, or disabled, which means the resource is ensured
 as &lsquo;absent&rsquo;.</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nc">self</span><span class="o">.</span><span class="nf">get_proxy_properties</span><span class="p">(</span><span class="n">int</span><span class="p">)</span>
-</span><span class='line'>  <span class="n">interface_properties</span> <span class="o">=</span> <span class="p">{}</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  begin&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="n">output</span> <span class="o">=</span> <span class="n">networksetup</span><span class="p">(</span><span class="o">[</span><span class="s1">&#39;-getwebproxy&#39;</span><span class="p">,</span> <span class="n">int</span><span class="o">]</span><span class="p">)</span>
-</span><span class='line'><span class="o">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">rescue</span> <span class="ss">Puppet</span><span class="p">:</span><span class="ss">:ExecutionFailure</span> <span class="o">=&gt;</span> <span class="n">e</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;raise Puppet::Error, &quot;#mac_web_proxy tried to run `networksetup -getwebproxy </span><span class="si">#{</span><span class="n">int</span><span class="si">}</span><span class="sr">` and the command returned non-zero. Failing here...&quot;</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="n">output_array</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;\</span><span class="n">n</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="p">;)</span>
-</span><span class='line'>  <span class="n">output_array</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">line</span><span class="o">|&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;line_values = line.split(&#39;:&#39;)</span>
-</span><span class='line'><span class="sr">line_values.last.strip!</span>
-</span><span class='line'><span class="sr">case line_values.first</span>
-</span><span class='line'><span class="sr">when &#39;Enabled&#39;</span>
-</span><span class='line'><span class="sr">  interface_properties[:ensure] = line_values.last == &#39;No&#39; ? :absent : :present</span>
-</span><span class='line'><span class="sr">when &#39;Server&#39;</span>
-</span><span class='line'><span class="sr">  interface_properties[:proxy_server] = line_values.last.empty? ? nil : line_values.last</span>
-</span><span class='line'><span class="sr">when &#39;Port&#39;</span>
-</span><span class='line'><span class="sr">  interface_properties[:proxy_port] = line_values.last == &#39;0&#39; ? nil : line_values.last</span>
-</span><span class='line'><span class="sr">when &#39;Authenticated Proxy Enabled&#39;</span>
-</span><span class='line'><span class="sr">  interface_properties[:proxy_authenticated] = line_values.last == &#39;0&#39; ? nil : line_values.last</span>
-</span><span class='line'><span class="sr">end</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="n">interface_properties</span><span class="o">[</span><span class="ss">:provider</span><span class="o">]</span> <span class="o">=</span> <span class="ss">:ruby</span>
-</span><span class='line'>  <span class="n">interface_properties</span><span class="o">[</span><span class="ss">:name</span><span class="o">]</span>     <span class="o">=</span> <span class="n">int</span><span class="o">.</span><span class="n">downcase</span>
-</span><span class='line'>  <span class="n">interface_properties</span>
-</span><span class='line'><span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:ruby %}
+def self.get_proxy_properties(int)
+  interface_properties = {}</p>
+
+<p>  begin</p>
+
+<pre><code>output = networksetup(['-getwebproxy', int])
+</code></pre>
+
+<p>  rescue Puppet::ExecutionFailure => e</p>
+
+<pre><code>raise Puppet::Error, "#mac_web_proxy tried to run `networksetup -getwebproxy #{int}` and the command returned non-zero. Failing here..."
+</code></pre>
+
+<p>  end</p>
+
+<p>  output_array = output.split(&ldquo;\n&rdquo;)
+  output_array.each do |line|</p>
+
+<pre><code>line_values = line.split(':')
+line_values.last.strip!
+case line_values.first
+when 'Enabled'
+  interface_properties[:ensure] = line_values.last == 'No' ? :absent : :present
+when 'Server'
+  interface_properties[:proxy_server] = line_values.last.empty? ? nil : line_values.last
+when 'Port'
+  interface_properties[:proxy_port] = line_values.last == '0' ? nil : line_values.last
+when 'Authenticated Proxy Enabled'
+  interface_properties[:proxy_authenticated] = line_values.last == '0' ? nil : line_values.last
+end
+</code></pre>
+
+<p>  end</p>
+
+<p>  interface_properties[:provider] = :ruby
+  interface_properties[:name]     = int.downcase
+  interface_properties
+end
+{% endcodeblock %}</p>
 
 <p>A couple of notes on the method itself &ndash; first, the <code>networksetup</code> command must
 exit zero on success or non-zero on failure (which it does). If ever the <code>networksetup</code>
@@ -541,25 +405,17 @@ the <code>:ensure</code> key at the VERY least.</p>
 <p>Once the helper provider methods have been defined, <code>self.instances</code> becomes
 reasonably simple:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nc">self</span><span class="o">.</span><span class="nf">instances</span>
-</span><span class='line'>  <span class="n">get_list_of_interfaces</span><span class="o">.</span><span class="n">collect</span> <span class="k">do</span> <span class="o">|</span><span class="n">int</span><span class="o">|&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;proxy_properties = get_proxy_properties(int)</span>
-</span><span class='line'><span class="sr">new(proxy_properties)</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end</span>
-</span><span class='line'><span class="sr">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:ruby %}
+def self.instances
+  get_list_of_interfaces.collect do |int|</p>
+
+<pre><code>proxy_properties = get_proxy_properties(int)
+new(proxy_properties)
+</code></pre>
+
+<p>  end
+end
+{% endcodeblock %}</p>
 
 <p>Remember that <code>self.instances</code> must return an array of provider instances,
 and each one of these instances must include the <code>namevar</code> and ensure value
@@ -598,13 +454,11 @@ essentially the same thing as the <code>ensure</code> value for a resource, let&
 <code>exists?</code> by doing a check on the ensure value from the <code>@property_hash</code>
 variable:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">exists?</span>
-</span><span class='line'>  <span class="vi">@property_hash</span><span class="o">[</span><span class="ss">:ensure</span><span class="o">]</span> <span class="o">==</span> <span class="ss">:present</span>
-</span><span class='line'><span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:ruby %}
+def exists?
+  @property_hash[:ensure] == :present
+end
+{% endcodeblock %}</p>
 
 <p>Perfect, now <code>exists?</code> will return true or false accordingly and Puppet will be
 satisfied.</p>
@@ -622,13 +476,11 @@ are named exactly the same as the properties they represent.</p>
 just use it again? We can, and you COULD implement all the getter methods
 like so:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">proxy_server</span>
-</span><span class='line'>  <span class="vi">@property_hash</span><span class="o">[</span><span class="ss">:proxy_server</span><span class="o">]</span>
-</span><span class='line'><span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:ruby %}
+def proxy_server
+  @property_hash[:proxy_server]
+end
+{% endcodeblock %}</p>
 
 <p>If you did that, you would be TECHNICALLY correct, but it would seem to be a
 waste of lines in a provider (especially if you have many properties).</p>
@@ -648,140 +500,74 @@ you&rsquo;re using self.instances &ndash; just implement <code>mk_resource_metho
 <p>Putting everything that we&rsquo;ve learned up until now, we should have a provider
 that looks like this:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>lib/puppet/provider/mac_web_proxy/ruby.rb </span></figcaption>
-<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-<span class='line-number'>49</span>
-<span class='line-number'>50</span>
-<span class='line-number'>51</span>
-<span class='line-number'>52</span>
-<span class='line-number'>53</span>
-<span class='line-number'>54</span>
-<span class='line-number'>55</span>
-<span class='line-number'>56</span>
-<span class='line-number'>57</span>
-<span class='line-number'>58</span>
-<span class='line-number'>59</span>
-<span class='line-number'>60</span>
-<span class='line-number'>61</span>
-<span class='line-number'>62</span>
-<span class='line-number'>63</span>
-<span class='line-number'>64</span>
-<span class='line-number'>65</span>
-<span class='line-number'>66</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="ss">Puppet</span><span class="p">:</span><span class="ss">:Type</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="ss">:mac_web_proxy</span><span class="p">)</span><span class="o">.</span><span class="n">provide</span><span class="p">(</span><span class="ss">:ruby</span><span class="p">)</span> <span class="k">do</span>
-</span><span class='line'>  <span class="n">commands</span> <span class="ss">:networksetup</span> <span class="o">=&gt;</span> <span class="o">&amp;</span><span class="n">lsquo</span><span class="p">;</span><span class="n">networksetup</span><span class="o">&amp;</span><span class="n">rsquo</span><span class="p">;</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  mk_resource_methods&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">def</span> <span class="nc">self</span><span class="o">.</span><span class="nf">get_list_of_interfaces</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;interfaces = networksetup(&#39;-listallnetworkservices&#39;).split(&quot;\n&quot;)</span>
-</span><span class='line'><span class="sr">interfaces.shift</span>
-</span><span class='line'><span class="sr">interfaces.sort</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">def</span> <span class="nc">self</span><span class="o">.</span><span class="nf">get_proxy_properties</span><span class="p">(</span><span class="n">int</span><span class="p">)</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;interface_properties = {}</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">begin</span>
-</span><span class='line'><span class="sr">  output = networksetup([&#39;-getwebproxy&#39;, int])</span>
-</span><span class='line'><span class="sr">rescue Puppet::ExecutionFailure =&amp;gt; e</span>
-</span><span class='line'><span class="sr">  Puppet.debug &quot;#get_proxy_properties had an error -&amp;gt; </span><span class="si">#{</span><span class="n">e</span><span class="o">.</span><span class="n">inspect</span><span class="si">}</span><span class="sr">&quot;</span>
-</span><span class='line'><span class="sr">  return {}</span>
-</span><span class='line'><span class="sr">end</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">output_array = output.split(&quot;\n&quot;)</span>
-</span><span class='line'><span class="sr">output_array.each do |line|</span>
-</span><span class='line'><span class="sr">  line_values = line.split(&#39;:&#39;)</span>
-</span><span class='line'><span class="sr">  line_values.last.strip!</span>
-</span><span class='line'><span class="sr">  case line_values.first</span>
-</span><span class='line'><span class="sr">  when &#39;Enabled&#39;</span>
-</span><span class='line'><span class="sr">    interface_properties[:ensure] = line_values.last == &#39;No&#39; ? :absent : :present</span>
-</span><span class='line'><span class="sr">  when &#39;Server&#39;</span>
-</span><span class='line'><span class="sr">    interface_properties[:proxy_server] = line_values.last.empty? ? nil : line_values.last</span>
-</span><span class='line'><span class="sr">  when &#39;Port&#39;</span>
-</span><span class='line'><span class="sr">    interface_properties[:proxy_port] = line_values.last == &#39;0&#39; ? nil : line_values.last</span>
-</span><span class='line'><span class="sr">  when &#39;Authenticated Proxy Enabled&#39;</span>
-</span><span class='line'><span class="sr">    interface_properties[:proxy_authenticated] = line_values.last == &#39;0&#39; ? nil : line_values.last</span>
-</span><span class='line'><span class="sr">  end</span>
-</span><span class='line'><span class="sr">end</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">interface_properties[:provider] = :ruby</span>
-</span><span class='line'><span class="sr">interface_properties[:name]     = int.downcase</span>
-</span><span class='line'><span class="sr">Puppet.debug &quot;Interface properties: </span><span class="si">#{</span><span class="n">interface_properties</span><span class="o">.</span><span class="n">inspect</span><span class="si">}</span><span class="sr">&quot;</span>
-</span><span class='line'><span class="sr">interface_properties</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">def</span> <span class="nc">self</span><span class="o">.</span><span class="nf">instances</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;get_list_of_interfaces.collect do |int|</span>
-</span><span class='line'><span class="sr">  proxy_properties = get_proxy_properties(int)</span>
-</span><span class='line'><span class="sr">  new(proxy_properties)</span>
-</span><span class='line'><span class="sr">end</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">def</span> <span class="nf">exists?</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;@property_hash[:ensure] == :present</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end</span>
-</span><span class='line'><span class="sr">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:ruby lib/puppet/provider/mac_web_proxy/ruby.rb %}
+Puppet::Type.type(:mac_web_proxy).provide(:ruby) do
+  commands :networksetup => &lsquo;networksetup&rsquo;</p>
+
+<p>  mk_resource_methods</p>
+
+<p>  def self.get_list_of_interfaces</p>
+
+<pre><code>interfaces = networksetup('-listallnetworkservices').split("\n")
+interfaces.shift
+interfaces.sort
+</code></pre>
+
+<p>  end</p>
+
+<p>  def self.get_proxy_properties(int)</p>
+
+<pre><code>interface_properties = {}
+
+begin
+  output = networksetup(['-getwebproxy', int])
+rescue Puppet::ExecutionFailure =&gt; e
+  Puppet.debug "#get_proxy_properties had an error -&gt; #{e.inspect}"
+  return {}
+end
+
+output_array = output.split("\n")
+output_array.each do |line|
+  line_values = line.split(':')
+  line_values.last.strip!
+  case line_values.first
+  when 'Enabled'
+    interface_properties[:ensure] = line_values.last == 'No' ? :absent : :present
+  when 'Server'
+    interface_properties[:proxy_server] = line_values.last.empty? ? nil : line_values.last
+  when 'Port'
+    interface_properties[:proxy_port] = line_values.last == '0' ? nil : line_values.last
+  when 'Authenticated Proxy Enabled'
+    interface_properties[:proxy_authenticated] = line_values.last == '0' ? nil : line_values.last
+  end
+end
+
+interface_properties[:provider] = :ruby
+interface_properties[:name]     = int.downcase
+Puppet.debug "Interface properties: #{interface_properties.inspect}"
+interface_properties
+</code></pre>
+
+<p>  end</p>
+
+<p>  def self.instances</p>
+
+<pre><code>get_list_of_interfaces.collect do |int|
+  proxy_properties = get_proxy_properties(int)
+  new(proxy_properties)
+end
+</code></pre>
+
+<p>  end</p>
+
+<p>  def exists?</p>
+
+<pre><code>@property_hash[:ensure] == :present
+</code></pre>
+
+<p>  end
+end
+{% endcodeblock %}</p>
 
 <p>Here&rsquo;s a tree of the module I&rsquo;ve assembled on my machine:</p>
 
@@ -892,50 +678,27 @@ night in Reed&rsquo;s chem lab where he might have accidently synthesized mescal
 
 <p>Let&rsquo;s look at the codebase:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>lib/puppet/provider.rb </span></figcaption>
-<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;h1&gt;@comment Document prefetch here as it does not exist anywhere else (called from transaction if implemented)&lt;/</span><span class="n">h1</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">h1</span><span class="o">&gt;</span><span class="err">@</span><span class="o">!</span><span class="nb">method</span> <span class="nb">self</span><span class="o">.</span><span class="n">prefetch</span><span class="p">(</span><span class="n">resource_hash</span><span class="p">)</span><span class="o">&lt;</span><span class="sr">/h1&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;h1&gt;@abstract A subclass may implement this &amp;ndash; it is not implemented in the Provider class&lt;/</span><span class="n">h1</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">h1</span><span class="o">&gt;</span><span class="no">This</span> <span class="nb">method</span> <span class="n">may</span> <span class="n">be</span> <span class="n">implemented</span> <span class="n">by</span> <span class="n">a</span> <span class="n">provider</span> <span class="k">in</span> <span class="n">order</span> <span class="n">to</span> <span class="n">pre</span><span class="o">-</span><span class="n">fetch</span> <span class="n">resource</span> <span class="n">properties</span><span class="o">.</span><span class="n">&lt;</span><span class="sr">/h1&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;h1&gt;If implemented it should set the provider instance of the managed resources to a provider with the&lt;/</span><span class="n">h1</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">h1</span><span class="o">&gt;</span><span class="n">fetched</span> <span class="n">state</span> <span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">e</span><span class="o">.</span> <span class="n">what</span> <span class="n">is</span> <span class="n">returned</span> <span class="n">from</span> <span class="n">the</span> <span class="p">{</span><span class="n">instances</span><span class="p">}</span> <span class="nb">method</span><span class="p">)</span><span class="o">.</span><span class="n">&lt;</span><span class="sr">/h1&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;h1&gt;@param resources_hash [Hash&amp;lt;{String =&gt; Puppet::Resource}&gt;] map from name to resource of resources to prefetch&lt;/</span><span class="n">h1</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">h1</span><span class="o">&gt;</span><span class="vi">@return</span> <span class="o">[</span><span class="n">void</span><span class="o">]&lt;</span><span class="sr">/h1&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;h1&gt;@api public&lt;/</span><span class="n">h1</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:ruby lib/puppet/provider.rb %}</p>
+
+<h1>@comment Document prefetch here as it does not exist anywhere else (called from transaction if implemented)</h1>
+
+<h1>@!method self.prefetch(resource_hash)</h1>
+
+<h1>@abstract A subclass may implement this &ndash; it is not implemented in the Provider class</h1>
+
+<h1>This method may be implemented by a provider in order to pre-fetch resource properties.</h1>
+
+<h1>If implemented it should set the provider instance of the managed resources to a provider with the</h1>
+
+<h1>fetched state (i.e. what is returned from the {instances} method).</h1>
+
+<h1>@param resources_hash [Hash&lt;{String => Puppet::Resource}>] map from name to resource of resources to prefetch</h1>
+
+<h1>@return [void]</h1>
+
+<h1>@api public</h1>
+
+<p>{% endcodeblock %}</p>
 
 <p>That&rsquo;s right, documentation for <code>self.prefetch</code> in the Puppet codebase is
 9 lines of comments in <code>lib/puppet/provider.rb</code>, which is awesome. So when
@@ -1022,24 +785,20 @@ I want to try and manage that resource with <code>puppet apply</code> (i.e. some
 uses <code>self.prefetch</code>). The resource in the manifest used to manage the proxy
 will look something like this:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="nc">mac_web_proxy</span> <span class="p">{</span> <span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">firewire</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">:</span>
-</span><span class='line'>  <span class="nt">ensure</span>       <span class="p">=&gt;</span> <span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">present</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;,</span>
-</span><span class='line'>  <span class="ss">proxy_port</span>   <span class="err">=&gt;</span> <span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="m">8080</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;,</span>
-</span><span class='line'>  <span class="ss">proxy_server</span> <span class="err">=&gt;</span> <span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">proxy</span><span class="m">.</span><span class="ss">server</span><span class="m">.</span><span class="ss">org</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;,</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:puppet %}
+mac_web_proxy { &lsquo;firewire&rsquo;:
+  ensure       => &lsquo;present&rsquo;,
+  proxy_port   => &lsquo;8080&rsquo;,
+  proxy_server => &lsquo;proxy.server.org&rsquo;,
+}
+{% endcodeblock %}</p>
 
 <p>When <code>self.prefetch</code> is called by Puppet, it&rsquo;s going to be passed a hash looking
 something like this:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="p">{</span> <span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;</span><span class="n">firewire</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="p">;</span> <span class="o">=&gt;</span> <span class="no">Mac_web_proxy</span><span class="o">[</span><span class="n">firewire</span><span class="o">]</span> <span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:ruby %}
+{ &ldquo;firewire&rdquo; => Mac_web_proxy[firewire] }
+{% endcodeblock %}</p>
 
 <p>Because only one resource is encountered in the catalog, only one key/value
 pair shows up in the hash that&rsquo;s passed as the argument to <code>self.prefetch</code>.</p>
@@ -1058,27 +817,18 @@ hash of resources that were encountered in the catalog &ndash; so we have THAT
 part done too. Our only job is to connect the dots (la la la la), programmatically
 speaking.  This should just about do it:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nc">self</span><span class="o">.</span><span class="nf">prefetch</span><span class="p">(</span><span class="n">resources</span><span class="p">)</span>
-</span><span class='line'>  <span class="n">instances</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">prov</span><span class="o">|&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;if resource = resources[prov.name]</span>
-</span><span class='line'><span class="sr">  resource.provider = prov</span>
-</span><span class='line'><span class="sr">end</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end</span>
-</span><span class='line'><span class="sr">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:ruby %}
+def self.prefetch(resources)
+  instances.each do |prov|</p>
+
+<pre><code>if resource = resources[prov.name]
+  resource.provider = prov
+end
+</code></pre>
+
+<p>  end
+end
+{% endcodeblock %}</p>
 
 <p>I want to make a confession right now &ndash; I&rsquo;ve only ever copied and pasted this
 code into every provider I&rsquo;ve ever written that needed <code>self.prefetch</code> implemented.
@@ -1126,15 +876,12 @@ a single command. Because of this, we really only need that instance variable
 for one property &ndash; the ensure value.  But let&rsquo;s start with the initialization
 of that instance variable for the <code>flush</code> method:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="p">{})</span>
-</span><span class='line'>  <span class="k">super</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
-</span><span class='line'>  <span class="vi">@property_flush</span> <span class="o">=</span> <span class="p">{}</span>
-</span><span class='line'><span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:ruby %}
+def initialize(value={})
+  super(value)
+  @property_flush = {}
+end
+{% endcodeblock %}</p>
 
 <p>The <code>initialize</code> method is magic to Ruby &ndash; it&rsquo;s invoked when you instantiate
 a new object. In our case, we want to create a new instance variable &ndash;
@@ -1158,55 +905,32 @@ binary <code>fooset</code> that took arguments of <code>--bar</code> and <code>-
 respectively for <code>bar</code> and <code>baz</code> properties of a resource, you might see the following
 setter and flush methods for <code>bar</code> and <code>baz</code>:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">bar</span><span class="o">=</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
-</span><span class='line'>  <span class="vi">@property_flush</span><span class="o">[</span><span class="ss">:bar</span><span class="o">]</span> <span class="o">=</span> <span class="n">value</span>
-</span><span class='line'><span class="k">end</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;def baz=(value)</span>
-</span><span class='line'><span class="sr">  @property_flush[:baz] = value</span>
-</span><span class='line'><span class="sr">end&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span><span class="k">def</span> <span class="nf">flush</span>
-</span><span class='line'>  <span class="n">array_arguments</span> <span class="o">=</span> <span class="o">[]</span>
-</span><span class='line'>  <span class="k">if</span> <span class="vi">@property_flush</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;array_arguments &amp;lt;&amp;lt; &#39;--bar&#39; &amp;lt;&amp;lt; @property_flush[:bar] if @property_flush[:bar]</span>
-</span><span class='line'><span class="sr">array_arguments &amp;lt;&amp;lt; &#39;--baz&#39; &amp;lt;&amp;lt; @property_flush[:baz] if @property_flush[:baz]</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end</span>
-</span><span class='line'><span class="sr">  if ! array_arguments.empty?&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="n">fooset</span><span class="p">(</span><span class="n">array_arguments</span><span class="p">,</span> <span class="n">resource</span><span class="o">[</span><span class="ss">:name</span><span class="o">]</span><span class="p">)</span>
-</span><span class='line'><span class="o">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">end</span>
-</span><span class='line'><span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:ruby %}
+def bar=(value)
+  @property_flush[:bar] = value
+end</p>
+
+<p>def baz=(value)
+  @property_flush[:baz] = value
+end</p>
+
+<p>def flush
+  array_arguments = []
+  if @property_flush</p>
+
+<pre><code>array_arguments &lt;&lt; '--bar' &lt;&lt; @property_flush[:bar] if @property_flush[:bar]
+array_arguments &lt;&lt; '--baz' &lt;&lt; @property_flush[:baz] if @property_flush[:baz]
+</code></pre>
+
+<p>  end
+  if ! array_arguments.empty?</p>
+
+<pre><code>fooset(array_arguments, resource[:name])
+</code></pre>
+
+<p>  end
+end
+{% endcodeblock %}</p>
 
 <p>That&rsquo;s not the case for <code>networksetup</code> &ndash; in fact, one of the ONLY places in our code
 where we&rsquo;re going to throw a value inside <code>@property_flush</code> is going to be in
@@ -1215,13 +939,11 @@ this case, disable the proxy for a network interface), then we can short-circuit
 the method we&rsquo;re going to create to set proxy values by simply checking for
 a value in <code>@property_flush[:ensure]</code>. Here&rsquo;s what the <code>destroy</code> method looks like:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">destroy</span>
-</span><span class='line'>  <span class="vi">@property_flush</span><span class="o">[</span><span class="ss">:ensure</span><span class="o">]</span> <span class="o">=</span> <span class="ss">:absent</span>
-</span><span class='line'><span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:ruby %}
+def destroy
+  @property_flush[:ensure] = :absent
+end
+{% endcodeblock %}</p>
 
 <p>Next, we need a method that will set values for our proxy. This method will
 handle all interaction to <code>networksetup</code>.  So, how do you set proxy values
@@ -1237,117 +959,67 @@ means we have to pass ALL of these values (again, which is why our <code>flush</
 implementation may be unique from other <code>flush</code> implementations). Here&rsquo;s what
 the <code>set_proxy</code> method looks like:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">set_proxy</span>
-</span><span class='line'>  <span class="k">if</span> <span class="vi">@property_flush</span><span class="o">[</span><span class="ss">:ensure</span><span class="o">]</span> <span class="o">==</span> <span class="ss">:absent</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;  networksetup([&#39;-setwebproxystate&#39;, resource[:name], &#39;off&#39;])</span>
-</span><span class='line'><span class="sr">  return</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">if</span> <span class="p">(</span><span class="n">resource</span><span class="o">[</span><span class="ss">:proxy_server</span><span class="o">].</span><span class="n">nil?</span> <span class="ow">or</span> <span class="n">resource</span><span class="o">[</span><span class="ss">:proxy_port</span><span class="o">].</span><span class="n">nil?</span><span class="p">)</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;raise Puppet::Error, &quot;Proxy types other than &#39;auto&#39; require both a proxy_server and proxy_port setting&quot;</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end</span>
-</span><span class='line'><span class="sr">  if resource[:proxy_authenticated] != :true&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="n">networksetup</span><span class="p">(</span>
-</span><span class='line'>  <span class="o">[</span>
-</span><span class='line'>    <span class="s1">&#39;-setwebproxy&#39;</span><span class="p">,</span>
-</span><span class='line'>    <span class="n">resource</span><span class="o">[</span><span class="ss">:name</span><span class="o">]</span><span class="p">,</span>
-</span><span class='line'>    <span class="n">resource</span><span class="o">[</span><span class="ss">:proxy_server</span><span class="o">]</span><span class="p">,</span>
-</span><span class='line'>    <span class="n">resource</span><span class="o">[</span><span class="ss">:proxy_port</span><span class="o">]</span>
-</span><span class='line'>  <span class="o">]</span>
-</span><span class='line'><span class="p">)</span>
-</span><span class='line'><span class="o">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">else</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;networksetup(</span>
-</span><span class='line'><span class="sr">  [</span>
-</span><span class='line'><span class="sr">    &#39;-setwebproxy&#39;,</span>
-</span><span class='line'><span class="sr">    resource[:name],</span>
-</span><span class='line'><span class="sr">    resource[:proxy_server],</span>
-</span><span class='line'><span class="sr">    resource[:proxy_port],</span>
-</span><span class='line'><span class="sr">    &#39;on&#39;,</span>
-</span><span class='line'><span class="sr">    resource[:authenticated_username],</span>
-</span><span class='line'><span class="sr">    resource[:authenticated_password]</span>
-</span><span class='line'><span class="sr">  ]</span>
-</span><span class='line'><span class="sr">)</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end</span>
-</span><span class='line'><span class="sr">  networksetup([&amp;lsquo;-setwebproxystate&amp;rsquo;, resource[:name], &amp;lsquo;on&amp;rsquo;])</span>
-</span><span class='line'><span class="sr">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:ruby %}
+def set_proxy
+  if @property_flush[:ensure] == :absent</p>
+
+<pre><code>  networksetup(['-setwebproxystate', resource[:name], 'off'])
+  return
+</code></pre>
+
+<p>  end</p>
+
+<p>  if (resource[:proxy_server].nil? or resource[:proxy_port].nil?)</p>
+
+<pre><code>raise Puppet::Error, "Proxy types other than 'auto' require both a proxy_server and proxy_port setting"
+</code></pre>
+
+<p>  end
+  if resource[:proxy_authenticated] != :true</p>
+
+<pre><code>networksetup(
+  [
+    '-setwebproxy',
+    resource[:name],
+    resource[:proxy_server],
+    resource[:proxy_port]
+  ]
+)
+</code></pre>
+
+<p>  else</p>
+
+<pre><code>networksetup(
+  [
+    '-setwebproxy',
+    resource[:name],
+    resource[:proxy_server],
+    resource[:proxy_port],
+    'on',
+    resource[:authenticated_username],
+    resource[:authenticated_password]
+  ]
+)
+</code></pre>
+
+<p>  end
+  networksetup([&lsquo;-setwebproxystate&rsquo;, resource[:name], &lsquo;on&rsquo;])
+end
+{% endcodeblock %}</p>
 
 <p>This helper method does all the validation checks for required properties,
 executes the correct command, and enables the proxy. Now, let&rsquo;s implement
 <code>flush</code>:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">flush</span>
-</span><span class='line'>  <span class="n">set_proxy</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  # Collect the resources again once they&amp;rsquo;ve been changed (that way &lt;code&gt;puppet</span>
-</span><span class='line'><span class="sr">  # resource&lt;/</span><span class="n">code</span><span class="o">&gt;</span> <span class="n">will</span> <span class="n">show</span> <span class="n">the</span> <span class="n">correct</span> <span class="n">values</span> <span class="n">after</span> <span class="n">changes</span> <span class="n">have</span> <span class="n">been</span> <span class="n">made</span><span class="p">)</span><span class="o">.</span>
-</span><span class='line'>  <span class="vi">@property_hash</span> <span class="o">=</span> <span class="nb">self</span><span class="o">.</span><span class="n">class</span><span class="o">.</span><span class="n">get_proxy_properties</span><span class="p">(</span><span class="n">resource</span><span class="o">[</span><span class="ss">:name</span><span class="o">]</span><span class="p">)</span>
-</span><span class='line'><span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:ruby %}
+def flush
+  set_proxy</p>
+
+<p>  # Collect the resources again once they&rsquo;ve been changed (that way <code>puppet
+  # resource</code> will show the correct values after changes have been made).
+  @property_hash = self.class.get_proxy_properties(resource[:name])
+end
+{% endcodeblock %}</p>
 
 <p>The last line re-populates <code>@property_hash</code> with the current resource values,
 and is necessary for <code>puppet resource</code> to return correct values after it
@@ -1361,13 +1033,11 @@ if it exists, but we&rsquo;ve yet to implement logic to CREATE a resource if it
 doesn&rsquo;t exist and it should.  Well, this is a bit of a lie &ndash; the logic is in
 the code, but we don&rsquo;t have a <code>create</code> method, so Puppet&rsquo;s going to complain:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">create</span>
-</span><span class='line'>  <span class="vi">@property_flush</span><span class="o">[</span><span class="ss">:ensure</span><span class="o">]</span> <span class="o">=</span> <span class="ss">:present</span>
-</span><span class='line'><span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:ruby %}
+def create
+  @property_flush[:ensure] = :present
+end
+{% endcodeblock %}</p>
 
 <p>Technically, this method doesn&rsquo;t have to do a DAMN thing. Why? Remember how the
 <code>flush</code> method is triggered when a resource&rsquo;s &lsquo;is&rsquo; values differ from its
@@ -1389,302 +1059,155 @@ in the shape of of a <code>Puppet::Error</code> exception):</p>
 <p>Wow, that was a wild ride, huh?  If you&rsquo;ve been coding along, you should have
 created a file that looks something like this:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>lib/puppet/provider/mac_web_proxy/ruby.rb </span></figcaption>
-<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-<span class='line-number'>49</span>
-<span class='line-number'>50</span>
-<span class='line-number'>51</span>
-<span class='line-number'>52</span>
-<span class='line-number'>53</span>
-<span class='line-number'>54</span>
-<span class='line-number'>55</span>
-<span class='line-number'>56</span>
-<span class='line-number'>57</span>
-<span class='line-number'>58</span>
-<span class='line-number'>59</span>
-<span class='line-number'>60</span>
-<span class='line-number'>61</span>
-<span class='line-number'>62</span>
-<span class='line-number'>63</span>
-<span class='line-number'>64</span>
-<span class='line-number'>65</span>
-<span class='line-number'>66</span>
-<span class='line-number'>67</span>
-<span class='line-number'>68</span>
-<span class='line-number'>69</span>
-<span class='line-number'>70</span>
-<span class='line-number'>71</span>
-<span class='line-number'>72</span>
-<span class='line-number'>73</span>
-<span class='line-number'>74</span>
-<span class='line-number'>75</span>
-<span class='line-number'>76</span>
-<span class='line-number'>77</span>
-<span class='line-number'>78</span>
-<span class='line-number'>79</span>
-<span class='line-number'>80</span>
-<span class='line-number'>81</span>
-<span class='line-number'>82</span>
-<span class='line-number'>83</span>
-<span class='line-number'>84</span>
-<span class='line-number'>85</span>
-<span class='line-number'>86</span>
-<span class='line-number'>87</span>
-<span class='line-number'>88</span>
-<span class='line-number'>89</span>
-<span class='line-number'>90</span>
-<span class='line-number'>91</span>
-<span class='line-number'>92</span>
-<span class='line-number'>93</span>
-<span class='line-number'>94</span>
-<span class='line-number'>95</span>
-<span class='line-number'>96</span>
-<span class='line-number'>97</span>
-<span class='line-number'>98</span>
-<span class='line-number'>99</span>
-<span class='line-number'>100</span>
-<span class='line-number'>101</span>
-<span class='line-number'>102</span>
-<span class='line-number'>103</span>
-<span class='line-number'>104</span>
-<span class='line-number'>105</span>
-<span class='line-number'>106</span>
-<span class='line-number'>107</span>
-<span class='line-number'>108</span>
-<span class='line-number'>109</span>
-<span class='line-number'>110</span>
-<span class='line-number'>111</span>
-<span class='line-number'>112</span>
-<span class='line-number'>113</span>
-<span class='line-number'>114</span>
-<span class='line-number'>115</span>
-<span class='line-number'>116</span>
-<span class='line-number'>117</span>
-<span class='line-number'>118</span>
-<span class='line-number'>119</span>
-<span class='line-number'>120</span>
-<span class='line-number'>121</span>
-<span class='line-number'>122</span>
-<span class='line-number'>123</span>
-<span class='line-number'>124</span>
-<span class='line-number'>125</span>
-<span class='line-number'>126</span>
-<span class='line-number'>127</span>
-<span class='line-number'>128</span>
-<span class='line-number'>129</span>
-<span class='line-number'>130</span>
-<span class='line-number'>131</span>
-<span class='line-number'>132</span>
-<span class='line-number'>133</span>
-<span class='line-number'>134</span>
-<span class='line-number'>135</span>
-<span class='line-number'>136</span>
-<span class='line-number'>137</span>
-<span class='line-number'>138</span>
-<span class='line-number'>139</span>
-<span class='line-number'>140</span>
-<span class='line-number'>141</span>
-<span class='line-number'>142</span>
-<span class='line-number'>143</span>
-<span class='line-number'>144</span>
-<span class='line-number'>145</span>
-<span class='line-number'>146</span>
-<span class='line-number'>147</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="ss">Puppet</span><span class="p">:</span><span class="ss">:Type</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="ss">:mac_web_proxy</span><span class="p">)</span><span class="o">.</span><span class="n">provide</span><span class="p">(</span><span class="ss">:ruby</span><span class="p">)</span> <span class="k">do</span>
-</span><span class='line'>  <span class="n">commands</span> <span class="ss">:networksetup</span> <span class="o">=&gt;</span> <span class="o">&amp;</span><span class="n">lsquo</span><span class="p">;</span><span class="n">networksetup</span><span class="o">&amp;</span><span class="n">rsquo</span><span class="p">;</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  mk_resource_methods&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="p">{})</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;super(value)</span>
-</span><span class='line'><span class="sr">@property_flush = {}</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">def</span> <span class="nc">self</span><span class="o">.</span><span class="nf">get_list_of_interfaces</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;interfaces = networksetup(&#39;-listallnetworkservices&#39;).split(&quot;\n&quot;)</span>
-</span><span class='line'><span class="sr">interfaces.shift</span>
-</span><span class='line'><span class="sr">interfaces.sort</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">def</span> <span class="nc">self</span><span class="o">.</span><span class="nf">get_proxy_properties</span><span class="p">(</span><span class="n">int</span><span class="p">)</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;interface_properties = {}</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">begin</span>
-</span><span class='line'><span class="sr">  output = networksetup([&#39;-getwebproxy&#39;, int])</span>
-</span><span class='line'><span class="sr">rescue Puppet::ExecutionFailure =&amp;gt; e</span>
-</span><span class='line'><span class="sr">  Puppet.debug &quot;#get_proxy_properties had an error -&amp;gt; </span><span class="si">#{</span><span class="n">e</span><span class="o">.</span><span class="n">inspect</span><span class="si">}</span><span class="sr">&quot;</span>
-</span><span class='line'><span class="sr">  return {}</span>
-</span><span class='line'><span class="sr">end</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">output_array = output.split(&quot;\n&quot;)</span>
-</span><span class='line'><span class="sr">output_array.each do |line|</span>
-</span><span class='line'><span class="sr">  line_values = line.split(&#39;:&#39;)</span>
-</span><span class='line'><span class="sr">  line_values.last.strip!</span>
-</span><span class='line'><span class="sr">  case line_values.first</span>
-</span><span class='line'><span class="sr">  when &#39;Enabled&#39;</span>
-</span><span class='line'><span class="sr">    interface_properties[:ensure] = line_values.last == &#39;No&#39; ? :absent : :present</span>
-</span><span class='line'><span class="sr">  when &#39;Server&#39;</span>
-</span><span class='line'><span class="sr">    interface_properties[:proxy_server] = line_values.last.empty? ? nil : line_values.last</span>
-</span><span class='line'><span class="sr">  when &#39;Port&#39;</span>
-</span><span class='line'><span class="sr">    interface_properties[:proxy_port] = line_values.last == &#39;0&#39; ? nil : line_values.last</span>
-</span><span class='line'><span class="sr">  when &#39;Authenticated Proxy Enabled&#39;</span>
-</span><span class='line'><span class="sr">    interface_properties[:proxy_authenticated] = line_values.last == &#39;0&#39; ? nil : line_values.last</span>
-</span><span class='line'><span class="sr">  end</span>
-</span><span class='line'><span class="sr">end</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">interface_properties[:provider] = :ruby</span>
-</span><span class='line'><span class="sr">interface_properties[:name]     = int.downcase</span>
-</span><span class='line'><span class="sr">Puppet.debug &quot;Interface properties: </span><span class="si">#{</span><span class="n">interface_properties</span><span class="o">.</span><span class="n">inspect</span><span class="si">}</span><span class="sr">&quot;</span>
-</span><span class='line'><span class="sr">interface_properties</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">def</span> <span class="nc">self</span><span class="o">.</span><span class="nf">instances</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;get_list_of_interfaces.collect do |int|</span>
-</span><span class='line'><span class="sr">  proxy_properties = get_proxy_properties(int)</span>
-</span><span class='line'><span class="sr">  new(proxy_properties)</span>
-</span><span class='line'><span class="sr">end</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">def</span> <span class="nf">create</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;@property_flush[:ensure] = :present</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">def</span> <span class="nf">exists?</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;@property_hash[:ensure] == :present</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">def</span> <span class="nf">destroy</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;@property_flush[:ensure] = :absent</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">def</span> <span class="nc">self</span><span class="o">.</span><span class="nf">prefetch</span><span class="p">(</span><span class="n">resources</span><span class="p">)</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;instances.each do |prov|</span>
-</span><span class='line'><span class="sr">  if resource = resources[prov.name]</span>
-</span><span class='line'><span class="sr">    resource.provider = prov</span>
-</span><span class='line'><span class="sr">  end</span>
-</span><span class='line'><span class="sr">end</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">def</span> <span class="nf">set_proxy</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;if @property_flush[:ensure] == :absent</span>
-</span><span class='line'><span class="sr">    networksetup([&#39;-setwebproxystate&#39;, resource[:name], &#39;off&#39;])</span>
-</span><span class='line'><span class="sr">    return</span>
-</span><span class='line'><span class="sr">end</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">if (resource[:proxy_server].nil? or resource[:proxy_port].nil?)</span>
-</span><span class='line'><span class="sr">  raise Puppet::Error, &quot;Both the proxy_server and proxy_port parameters require a value.&quot;</span>
-</span><span class='line'><span class="sr">end</span>
-</span><span class='line'><span class="sr">if resource[:proxy_authenticated] != :true</span>
-</span><span class='line'><span class="sr">  networksetup(</span>
-</span><span class='line'><span class="sr">    [</span>
-</span><span class='line'><span class="sr">      &#39;-setwebproxy&#39;,</span>
-</span><span class='line'><span class="sr">      resource[:name],</span>
-</span><span class='line'><span class="sr">      resource[:proxy_server],</span>
-</span><span class='line'><span class="sr">      resource[:proxy_port]</span>
-</span><span class='line'><span class="sr">    ]</span>
-</span><span class='line'><span class="sr">  )</span>
-</span><span class='line'><span class="sr">else</span>
-</span><span class='line'><span class="sr">  networksetup(</span>
-</span><span class='line'><span class="sr">    [</span>
-</span><span class='line'><span class="sr">      &#39;-setwebproxy&#39;,</span>
-</span><span class='line'><span class="sr">      resource[:name],</span>
-</span><span class='line'><span class="sr">      resource[:proxy_server],</span>
-</span><span class='line'><span class="sr">      resource[:proxy_port],</span>
-</span><span class='line'><span class="sr">      &#39;on&#39;,</span>
-</span><span class='line'><span class="sr">      resource[:authenticated_username],</span>
-</span><span class='line'><span class="sr">      resource[:authenticated_password]</span>
-</span><span class='line'><span class="sr">    ]</span>
-</span><span class='line'><span class="sr">  )</span>
-</span><span class='line'><span class="sr">end</span>
-</span><span class='line'><span class="sr">networksetup([&#39;-setwebproxystate&#39;, resource[:name], &#39;on&#39;])</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">def</span> <span class="nf">flush</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;set_proxy</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr"># Collect the resources again once they&#39;ve been changed (that way `puppet</span>
-</span><span class='line'><span class="sr"># resource` will show the correct values after changes have been made).</span>
-</span><span class='line'><span class="sr">@property_hash = self.class.get_proxy_properties(resource[:name])</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end</span>
-</span><span class='line'><span class="sr">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:ruby lib/puppet/provider/mac_web_proxy/ruby.rb %}
+Puppet::Type.type(:mac_web_proxy).provide(:ruby) do
+  commands :networksetup => &lsquo;networksetup&rsquo;</p>
+
+<p>  mk_resource_methods</p>
+
+<p>  def initialize(value={})</p>
+
+<pre><code>super(value)
+@property_flush = {}
+</code></pre>
+
+<p>  end</p>
+
+<p>  def self.get_list_of_interfaces</p>
+
+<pre><code>interfaces = networksetup('-listallnetworkservices').split("\n")
+interfaces.shift
+interfaces.sort
+</code></pre>
+
+<p>  end</p>
+
+<p>  def self.get_proxy_properties(int)</p>
+
+<pre><code>interface_properties = {}
+
+begin
+  output = networksetup(['-getwebproxy', int])
+rescue Puppet::ExecutionFailure =&gt; e
+  Puppet.debug "#get_proxy_properties had an error -&gt; #{e.inspect}"
+  return {}
+end
+
+output_array = output.split("\n")
+output_array.each do |line|
+  line_values = line.split(':')
+  line_values.last.strip!
+  case line_values.first
+  when 'Enabled'
+    interface_properties[:ensure] = line_values.last == 'No' ? :absent : :present
+  when 'Server'
+    interface_properties[:proxy_server] = line_values.last.empty? ? nil : line_values.last
+  when 'Port'
+    interface_properties[:proxy_port] = line_values.last == '0' ? nil : line_values.last
+  when 'Authenticated Proxy Enabled'
+    interface_properties[:proxy_authenticated] = line_values.last == '0' ? nil : line_values.last
+  end
+end
+
+interface_properties[:provider] = :ruby
+interface_properties[:name]     = int.downcase
+Puppet.debug "Interface properties: #{interface_properties.inspect}"
+interface_properties
+</code></pre>
+
+<p>  end</p>
+
+<p>  def self.instances</p>
+
+<pre><code>get_list_of_interfaces.collect do |int|
+  proxy_properties = get_proxy_properties(int)
+  new(proxy_properties)
+end
+</code></pre>
+
+<p>  end</p>
+
+<p>  def create</p>
+
+<pre><code>@property_flush[:ensure] = :present
+</code></pre>
+
+<p>  end</p>
+
+<p>  def exists?</p>
+
+<pre><code>@property_hash[:ensure] == :present
+</code></pre>
+
+<p>  end</p>
+
+<p>  def destroy</p>
+
+<pre><code>@property_flush[:ensure] = :absent
+</code></pre>
+
+<p>  end</p>
+
+<p>  def self.prefetch(resources)</p>
+
+<pre><code>instances.each do |prov|
+  if resource = resources[prov.name]
+    resource.provider = prov
+  end
+end
+</code></pre>
+
+<p>  end</p>
+
+<p>  def set_proxy</p>
+
+<pre><code>if @property_flush[:ensure] == :absent
+    networksetup(['-setwebproxystate', resource[:name], 'off'])
+    return
+end
+
+if (resource[:proxy_server].nil? or resource[:proxy_port].nil?)
+  raise Puppet::Error, "Both the proxy_server and proxy_port parameters require a value."
+end
+if resource[:proxy_authenticated] != :true
+  networksetup(
+    [
+      '-setwebproxy',
+      resource[:name],
+      resource[:proxy_server],
+      resource[:proxy_port]
+    ]
+  )
+else
+  networksetup(
+    [
+      '-setwebproxy',
+      resource[:name],
+      resource[:proxy_server],
+      resource[:proxy_port],
+      'on',
+      resource[:authenticated_username],
+      resource[:authenticated_password]
+    ]
+  )
+end
+networksetup(['-setwebproxystate', resource[:name], 'on'])
+</code></pre>
+
+<p>  end</p>
+
+<p>  def flush</p>
+
+<pre><code>set_proxy
+
+# Collect the resources again once they've been changed (that way `puppet
+# resource` will show the correct values after changes have been made).
+@property_hash = self.class.get_proxy_properties(resource[:name])
+</code></pre>
+
+<p>  end
+end
+{% endcodeblock %}</p>
 
 <p>Undoubtedly there are better ways to write this Ruby code, no? Also, I&rsquo;m SURE
 I have some errors/bugs in that code. It&rsquo;s those things that keep me in a job&hellip;</p>
@@ -1742,19 +1265,17 @@ simplest and crudest explanation I could muster, types model how your
 declaration will look in the manifest. Providers are where the actual
 IMPLEMENTATION happens. If you&rsquo;ve ever wondered how this:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="nc">package</span> <span class="p">{</span> <span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">httpd</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">:</span>
-</span><span class='line'>  <span class="nt">ensure</span> <span class="p">=&gt;</span> <span class="ss">installed</span><span class="p">,</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:puppet %}
+package { &lsquo;httpd&rsquo;:
+  ensure => installed,
+}
+{% endcodeblock %}</p>
 
 <p>eventually gets turned into this:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'>yum install -e 0 -d 0 -y httpd
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:bash %}
+yum install -e 0 -d 0 -y httpd
+{% endcodeblock %}</p>
 
 <p>your answer would be &ldquo;It&rsquo;s in the provider file&rdquo;.</p>
 
@@ -1798,100 +1319,66 @@ information we have:</p>
 
 <p>The list of network interfaces:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'>└▷ networksetup -listallnetworkservices
-</span><span class='line'>An asterisk <span class="o">(</span>*<span class="o">)</span> denotes that a network service is disabled.
-</span><span class='line'>Bluetooth DUN
-</span><span class='line'>Display Ethernet
-</span><span class='line'>Ethernet
-</span><span class='line'>FireWire
-</span><span class='line'>Wi-Fi
-</span><span class='line'>iPhone USB
-</span><span class='line'>Bluetooth PAN
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:bash %}
+└▷ networksetup -listallnetworkservices
+An asterisk (*) denotes that a network service is disabled.
+Bluetooth DUN
+Display Ethernet
+Ethernet
+FireWire
+Wi-Fi
+iPhone USB
+Bluetooth PAN
+{% endcodeblock %}</p>
 
 <p>Getting the list of bypass domains for an interface:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'>└▷ networksetup -getproxybypassdomains Ethernet
-</span><span class='line'>www.garylarizza.com
-</span><span class='line'>*.corp.net
-</span><span class='line'>10.13.1.3/24
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:bash %}
+└▷ networksetup -getproxybypassdomains Ethernet
+www.garylarizza.com
+*.corp.net
+10.13.1.3/24
+{% endcodeblock %}</p>
 
 <p>The message displayed when no domains are set for an interface:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'>└▷ networksetup -getproxybypassdomains FireWire
-</span><span class='line'>There aren&amp;rsquo;t any bypass domains <span class="nb">set </span>on FireWire.
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:bash %}
+└▷ networksetup -getproxybypassdomains FireWire
+There aren&rsquo;t any bypass domains set on FireWire.
+{% endcodeblock %}</p>
 
 <p>Setting the list of bypass domains for an interface:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'>└▷ networksetup -setproxybypassdomains Ethernet &amp;lsquo;*.corp.net&amp;rsquo; &amp;lsquo;10.13.1.3/24&amp;rsquo; &amp;lsquo;www.garylarizza.com&amp;rsquo;
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:bash %}
+└▷ networksetup -setproxybypassdomains Ethernet &lsquo;*.corp.net&rsquo; &lsquo;10.13.1.3/24&rsquo; &lsquo;www.garylarizza.com&rsquo;
+{% endcodeblock %}</p>
 
 <p>Perfect &ndash; all of that is done with a single binary, and it&rsquo;s pretty straightforward. Let&rsquo;s look at the type I ended up creating for this problem:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>lib/puppet/type/mac_proxy_bypassdomains.rb </span></figcaption>
-<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="ss">Puppet</span><span class="p">:</span><span class="ss">:Type</span><span class="o">.</span><span class="n">newtype</span><span class="p">(</span><span class="ss">:mac_proxy_bypassdomains</span><span class="p">)</span> <span class="k">do</span>
-</span><span class='line'>  <span class="n">desc</span> <span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;</span><span class="no">Puppet</span> <span class="n">type</span> <span class="n">that</span> <span class="n">models</span> <span class="n">bypass</span> <span class="n">domains</span> <span class="k">for</span> <span class="n">a</span> <span class="n">network</span> <span class="n">interface</span> <span class="n">on</span> <span class="no">OS</span> <span class="n">X</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="p">;</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  ensurable&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="n">newparam</span><span class="p">(</span><span class="ss">:name</span><span class="p">,</span> <span class="ss">:namevar</span> <span class="o">=&gt;</span> <span class="kp">true</span><span class="p">)</span> <span class="k">do</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;desc &quot;Interface name - currently must be &#39;friendly&#39; name (e.g. Ethernet)&quot;</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="n">newproperty</span><span class="p">(</span><span class="ss">:domains</span><span class="p">,</span> <span class="ss">:array_matching</span> <span class="o">=&gt;</span> <span class="ss">:all</span><span class="p">)</span> <span class="k">do</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;desc &quot;Domains which should bypass the proxy&quot;</span>
-</span><span class='line'><span class="sr">def insync?(is)</span>
-</span><span class='line'><span class="sr">  is.sort == should.sort</span>
-</span><span class='line'><span class="sr">end</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end</span>
-</span><span class='line'><span class="sr">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lib/puppet/type/mac_proxy_bypassdomains.rb lang:ruby %}
+Puppet::Type.newtype(:mac_proxy_bypassdomains) do
+  desc &ldquo;Puppet type that models bypass domains for a network interface on OS X&rdquo;</p>
+
+<p>  ensurable</p>
+
+<p>  newparam(:name, :namevar => true) do</p>
+
+<pre><code>desc "Interface name - currently must be 'friendly' name (e.g. Ethernet)"
+</code></pre>
+
+<p>  end</p>
+
+<p>  newproperty(:domains, :array_matching => :all) do</p>
+
+<pre><code>desc "Domains which should bypass the proxy"
+def insync?(is)
+  is.sort == should.sort
+end
+</code></pre>
+
+<p>  end
+end
+{% endcodeblock %}</p>
 
 <p>The type uses a namevar parameter called &lsquo;name&rsquo;, which is the name of the network interface.
 This means that we can set one list of bypass domains for every network interface.
@@ -1927,26 +1414,17 @@ things.</p>
 <p>Here&rsquo;s a tree of my module to understand how the type and provider files are
 to be laid out:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>Module tree </span></figcaption>
-<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'>├── Modulefile
-</span><span class='line'>├── README.markdown
-</span><span class='line'>└── lib
-</span><span class='line'>    └── puppet
-</span><span class='line'>        ├── provider
-</span><span class='line'>        │   ├── mac_proxy_bypassdomains
-</span><span class='line'>        │   │   └── ruby.rb
-</span><span class='line'>        └── <span class="nb">type</span>
-</span><span class='line'>            └── mac_proxy_bypassdomains.rb
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock Module tree lang:bash %}
+├── Modulefile
+├── README.markdown
+└── lib
+    └── puppet
+        ├── provider
+        │   ├── mac_proxy_bypassdomains
+        │   │   └── ruby.rb
+        └── type
+            └── mac_proxy_bypassdomains.rb
+{% endcodeblock %}</p>
 
 <p>As you can see from above, the name of both the type and provider must <strong>EXACTLY</strong>
 match the filename of their corresponding files. Also, the provider file lives
@@ -1971,14 +1449,11 @@ etc&hellip;).</p>
 <p>Let&rsquo;s layout the shell of our provider, first, to ensure that we haven&rsquo;t typoed
 anything. Here&rsquo;s the provider declaration:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>lib/puppet/type/mac_proxy_bypassdomains/ruby.rb </span></figcaption>
-<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="ss">Puppet</span><span class="p">:</span><span class="ss">:Type</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="ss">:mac_proxy_bypassdomains</span><span class="p">)</span><span class="o">.</span><span class="n">provide</span><span class="p">(</span><span class="ss">:ruby</span><span class="p">)</span> <span class="k">do</span>
-</span><span class='line'>  <span class="c1"># Provider work goes here</span>
-</span><span class='line'><span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lib/puppet/type/mac_proxy_bypassdomains/ruby.rb lang:ruby %}
+Puppet::Type.type(:mac_proxy_bypassdomains).provide(:ruby) do
+  # Provider work goes here
+end
+{% endcodeblock %}</p>
 
 <p>Note that the name of the type and the name of the provider are symbolized (i.e.
 they&rsquo;re prepended with a colon). Like I mentioned above, they must be spelled
@@ -2020,9 +1495,9 @@ your own method JUST for a system binary. The <code>commands</code> method abstr
 all the dirtyness of making a method for each system binary you want to call.
 The way you use the <code>commands</code> method is like so:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">commands</span> <span class="ss">:networksetup</span> <span class="o">=&gt;</span> <span class="o">&amp;</span><span class="n">lsquo</span><span class="p">;</span><span class="n">networksetup</span><span class="o">&amp;</span><span class="n">rsquo</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:ruby %}
+commands :networksetup => &lsquo;networksetup&rsquo;
+{% endcodeblock %}</p>
 
 <p>The <code>commands</code> method accepts a hash whose key must be a symbolized name. The
 CONVENTION is to use a symbolized name that matches the binary name, but it&rsquo;s
@@ -2089,41 +1564,25 @@ going to be a binary call that&rsquo;s going to return some data. Because of thi
 let&rsquo;s create a helper method that returns a list of domains for a specific
 interface:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">get_proxy_bypass_domains</span><span class="p">(</span><span class="n">int</span><span class="p">)</span>
-</span><span class='line'>  <span class="k">begin</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;output = networksetup([&#39;-getproxybypassdomains&#39;, int])</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  rescue Puppet::ExecutionFailure =&gt; e&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="no">Puppet</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;#get_proxy_bypass_domains had an error -&amp;gt; </span><span class="si">#{</span><span class="n">e</span><span class="o">.</span><span class="n">inspect</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span class='line'><span class="k">return</span> <span class="kp">nil</span>
-</span><span class='line'><span class="o">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">end</span>
-</span><span class='line'>  <span class="n">domains</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;\</span><span class="n">n</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="p">;)</span><span class="o">.</span><span class="n">sort</span>
-</span><span class='line'>  <span class="k">return</span> <span class="kp">nil</span> <span class="k">if</span> <span class="n">domains</span><span class="o">.</span><span class="n">first</span> <span class="o">=~</span> <span class="sr">/There aren\&amp;rsquo;t any bypass domains set/</span>
-</span><span class='line'>  <span class="n">domains</span>
-</span><span class='line'><span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:ruby %}
+def get_proxy_bypass_domains(int)
+  begin</p>
+
+<pre><code>output = networksetup(['-getproxybypassdomains', int])
+</code></pre>
+
+<p>  rescue Puppet::ExecutionFailure => e</p>
+
+<pre><code>Puppet.debug("#get_proxy_bypass_domains had an error -&gt; #{e.inspect}")
+return nil
+</code></pre>
+
+<p>  end
+  domains = output.split(&ldquo;\n&rdquo;).sort
+  return nil if domains.first =~ /There aren\&rsquo;t any bypass domains set/
+  domains
+end
+{% endcodeblock %}</p>
 
 <p>Ruby convention is to use underscores (i.e. versus camelCase or hyphens) in
 method names. You want to give your methods very descriptive names based on
@@ -2142,13 +1601,11 @@ return <code>nil</code> if domains aren&rsquo;t found or the <code>networksetup<
 
 <p>Using the helper method above, here&rsquo;s what the final <code>exists?</code> method looks like:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">exists?</span>
-</span><span class='line'>  <span class="n">get_proxy_bypass_domains</span><span class="p">(</span><span class="n">resource</span><span class="o">[</span><span class="ss">:name</span><span class="o">]</span><span class="p">)</span> <span class="o">!=</span> <span class="kp">nil</span>
-</span><span class='line'><span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:ruby %}
+def exists?
+  get_proxy_bypass_domains(resource[:name]) != nil
+end
+{% endcodeblock %}</p>
 
 <p>All provider methods have the ability to access the &lsquo;should&rsquo; values for the resource
 (and by that I mean the values that are set in the Puppet maniest on the Puppet master
@@ -2167,13 +1624,11 @@ method explicitly in <code>create</code> &ndash; it&rsquo;s already been evaluat
 the <code>-setproxybypassdomains</code> argument to the <code>networksetup</code> binary will set a domain
 list, so the <code>create</code> method is going to be very short-and-sweet:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">create</span>
-</span><span class='line'>  <span class="n">networksetup</span><span class="p">(</span><span class="o">[&amp;</span><span class="n">lsquo</span><span class="p">;</span><span class="o">-</span><span class="n">setproxybypassdomains</span><span class="o">&amp;</span><span class="n">rsquo</span><span class="p">;,</span> <span class="n">resource</span><span class="o">[</span><span class="ss">:name</span><span class="o">]</span><span class="p">,</span> <span class="n">resource</span><span class="o">[</span><span class="ss">:domains</span><span class="o">]]</span><span class="p">)</span>
-</span><span class='line'><span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:ruby %}
+def create
+  networksetup([&lsquo;-setproxybypassdomains&rsquo;, resource[:name], resource[:domains]])
+end
+{% endcodeblock %}</p>
 
 <p>In the end, the <code>create</code> method will call the <code>networksetup</code> binary with the <code>-setproxybypassdomains</code>
 argument, pass the interface name (from <code>resource[:name]</code>) and pass an array of domain values (which
@@ -2183,13 +1638,11 @@ comes from <code>resource[:domains]</code>). That&rsquo;s it; it&rsquo;s done!</
 
 <p>The <code>destroy</code> method is easier than the <code>create</code> method:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">destroy</span>
-</span><span class='line'>  <span class="n">networksetup</span><span class="p">(</span><span class="o">[&amp;</span><span class="n">lsquo</span><span class="p">;</span><span class="o">-</span><span class="n">setproxybypassdomains</span><span class="o">&amp;</span><span class="n">rsquo</span><span class="p">;,</span> <span class="kp">nil</span><span class="o">]</span><span class="p">)</span>
-</span><span class='line'><span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:ruby %}
+def destroy
+  networksetup([&lsquo;-setproxybypassdomains&rsquo;, nil])
+end
+{% endcodeblock %}</p>
 
 <p>Here, we&rsquo;re calling <code>networksetup</code> with the <code>-setproxybypassdomains</code> argument
 and passing nothing else. This will initialize the list and set it to be empty.</p>
@@ -2210,13 +1663,11 @@ method that returns a value (in this case, an array of domains to be bypassed by
 proxy). We&rsquo;ve already written a helper method that does this work for us, so the
 <code>domains</code> getter method is pretty easy:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">domains</span>
-</span><span class='line'>  <span class="n">get_proxy_bypass_domains</span><span class="p">(</span><span class="n">resource</span><span class="o">[</span><span class="ss">:name</span><span class="o">]</span><span class="p">)</span>
-</span><span class='line'><span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:ruby %}
+def domains
+  get_proxy_bypass_domains(resource[:name])
+end
+{% endcodeblock %}</p>
 
 <p>Tada! Just call the helper method and pass the interface name. Boom &ndash; instant array
 of values. The getter method will return the &lsquo;is&rsquo; value, because that&rsquo;s what the value
@@ -2232,13 +1683,11 @@ in the catalog. It does this by calling the &lsquo;setter&rsquo; method for the 
 is the name of the property and the equals ( = ) sign. In this case, the setter
 method for the <code>domains</code> property must be called <code>domains=</code>.  It looks like this:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">domains</span><span class="o">=</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
-</span><span class='line'>  <span class="n">networksetup</span><span class="p">(</span><span class="o">[&amp;</span><span class="n">lsquo</span><span class="p">;</span><span class="o">-</span><span class="n">setproxybypassdomains</span><span class="o">&amp;</span><span class="n">rsquo</span><span class="p">;,</span> <span class="n">resource</span><span class="o">[</span><span class="ss">:name</span><span class="o">]</span><span class="p">,</span> <span class="n">value</span><span class="o">]</span><span class="p">)</span>
-</span><span class='line'><span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:ruby %}
+def domains=(value)
+  networksetup([&lsquo;-setproxybypassdomains&rsquo;, resource[:name], value])
+end
+{% endcodeblock %}</p>
 
 <p>Setter methods are always passed a single argument &ndash; the &lsquo;should&rsquo; value of the property.
 In our example, we&rsquo;re calling the <code>networksetup</code> binary with the <code>-setproxybypassdomains</code>
@@ -2249,114 +1698,61 @@ the array of domains. It&rsquo;s easy, it&rsquo;s one line, and I love it when a
 
 <p>I&rsquo;ve broken down the provider line by line, but here&rsquo;s the entire file:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>lib/puppet/provider/mac_proxy_bypassdomains/ruby.rb </span></figcaption>
-<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-<span class='line-number'>49</span>
-<span class='line-number'>50</span>
-<span class='line-number'>51</span>
-<span class='line-number'>52</span>
-<span class='line-number'>53</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="ss">Puppet</span><span class="p">:</span><span class="ss">:Type</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="ss">:mac_proxy_bypassdomains</span><span class="p">)</span><span class="o">.</span><span class="n">provide</span><span class="p">(</span><span class="ss">:ruby</span><span class="p">)</span> <span class="k">do</span>
-</span><span class='line'>  <span class="n">commands</span> <span class="ss">:networksetup</span> <span class="o">=&gt;</span> <span class="o">&amp;</span><span class="n">lsquo</span><span class="p">;</span><span class="n">networksetup</span><span class="o">&amp;</span><span class="n">rsquo</span><span class="p">;</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  def get_proxy_bypass_domains(int)&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="k">begin</span>
-</span><span class='line'>  <span class="n">output</span> <span class="o">=</span> <span class="n">networksetup</span><span class="p">(</span><span class="o">[</span><span class="s1">&#39;-getproxybypassdomains&#39;</span><span class="p">,</span> <span class="n">int</span><span class="o">]</span><span class="p">)</span>
-</span><span class='line'><span class="k">rescue</span> <span class="ss">Puppet</span><span class="p">:</span><span class="ss">:ExecutionFailure</span> <span class="o">=&amp;</span><span class="n">gt</span><span class="p">;</span> <span class="n">e</span>
-</span><span class='line'>  <span class="no">Puppet</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;#get_proxy_bypass_domains had an error -&amp;gt; </span><span class="si">#{</span><span class="n">e</span><span class="o">.</span><span class="n">inspect</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span class='line'>  <span class="k">return</span> <span class="kp">nil</span>
-</span><span class='line'><span class="k">end</span>
-</span><span class='line'><span class="n">domains</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">sort</span>
-</span><span class='line'><span class="k">return</span> <span class="kp">nil</span> <span class="k">if</span> <span class="n">domains</span><span class="o">.</span><span class="n">first</span> <span class="o">=~</span> <span class="sr">/There aren\&#39;t any bypass domains set/</span>
-</span><span class='line'><span class="n">domains</span>
-</span><span class='line'><span class="o">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">end</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  def exists?&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="n">get_proxy_bypass_domains</span><span class="p">(</span><span class="n">resource</span><span class="o">[</span><span class="ss">:name</span><span class="o">]</span><span class="p">)</span> <span class="o">!=</span> <span class="kp">nil</span>
-</span><span class='line'><span class="o">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">end</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  def destroy&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="n">networksetup</span><span class="p">(</span><span class="o">[</span><span class="s1">&#39;-setproxybypassdomains&#39;</span><span class="p">,</span> <span class="kp">nil</span><span class="o">]</span><span class="p">)</span>
-</span><span class='line'><span class="o">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">end</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  def create&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="n">networksetup</span><span class="p">(</span><span class="o">[</span><span class="s1">&#39;-setproxybypassdomains&#39;</span><span class="p">,</span> <span class="n">resource</span><span class="o">[</span><span class="ss">:name</span><span class="o">]</span><span class="p">,</span> <span class="n">resource</span><span class="o">[</span><span class="ss">:domains</span><span class="o">]]</span><span class="p">)</span>
-</span><span class='line'><span class="o">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">end</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  def domains&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="n">get_proxy_bypass_domains</span><span class="p">(</span><span class="n">resource</span><span class="o">[</span><span class="ss">:name</span><span class="o">]</span><span class="p">)</span>
-</span><span class='line'><span class="o">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">end</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  def domains=(value)&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="n">networksetup</span><span class="p">(</span><span class="o">[</span><span class="s1">&#39;-setproxybypassdomains&#39;</span><span class="p">,</span> <span class="n">resource</span><span class="o">[</span><span class="ss">:name</span><span class="o">]</span><span class="p">,</span> <span class="n">value</span><span class="o">]</span><span class="p">)</span>
-</span><span class='line'><span class="o">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">end</span>
-</span><span class='line'><span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lib/puppet/provider/mac_proxy_bypassdomains/ruby.rb lang:ruby %}
+Puppet::Type.type(:mac_proxy_bypassdomains).provide(:ruby) do
+  commands :networksetup => &lsquo;networksetup&rsquo;</p>
+
+<p>  def get_proxy_bypass_domains(int)</p>
+
+<pre><code>begin
+  output = networksetup(['-getproxybypassdomains', int])
+rescue Puppet::ExecutionFailure =&gt; e
+  Puppet.debug("#get_proxy_bypass_domains had an error -&gt; #{e.inspect}")
+  return nil
+end
+domains = output.split("\n").sort
+return nil if domains.first =~ /There aren\'t any bypass domains set/
+domains
+</code></pre>
+
+<p>  end</p>
+
+<p>  def exists?</p>
+
+<pre><code>get_proxy_bypass_domains(resource[:name]) != nil
+</code></pre>
+
+<p>  end</p>
+
+<p>  def destroy</p>
+
+<pre><code>networksetup(['-setproxybypassdomains', nil])
+</code></pre>
+
+<p>  end</p>
+
+<p>  def create</p>
+
+<pre><code>networksetup(['-setproxybypassdomains', resource[:name], resource[:domains]])
+</code></pre>
+
+<p>  end</p>
+
+<p>  def domains</p>
+
+<pre><code>get_proxy_bypass_domains(resource[:name])
+</code></pre>
+
+<p>  end</p>
+
+<p>  def domains=(value)</p>
+
+<pre><code>networksetup(['-setproxybypassdomains', resource[:name], value])
+</code></pre>
+
+<p>  end
+end
+{% endcodeblock %}</p>
 
 <h2>Testing the type/provider</h2>
 
@@ -2369,35 +1765,29 @@ serve it out to all of your nodes without it being tested). Because this module
 is on my system at <code>/users/glarizza/src/puppet-mac_proxy</code>, here&rsquo;s how my
 <code>$RUBYLIB</code> is set:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nb">export </span><span class="nv">RUBYLIB</span><span class="o">=</span>/users/glarizza/src/puppet-mac_proxy/lib
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:bash %}
+export RUBYLIB=/users/glarizza/src/puppet-mac_proxy/lib
+{% endcodeblock %}</p>
 
 <p>Next, we need to create a resource declaration to try and set a couple of
 bypass domains. I&rsquo;ll create a <code>tests</code> directory and simple test file in
 <code>tests/mac_proxy_bypassdomains.pp</code>:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>tests/mac_proxy_bypassdomains.pp </span></figcaption>
-<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="nc">mac_proxy_bypassdomains</span> <span class="p">{</span> <span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">Ethernet</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">:</span>
-</span><span class='line'>  <span class="nt">ensure</span>  <span class="p">=&gt;</span> <span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">present</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;,</span>
-</span><span class='line'>  <span class="ss">domains</span> <span class="err">=&gt;</span> <span class="p">[</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">www</span><span class="m">.</span><span class="ss">garylarizza</span><span class="m">.</span><span class="ss">com</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">,</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;*</span><span class="m">.</span><span class="ss">puppetlabs</span><span class="m">.</span><span class="ss">com</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">,</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="m">10.13.1.3</span><span class="err">/</span><span class="m">24</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">]</span><span class="err">,</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock tests/mac_proxy_bypassdomains.pp lang:puppet %}
+mac_proxy_bypassdomains { &lsquo;Ethernet&rsquo;:
+  ensure  => &lsquo;present&rsquo;,
+  domains => [&lsquo;www.garylarizza.com&rsquo;,&lsquo;*.puppetlabs.com&rsquo;,&lsquo;10.13.1.3/24&rsquo;],
+}
+{% endcodeblock %}</p>
 
 <p>Finally, let&rsquo;s run Puppet and test it out:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>└▷ puppet apply ~/src/puppet-mac_proxy/tests/mac_proxy_bypassdomains.pp
-</span><span class='line'>Notice: Compiled catalog for satori.local in environment production in 0.06 seconds
-</span><span class='line'>Notice: /Stage[main]//Mac_proxy_bypassdomains[Ethernet]/domains: domains changed [] to &lsquo;www.garylarizza.com *.puppetlabs.com 10.13.1.3/24&rsquo;
-</span><span class='line'>Notice: Finished catalog run in 3.47 seconds</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock %}
+└▷ puppet apply ~/src/puppet-mac_proxy/tests/mac_proxy_bypassdomains.pp
+Notice: Compiled catalog for satori.local in environment production in 0.06 seconds
+Notice: /Stage[main]//Mac_proxy_bypassdomains[Ethernet]/domains: domains changed [] to &lsquo;www.garylarizza.com *.puppetlabs.com 10.13.1.3/24&rsquo;
+Notice: Finished catalog run in 3.47 seconds
+{% endcodeblock %}</p>
 
 <p><strong>NOTE:</strong> If you run this as a local user, you will be prompted by OS X to
 enter an administrative password for a change.  Since Puppet will ultimately be
@@ -2512,118 +1902,63 @@ You&rsquo;ll see later where the property/parameter distinction becomes very imp
 <p>Recently I built a type modeling the setting of proxy data for network interfaces on OS X, so we&rsquo;ll use that as
 a demonstration of a type.  It looks like the following:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>lib/puppet/type/mac_web_proxy.rb </span></figcaption>
-<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-<span class='line-number'>49</span>
-<span class='line-number'>50</span>
-<span class='line-number'>51</span>
-<span class='line-number'>52</span>
-<span class='line-number'>53</span>
-<span class='line-number'>54</span>
-<span class='line-number'>55</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="ss">Puppet</span><span class="p">:</span><span class="ss">:Type</span><span class="o">.</span><span class="n">newtype</span><span class="p">(</span><span class="ss">:mac_web_proxy</span><span class="p">)</span> <span class="k">do</span>
-</span><span class='line'>  <span class="n">desc</span> <span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;</span><span class="no">Puppet</span> <span class="n">type</span> <span class="n">that</span> <span class="n">models</span> <span class="n">a</span> <span class="n">network</span> <span class="n">interface</span> <span class="n">on</span> <span class="no">OS</span> <span class="n">X</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="p">;</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  ensurable&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="n">newparam</span><span class="p">(</span><span class="ss">:name</span><span class="p">,</span> <span class="ss">:namevar</span> <span class="o">=&gt;</span> <span class="kp">true</span><span class="p">)</span> <span class="k">do</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;desc &quot;Interface name - currently must be &#39;friendly&#39; name (e.g. Ethernet)&quot;</span>
-</span><span class='line'><span class="sr">munge do |value|</span>
-</span><span class='line'><span class="sr">  value.downcase</span>
-</span><span class='line'><span class="sr">end</span>
-</span><span class='line'><span class="sr">def insync?(is)</span>
-</span><span class='line'><span class="sr">  is.downcase == should.downcase</span>
-</span><span class='line'><span class="sr">end</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="n">newproperty</span><span class="p">(</span><span class="ss">:proxy_server</span><span class="p">)</span> <span class="k">do</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;desc &quot;Proxy Server setting for the interface&quot;</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="n">newparam</span><span class="p">(</span><span class="ss">:authenticated_username</span><span class="p">)</span> <span class="k">do</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;desc &quot;Username for proxy authentication&quot;</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="n">newparam</span><span class="p">(</span><span class="ss">:authenticated_password</span><span class="p">)</span> <span class="k">do</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;desc &quot;Password for proxy authentication&quot;</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="n">newproperty</span><span class="p">(</span><span class="ss">:proxy_authenticated</span><span class="p">)</span> <span class="k">do</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;desc &quot;Proxy Server setting for the interface&quot;</span>
-</span><span class='line'><span class="sr">newvalues(:true, :false)</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="n">newproperty</span><span class="p">(</span><span class="ss">:proxy_port</span><span class="p">)</span> <span class="k">do</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;desc &quot;Proxy Server setting for the interface&quot;</span>
-</span><span class='line'><span class="sr">newvalues(/</span><span class="o">^</span><span class="p">\</span><span class="n">d</span><span class="o">+</span><span class="vg">$/</span><span class="p">)</span>
-</span><span class='line'><span class="o">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">end</span>
-</span><span class='line'><span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lib/puppet/type/mac_web_proxy.rb lang:ruby %}
+Puppet::Type.newtype(:mac_web_proxy) do
+  desc &ldquo;Puppet type that models a network interface on OS X&rdquo;</p>
+
+<p>  ensurable</p>
+
+<p>  newparam(:name, :namevar => true) do</p>
+
+<pre><code>desc "Interface name - currently must be 'friendly' name (e.g. Ethernet)"
+munge do |value|
+  value.downcase
+end
+def insync?(is)
+  is.downcase == should.downcase
+end
+</code></pre>
+
+<p>  end</p>
+
+<p>  newproperty(:proxy_server) do</p>
+
+<pre><code>desc "Proxy Server setting for the interface"
+</code></pre>
+
+<p>  end</p>
+
+<p>  newparam(:authenticated_username) do</p>
+
+<pre><code>desc "Username for proxy authentication"
+</code></pre>
+
+<p>  end</p>
+
+<p>  newparam(:authenticated_password) do</p>
+
+<pre><code>desc "Password for proxy authentication"
+</code></pre>
+
+<p>  end</p>
+
+<p>  newproperty(:proxy_authenticated) do</p>
+
+<pre><code>desc "Proxy Server setting for the interface"
+newvalues(:true, :false)
+</code></pre>
+
+<p>  end</p>
+
+<p>  newproperty(:proxy_port) do</p>
+
+<pre><code>desc "Proxy Server setting for the interface"
+newvalues(/^\d+$/)
+</code></pre>
+
+<p>  end
+end
+{% endcodeblock %}</p>
 
 <p>First note the type file&rsquo;s path in the grey titlebar of the graphic: <code>lib/puppet/type/mac_web_proxy.rb</code>
 This path is relative to the module that you&rsquo;re building, and it&rsquo;s VERY important that it be named
@@ -2658,14 +1993,11 @@ is called &lsquo;munging&rsquo;).</p>
 method in the entire Puppet codebase. Validate accepts a block and allows you to perform
 free-form validation in any way you prefer.  For example:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>lib/puppet/type/user.rb </span></figcaption>
-<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">validate</span> <span class="k">do</span> <span class="o">|</span><span class="n">value</span><span class="o">|</span>
-</span><span class='line'>  <span class="k">raise</span> <span class="no">ArgumentError</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;</span><span class="no">Passwords</span> <span class="n">cannot</span> <span class="kp">include</span> <span class="o">&amp;</span><span class="n">lsquo</span><span class="p">;</span><span class="ss">:&amp;</span><span class="n">rsquo</span><span class="p">;</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="p">;</span> <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">is_a?</span><span class="p">(</span><span class="nb">String</span><span class="p">)</span> <span class="ow">and</span> <span class="n">value</span><span class="o">.</span><span class="n">include?</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;</span><span class="ss">:&amp;</span><span class="n">rdquo</span><span class="p">;)</span>
-</span><span class='line'><span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lib/puppet/type/user.rb lang:ruby %}
+validate do |value|
+  raise ArgumentError, &ldquo;Passwords cannot include &lsquo;:&rsquo;&rdquo; if value.is_a?(String) and value.include?(&ldquo;:&rdquo;)
+end
+{% endcodeblock %}</p>
 
 <p>This example, pulled straight from the Puppet codebase, will raise an error if a
 password contains a colon. In this case, we&rsquo;re looking for a specific exception
@@ -2677,52 +2009,34 @@ and are raising errors accordingly.</p>
 need to match (if you&rsquo;re one of the 8 people in the world that speak regex fluently),
 or a list of acceptable values. From the example above:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>lib/puppet/type/mac_web_proxy.rb </span></figcaption>
-<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'>  <span class="n">newproperty</span><span class="p">(</span><span class="ss">:proxy_authenticated</span><span class="p">)</span> <span class="k">do</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;desc &quot;Proxy Server setting for the interface&quot;</span>
-</span><span class='line'><span class="sr">newvalues(:true, :false)</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="n">newproperty</span><span class="p">(</span><span class="ss">:proxy_port</span><span class="p">)</span> <span class="k">do</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;desc &quot;Proxy Server setting for the interface&quot;</span>
-</span><span class='line'><span class="sr">newvalues(/</span><span class="o">^</span><span class="p">\</span><span class="n">d</span><span class="o">+</span><span class="vg">$/</span><span class="p">)</span>
-</span><span class='line'><span class="o">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lib/puppet/type/mac_web_proxy.rb lang:ruby %}
+  newproperty(:proxy_authenticated) do</p>
+
+<pre><code>desc "Proxy Server setting for the interface"
+newvalues(:true, :false)
+</code></pre>
+
+<p>  end</p>
+
+<p>  newproperty(:proxy_port) do</p>
+
+<pre><code>desc "Proxy Server setting for the interface"
+newvalues(/^\d+$/)
+</code></pre>
+
+<p>  end
+{% endcodeblock %}</p>
 
 <h3>munge()</h3>
 
 <p>The final method, named &lsquo;munge&rsquo; accepts a block like <code>newvalues</code> but allows you to
 convert an unacceptable value into an acceptable value. Again, this is from the example above:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>lib/puppet/type/mac_web_proxy.rb </span></figcaption>
-<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">munge</span> <span class="k">do</span> <span class="o">|</span><span class="n">value</span><span class="o">|</span>
-</span><span class='line'>  <span class="n">value</span><span class="o">.</span><span class="n">downcase</span>
-</span><span class='line'><span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lib/puppet/type/mac_web_proxy.rb lang:ruby %}
+munge do |value|
+  value.downcase
+end
+{% endcodeblock %}</p>
 
 <p>In this case, we want to ensure that the parameter value is lower case. It&rsquo;s not
 necessary to throw an error, but rather it&rsquo;s acceptable to &lsquo;munge&rsquo; the value to
@@ -2741,16 +2055,12 @@ your property/parameter. It&rsquo;s a pretty simple construct, but it&rsquo;s im
 remember when you write spec tests for your type (which you ARE doing, right?) that
 there will ALWAYS be values for properties/parameters that utilize <code>defaultto</code>. Here&rsquo;s a quick example:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>Defaultto example </span></figcaption>
-<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">newparam</span><span class="p">(</span><span class="ss">:enable_lacp</span><span class="p">)</span> <span class="k">do</span>
-</span><span class='line'>  <span class="n">defaultto</span> <span class="ss">:true</span>
-</span><span class='line'>  <span class="n">newvalues</span><span class="p">(</span><span class="ss">:true</span><span class="p">,</span> <span class="ss">:false</span><span class="p">)</span>
-</span><span class='line'><span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock Defaultto example lang:ruby %}
+newparam(:enable_lacp) do
+  defaultto :true
+  newvalues(:true, :false)
+end
+{% endcodeblock %}</p>
 
 <h3>Ensurable types</h3>
 
@@ -2766,66 +2076,37 @@ you can choose to pass a block to the <code>ensurable</code> method and define a
 property values as well as the methods of the provider that are to be called. That
 would look something like this:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>lib/puppet/type/package.rb </span></figcaption>
-<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">ensurable</span> <span class="k">do</span>
-</span><span class='line'>  <span class="n">newvalue</span><span class="p">(</span><span class="ss">:present</span><span class="p">)</span> <span class="k">do</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;provider.install</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="n">newvalue</span><span class="p">(</span><span class="ss">:absent</span><span class="p">)</span> <span class="k">do</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;provider.uninstall</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="n">newvalue</span><span class="p">(</span><span class="ss">:purged</span><span class="p">)</span> <span class="k">do</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;provider.purge</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="n">newvalue</span><span class="p">(</span><span class="ss">:held</span><span class="p">)</span> <span class="k">do</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;provider.hold</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end</span>
-</span><span class='line'><span class="sr">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lib/puppet/type/package.rb lang:ruby %}
+ensurable do
+  newvalue(:present) do</p>
+
+<pre><code>provider.install
+</code></pre>
+
+<p>  end</p>
+
+<p>  newvalue(:absent) do</p>
+
+<pre><code>provider.uninstall
+</code></pre>
+
+<p>  end</p>
+
+<p>  newvalue(:purged) do</p>
+
+<pre><code>provider.purge
+</code></pre>
+
+<p>  end</p>
+
+<p>  newvalue(:held) do</p>
+
+<pre><code>provider.hold
+</code></pre>
+
+<p>  end
+end
+{% endcodeblock %}</p>
 
 <p>This means that instead of calling the <code>create</code> method to create a new resource that
 SHOULD exist (but doesn&rsquo;t), Puppet is going to call the <code>install</code> method. Conversely,
@@ -2847,13 +2128,11 @@ don&rsquo;t have to be unique on systems).</p>
 can you tell unique resources from one another). To make a parameter the namevar, you simply
 set the <code>:namevar</code> attribute to <code>:true</code> like below:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">newparam</span><span class="p">(</span><span class="ss">:name</span><span class="p">,</span> <span class="ss">:namevar</span> <span class="o">=&gt;</span> <span class="ss">:true</span><span class="p">)</span> <span class="k">do</span>
-</span><span class='line'>  <span class="c1"># Type declaration attributes here&amp;hellip;</span>
-</span><span class='line'><span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:ruby %}
+newparam(:name, :namevar => :true) do
+  # Type declaration attributes here&hellip;
+end
+{% endcodeblock %}</p>
 
 <h3>Handling array values</h3>
 
@@ -2864,13 +2143,11 @@ be passing an array by setting the <code>:array_matching</code> attribute to <co
 this attribute, it defaults to <code>:first</code>, which means that if you pass an array as a value
 for a property/parameter, Puppet will only accept the FIRST element in that array).</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">newproperty</span><span class="p">(</span><span class="ss">:domains</span><span class="p">,</span> <span class="ss">:array_matching</span> <span class="o">=&gt;</span> <span class="ss">:all</span><span class="p">)</span> <span class="k">do</span>
-</span><span class='line'>  <span class="c1"># Type declaration attributes here&amp;hellip;</span>
-</span><span class='line'><span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:ruby %}
+newproperty(:domains, :array_matching => :all) do
+  # Type declaration attributes here&hellip;
+end
+{% endcodeblock %}</p>
 
 <p>If you set <code>:array_matching</code> to <code>:all</code>, EVERY value passed for that parameter/property will
 be cast to an array (which means if you pass a value of &lsquo;foo&rsquo;, you&rsquo;ll get an array with a
@@ -2882,19 +2159,14 @@ single element &ndash; the string of &lsquo;foo&rsquo;).</p>
 this can be done by passing a string to the <code>desc</code> method within the body of the property/parameter
 declaration.</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">newproperty</span><span class="p">(</span><span class="ss">:domains</span><span class="p">,</span> <span class="ss">:array_matching</span> <span class="o">=&gt;</span> <span class="ss">:all</span><span class="p">)</span> <span class="k">do</span>
-</span><span class='line'>  <span class="n">desc</span> <span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;</span><span class="no">Domains</span> <span class="n">which</span> <span class="n">should</span> <span class="n">bypass</span> <span class="n">the</span> <span class="n">proxy</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="p">;</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;h1&gt;Type declaration attributes here&amp;hellip;&lt;/</span><span class="n">h1</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span><span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:ruby %}
+newproperty(:domains, :array_matching => :all) do
+  desc &ldquo;Domains which should bypass the proxy&rdquo;</p>
+
+<h1>Type declaration attributes here&hellip;</h1>
+
+<p>end
+{% endcodeblock %}</p>
 
 <h3>Synchronization tricks</h3>
 
@@ -2911,25 +2183,17 @@ just want to make sure that all of them are set.</p>
 <p>If the latter cases sounds like what you need, then you&rsquo;ll need to override the behavior of the
 <code>insync?</code> method. Take a look at the below example:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">newproperty</span><span class="p">(</span><span class="ss">:domains</span><span class="p">,</span> <span class="ss">:array_matching</span> <span class="o">=&gt;</span> <span class="ss">:all</span><span class="p">)</span> <span class="k">do</span>
-</span><span class='line'>  <span class="n">desc</span> <span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;</span><span class="no">Domains</span> <span class="n">which</span> <span class="n">should</span> <span class="n">bypass</span> <span class="n">the</span> <span class="n">proxy</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="p">;</span>
-</span><span class='line'>  <span class="k">def</span> <span class="nf">insync?</span><span class="p">(</span><span class="n">is</span><span class="p">)</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;is.sort == should.sort</span>
-</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  end</span>
-</span><span class='line'><span class="sr">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:ruby %}
+newproperty(:domains, :array_matching => :all) do
+  desc &ldquo;Domains which should bypass the proxy&rdquo;
+  def insync?(is)</p>
+
+<pre><code>is.sort == should.sort
+</code></pre>
+
+<p>  end
+end
+{% endcodeblock %}</p>
 
 <p>In this case, I&rsquo;ve overridden the <code>insync?</code> method to first sort the &lsquo;is&rsquo; value (or, the value that
 was discovered by Puppet on the target node) and compare it with the sorted &lsquo;should&rsquo; value (or,
