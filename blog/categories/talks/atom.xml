@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: talks | Shit Gary Says]]></title>
+  <link href="http://garylarizza.com/blog/categories/talks/atom.xml" rel="self"/>
+  <link href="http://garylarizza.com/"/>
+  <updated>2014-10-23T14:14:39+02:00</updated>
+  <id>http://garylarizza.com/</id>
+  <author>
+    <name><![CDATA[Gary larizza]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Puppetconf 2014 Talk - The Refactor Dance]]></title>
+    <link href="http://garylarizza.com/blog/2014/10/23/puppetconf-2014-talk/"/>
+    <updated>2014-10-23T15:15:42+02:00</updated>
+    <id>http://garylarizza.com/blog/2014/10/23/puppetconf-2014-talk</id>
+    <content type="html"><![CDATA[<p>This year at Puppetconf 2014, I presented a 1.5 hour talk entitled &ldquo;The Refactor
+Dance&rdquo; that comprised nearly EVERYTHING that I&rsquo;ve written about in my Puppet
+Workflows series (from writing better component modules, to Roles/Profiles,
+to Workflow, and lots of stories in-between) as well as a couple of bad words,
+a pair of leather pants (trousers), and an Uber story that beats your Uber
+story. It&rsquo;s long, informative, and you get to watch the sweat stains under my
+arms grow in an attractive grey Puppet Labs shirt.  What&rsquo;s not to love?</p>
+
+<p><a href="https://puppetlabs.com/presentations/workshop-doing-refactor-dance-making-your-puppet-modules-more-modular-gary-larizza">To watch the video, click here to check it out!</a></p>
+]]></content>
+  </entry>
+  
+</feed>

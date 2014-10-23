@@ -9,7 +9,7 @@
   <meta name="author" content="Gary larizza">
 
   
-  <meta name="description" content="With the current movement in the Mac Community toward modular imaging strategies, there&rsquo;s a spike in the need for properly formed package &hellip;">
+  <meta name="description" content="As of version 2.6, Puppet introduced a feature called &ldquo;Run Stages&rdquo; that will allow you to better control the order that Puppet configures &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -78,6 +78,159 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/03/11/using-run-stages-with-puppet/">Using Run Stages With Puppet</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-03-11T11:34:00+01:00" pubdate data-updated="true">Mar 11<span>th</span>, 2011</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>As of version 2.6, Puppet introduced a feature called &ldquo;Run Stages&rdquo; that will allow you to better control the order that Puppet configures your system.  The problem with Run Stages (as of right now) is that there&rsquo;s not that much good Documentation out there.  Hopefully this document helps someone else out there who wants to setup Run Stages in their own environment.</p>
+
+<h2>A NOTE ON SYNTAX!!!</h2>
+
+<p>One of THE MOST DIFFICULT concepts to understand for puppet newbies is that these two things are identical:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="kn">include</span> <span class="nc">foo</span>
+</span><span class='line'><span class="nc">class</span> <span class="p">{</span> <span class="s1">&#39;foo&#39;</span><span class="p">:</span> <span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Both of these lines INVOKE the &lsquo;foo&rsquo; class for use on a particular node.  The problem is that the second method (the parameterized class method) looks nearly IDENTICAL to the method you would use to DECLARE the foo class in foo.pp.  The only difference is that the class name is now INSIDE the curly braces (versus being OUTSIDE the braces when you DECLARE the class in your foo.pp file).  It is VERY important that you distinguish the difference between DECLARING a class and using a parameterized class to INCLUDE the class in your site.pp file.  I will point this out later too&hellip;</p>
+
+<h2>A Linux Example &ndash; Repositories</h2>
+
+<p>I would bet that the resource with the most &ldquo;require&rdquo; and &ldquo;before&rdquo; dependencies in the Linux world (Well, in the RHEL world anyways) would be the yumrepo.  I&rsquo;m sure most of us have many declared yumrepo resources in our manifests that each have their own tangled web of dependencies.  My goal was to create a &ldquo;repo&rdquo; class that would have all of my repositories and use a Run Stage to ensure that my repo class was installed prior to any other package installs.  Let&rsquo;s look at some code:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="kd">class</span> <span class="nc">general::repo</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nc">yumrepo</span> <span class="p">{</span> <span class="s1">&#39;huronrepo&#39;</span><span class="p">:</span>
+</span><span class='line'>    <span class="nt">descr</span>    <span class="p">=&gt;</span> <span class="s1">&#39;Huron Repository&#39;</span><span class="p">,</span>
+</span><span class='line'>    <span class="nt">enabled</span>  <span class="p">=&gt;</span>  <span class="s1">&#39;1&#39;</span><span class="p">,</span>
+</span><span class='line'>    <span class="nt">gpgcheck</span> <span class="p">=&gt;</span>  <span class="s1">&#39;0&#39;</span><span class="p">,</span>
+</span><span class='line'>    <span class="nt">baseurl</span>  <span class="p">=&gt;</span>  <span class="s1">&#39;http://10.13.0.6/huronrepo&#39;</span><span class="p">,</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>}
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This is my repo subclass based on my general base class.  I have a single repository, but could easily have another 5 or 10 as need arises (I&rsquo;m keeping things simple for demo purposes).  Let&rsquo;s look at another class:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="kd">class</span> <span class="nc">general::centos</span> <span class="p">{</span>
+</span><span class='line'>  <span class="kn">include</span> <span class="nc">general::repo</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nc">package</span> <span class="p">{</span> <span class="s1">&#39;mcollective&#39;</span><span class="p">:</span>
+</span><span class='line'>    <span class="nt">name</span>    <span class="p">=&gt;</span> <span class="s2">&quot;mcollective&quot;</span><span class="p">,</span>
+</span><span class='line'>    <span class="nt">ensure</span>  <span class="p">=&gt;</span> <span class="s1">&#39;present&#39;</span><span class="p">,</span>
+</span><span class='line'>    <span class="nt">require</span> <span class="p">=&gt;</span> <span class="nc">Package</span><span class="p">[</span><span class="s1">&#39;stomp&#39;</span><span class="p">],</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>}
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Here&rsquo;s a centos subclass off of the general base class.  We&rsquo;re including our repo class and declaring a single package that requires our &ldquo;huronrepo&rdquo; yumrepo.  If we only needed to install a single package, we could use the &ldquo;require&rdquo; parameter; but if you assume that we will eventually need to install MULTIPLE packages, then this logic doesn&rsquo;t scale. Just to keep things consistent, here&rsquo;s my general base class:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="kd">class</span> <span class="nc">general</span> <span class="p">{</span>
+</span><span class='line'>  <span class="kr">case</span> <span class="nv">$::operatingsystem</span> <span class="p">{</span>
+</span><span class='line'>    <span class="s1">&#39;CentOS&#39;</span><span class="p">:</span> <span class="p">{</span> <span class="kn">include</span> <span class="nc">general::centos</span> <span class="err">}</span>
+</span><span class='line'>    <span class="err">&#39;Darwin&#39;</span><span class="nc">:</span> <span class="p">{</span> <span class="ss">include</span> <span class="ss">general</span><span class="p">::</span><span class="ss">osx</span> <span class="p">}</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>}
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>You can see that we include the general::centos class as long as Puppet is running on a CentOS box.  There&rsquo;s one final piece to this puzzle &ndash; it&rsquo;s the actual declaration and assignment of the Run Stages.  I&rsquo;m doing this in my site.pp file.  Here&rsquo;s a snippit of what&rsquo;s in my site.pp file:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="c-Singleline"># /etc/puppet/manifests/site.pp</span>
+</span><span class='line'>
+</span><span class='line'><span class="nc">Exec</span> <span class="p">{</span> <span class="ss">path</span> <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="s2">&quot;/usr/bin:/usr/sbin:/bin:/sbin&quot;</span> <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c-Singleline"># Run Stages</span>
+</span><span class='line'><span class="ss">stage</span> <span class="p">{</span> <span class="s1">&#39;pre&#39;</span><span class="err">:</span>
+</span><span class='line'>  <span class="ss">before</span> <span class="p">=&gt;</span> <span class="nc">Stage</span><span class="p">[</span><span class="s2">&quot;main&quot;</span><span class="p">],</span>
+</span><span class='line'><span class="p">}</span><span class="c-Singleline"></span>
+</span><span class='line'>
+</span><span class='line'><span class="c-Singleline"># Node Declaration</span>
+</span><span class='line'><span class="ss">node</span> <span class="s1">&#39;server.whomever.com&#39;</span> <span class="p">{</span>
+</span><span class='line'>  <span class="ss">class</span> <span class="p">{</span> <span class="s1">&#39;general::repos&#39;</span><span class="err">:</span>
+</span><span class='line'>    <span class="ss">stage</span> <span class="p">=&gt;</span> <span class="s1">&#39;pre&#39;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Here&rsquo;s where we&rsquo;ve declared a &ldquo;pre&rdquo; stage that needs to run before the &ldquo;main&rdquo; stage.  We don&rsquo;t have to declare the &ldquo;main&rdquo; stage because Puppet uses that stage by default.  Next, we&rsquo;re including the general::repos class inside our &lsquo;server.whomever.com&rsquo; node declaration and assigning it to the &ldquo;pre&rdquo; stage (which means that everything in that class will get configured prior to our &ldquo;main&rdquo; stage).  Remember that you can declare as many stages as you need and chain them all to setup the order that you want, but that can become very unmanageable very quickly.  I find it ideal to setup a &lsquo;pre&rsquo; stage for repo setup, and then setting up dependencies within class files.</p>
+
+<h2>The World is Your Stage</h2>
+
+<p>This might not be the &ldquo;best&rdquo; way to use Run Stages, but it works for me.  Hopefully this little writeup cements the concept for you too.</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -639,6 +792,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/10/23/puppetconf-2014-talk/">Puppetconf 2014 Talk - the Refactor Dance</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/10/19/on-dependencies-and-order/">On Dependencies and Order</a>
       </li>
     
@@ -652,10 +809,6 @@
     
       <li class="post">
         <a href="/blog/2014/03/12/when-yellow-ruled-the-world/">When Yellow Ruled the World</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/03/07/puppet-workflow-part-3b/">Building a Functional Puppet Workflow Part 3b: More R10k Madness</a>
       </li>
     
   </ul>
