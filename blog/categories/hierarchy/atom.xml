@@ -1,0 +1,674 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: hierarchy | Shit Gary Says]]></title>
+  <link href="http://garylarizza.com/blog/categories/hierarchy/atom.xml" rel="self"/>
+  <link href="http://garylarizza.com/"/>
+  <updated>2014-10-24T14:19:53+02:00</updated>
+  <id>http://garylarizza.com/</id>
+  <author>
+    <name><![CDATA[Gary larizza]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Puppet Workflows 4: Using Hiera in anger]]></title>
+    <link href="http://garylarizza.com/blog/2014/10/24/puppet-workflows-4-using-hiera-in-anger/"/>
+    <updated>2014-10-24T15:13:49+02:00</updated>
+    <id>http://garylarizza.com/blog/2014/10/24/puppet-workflows-4-using-hiera-in-anger</id>
+    <content type="html"><![CDATA[<p>Hiera. That thing nobody is REALLY quite sure how to say (FYI: It&rsquo;s pronounced
+&lsquo;hiera&rsquo;), the tool that everyone says you should be using, and the tool that
+will make you hate YAML syntax errors with a passion. It&rsquo;s a data/code
+separation dream, (potentially) a debugging nightmare, and absolutely vital in
+creating a Puppet workflow that scales better than your company&rsquo;s Wifi strategy
+(FYI: your company&rsquo;s Wifi password just changed. Again. Because they&rsquo;re not
+using certificates). I&rsquo;ve already written a GOOD AMOUNT on why/how to use it,
+but now I&rsquo;m going to give you a couple of edge cases. Call them &ldquo;best
+practices&rdquo; (and I&rsquo;ll cut you), but I like to call it &ldquo;shit I learned
+after using Hiera in anger.&rdquo; Here are a couple of the most popular questions
+I hear, and my usual responses&hellip;</p>
+
+<h2>&ldquo;How should I setup my hierarchy?&rdquo;</h2>
+
+<p>This is such a subjective question because it&rsquo;s specific to your organization
+(because it&rsquo;s your data). I usually ask back &ldquo;What are the things about your
+nodes that are different, and when are they different?&rdquo; Usually I hear something
+back like &ldquo;Well, nodes in this datacenter have different DNS settings&rdquo; or
+&ldquo;Application servers in production use one version of java, and those in dev
+use a different version&rdquo; or &ldquo;All machines in the dev environment in this datacenter
+need to have a specific repository&rdquo;. All of these replies give me ideas to your
+hierarchy.  When you think of Hiera as a giant conditional statment, you can
+start seeing how your hierarchy could be laid out.  With the first response, we
+know we need a <code>location</code> fact to determine where a node is, and then we can
+have a hierarchy level for that location. The second response tells me we need
+a level for the application tier (i.e. dev/test/prod).  The third response tells
+me we need a level that combines both the location and the application tier. When
+you add in that you should probably have a node-specific level at the top (for
+overrides) and a default level at the bottom (or not: see the next section), I&rsquo;m
+starting to picture this:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">:hierarchy</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="nl">&amp;ndash</span><span class="l-Scalar-Plain">; &amp;ldquo;nodes/%{::clientcert}&amp;rdquo;</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">&amp;ndash; &amp;ldquo;%{::location}/%{::applicationtier}&amp;rdquo;</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">&amp;ndash; &amp;ldquo;%{::location}/common&amp;rdquo;</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">&amp;ndash; &amp;ldquo;tier/%{::applicationtier}&amp;rdquo;</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">&amp;ndash; common</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>Every time you have a need, you consider a level.  Now, obviously, it doesn&rsquo;t
+mean that you NEED a level for every request (sometimes if it&rsquo;s an edge case
+you can handle it in the profile or the role). There&rsquo;s a performance hit for
+every level of your Hiera hierarchy, so ideally keep it minimal (or around
+5 levels or so), but we&rsquo;re talking about flexibility here, and, if that&rsquo;s more
+important than performance then you should go for it.</p>
+
+<p>Next comes ordering. This one&rsquo;s SLIGHTLY easier &ndash; your hierarchy should read from
+most-specific to least-specific. Note that when you specify an application tier
+at a specific location that that it is MORE specific than just saying &ldquo;all nodes in
+this application tier.&rdquo; Sometimes you will have levels that might be hard to
+define an order &ndash; such as location vs. application tier. You kinda just have to
+go with your gut here. In many cases you may find that the data you put in those
+two levels will be entirely different (location-based data may not ever overlap
+with application-tier-specific data). Do remember than any time you change the
+order of your hierarchy you&rsquo;re going to introduce the possibility that values
+get flip/flopped.</p>
+
+<p>If you look at level 3 of the hierarchy above, you&rsquo;ll see that I have &lsquo;common&rsquo;
+at the end. Some people like this syntax (where they put a &lsquo;common&rsquo; file in a
+folder that matches the fact they&rsquo;re checking against), and some people prefer
+a filename matching the fact.  Do what makes you happy, but, in this case,
+we can unify the location folder and just put the common file underneath the
+application tier files.</p>
+
+<p>Finally, DO MAKE USE OF FOLDERS!  For the love of god, this. Putting all files
+in a single folder both makes that a BIG folder, but also introduces a namespace
+collision (i.e. what if you have a location named &lsquo;dev&rsquo; for example? Now you have
+both an application tier and a location with the same name.  Oops).</p>
+
+<p>How you setup your hierarchy is up to you, but this should hopefully give you
+somewhere to start.</p>
+
+<h2>An argument AGAINST {global,common}.yaml</h2>
+
+<p>I might as well drum up some controversy now&hellip;</p>
+
+<p>When using Hiera, you need to define a hierarchy that Hiera uses in its search
+for your data. Most often, it looks something like this:</p>
+
+<h2><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>hiera.yaml </span></figcaption>
+<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">&lt;/h2&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="l-Scalar-Plain">&lt;p&gt;:backends</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="nl">&amp;ndash</span><span class="l-Scalar-Plain">; yaml</span>
+</span><span class='line'><span class="l-Scalar-Plain">:yaml</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">:datadir</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">/etc/puppetlabs/puppet/hieradata</span>
+</span><span class='line'><span class="l-Scalar-Plain">:hierarchy</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="nl">&amp;ndash</span><span class="l-Scalar-Plain">; &amp;ldquo;nodes/%{::clientcert}&amp;rdquo;</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">&amp;ndash; &amp;ldquo;location/%{::location}&amp;rdquo;</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">&amp;ndash; &amp;ldquo;environment/%{::applicationtier}&amp;rdquo;</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">&amp;ndash; common</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>Notice that little &ldquo;common&rdquo; at the end?  That means that, failing everything
+else, it&rsquo;s going to look in <code>common.yaml</code> for a value.  This means that
+<code>common.yaml</code> is a storage bin of default values.</p>
+
+<p>Previously, you may have heard me rail against Hiera&rsquo;s optional second argument
+and how I really don&rsquo;t like it.  Take this example:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="nv">$foo</span> <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">port</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">,</span> <span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="m">80</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>Given this code, Hiera is going to look for a parameter called &lsquo;port&rsquo; in its
+hierarchy, and, if it doesn&rsquo;t find one in ANY of the levels, assign back a default
+value of &lsquo;80&rsquo;.  I don&rsquo;t like using this second argument because:</p>
+
+<ol>
+<li>If you forget to enter the &lsquo;port&rsquo; parameter into the hierarchy, or typo it in the YAML file, Hiera will gladly assign the default value of &lsquo;80&rsquo; (which, unless you&rsquo;re checking for this, might sneak and get into production)</li>
+<li>Where is the real &lsquo;default&rsquo; value: the value in <code>common.yaml</code> or the optional second argument?</li>
+</ol>
+
+
+<p>Okay, so we&rsquo;re resigned to never use the second argument.  Cool.  BUT, what
+happens when you already have a value in <code>common.yaml</code> and you typo the name
+of the parameter at a higher level (for example, you write &ldquo;prot: 44&rdquo; inside
+a YAML file at a higher level)?  You&rsquo;re going to get the value in <code>common.yaml</code>,
+and, again, unless you&rsquo;re watching for this, suddenly you get a default value
+when you didn&rsquo;t expect it.</p>
+
+<p>So, what is this value in <code>common.yaml</code> used for anyways? Well, it&rsquo;s a value
+default for every node that needs it.  And where are we going to be getting
+this value?  If you said &ldquo;The Profile&rdquo;, you would be correct.  So what should
+we do about this?  I say you hardcode the value right into the Profile (GASP!!)
+I will talk about this more in the next section (because it&rsquo;s more appropriate
+there), so just hold that thought for another section.</p>
+
+<p>Until then, let me say that I&rsquo;ve started to align myself with the idea that
+<code>hiera.yaml</code> shouldn&rsquo;t have a &ldquo;defaults&rdquo; level.  The idea is that if there&rsquo;s
+a value that every node should have, keep it visible and in the Profile. If
+you need Hiera&rsquo;s dynamic lookup capability, THEN drop it into the hierarchy.
+The downside of this philosophy is that you&rsquo;ll suddenly need to enter a value
+in many different places (i.e. if suddenly you want to define a different port
+in the &lsquo;dev&rsquo; application tier than in all the other application tiers, then you
+need to add the port parameter to EVERY ONE of your application tier files. If
+you have 8 of these tiers, then you need to enter the value into all 8 files).
+This is also less-than-ideal, but what are you optimizing for here?  You&rsquo;re
+optimizing for early failure.  If Hiera can&rsquo;t find a value and it SHOULD, this
+is an early failure at catalog compilation time. You&rsquo;ll know INSTANTLY that
+there&rsquo;s a problem (instead of deploying a default value to production, for
+example).</p>
+
+<p>If you don&rsquo;t need this level of optimization, by all means keep the default
+level.  If you don&rsquo;t want this much redundancy by entering values in multiple
+files, by all means keep the default level.  I simply offer forth a solution
+for those folks who are wanting a &ldquo;fail-early, fail-often&rdquo; approach in their
+data lookup mechanism.</p>
+
+<p><strong>NOTE</strong>: You&rsquo;re never going to completely escape the idea of typos. Even
+if you remove the &ldquo;defaults&rdquo; level in the hierarchy, you could still have the
+case where you enter a port value in every file at the <code>$::applicationtier</code>
+level, but maybe typo the parameter at a higher level.  In this case, Hiera
+DOES return a value, but it&rsquo;s the <code>$::applicationtier</code> value.  This requires
+&ldquo;CONSTANT VIGILANCE!&rdquo; to catch these cases, but the idea is that these edge
+cases are much less than a defaults-level override, so you SHOULD be able to
+spot it easier. No level of automation will totally remove human error (and
+watch The Matrix if you don&rsquo;t believe me).</p>
+
+<h2>Where to data &ndash; Hiera or Profile?</h2>
+
+<p>&ldquo;Does this go right into the Profile or into Hiera?&rdquo;  I get that question
+repeatedly when I&rsquo;m working with customers. It&rsquo;s a good question, and one of
+the quickest ways to blow up your YAML files in Hiera. Here&rsquo;s the order I use
+when deciding where to put data:</p>
+
+<h3>Enter the data into the Profile itself</h3>
+
+<p>Yes, that&rsquo;s exactly what I said &ndash; put it in the Profile.  &ldquo;BUT GARY!&rdquo;, you
+should be thinking, &ldquo;THAT&rsquo;S EMBEDDING DATA INSIDE YOUR PUPPET CODE!&rdquo;  To that
+I say: &ldquo;It depends on how you look at the problem and solution.&rdquo; The profile is
+YOUR implementation.  It describes how YOU define the implementation of a piece
+of technology in YOUR organization. As such, it&rsquo;s less about Puppet code and
+more about pulling data and passing it TO the Puppet code. It&rsquo;s the glue-code
+that grabs the data and wires it up to the model that uses it. How it grabs the
+data is not really a big deal, so long as it grabs the RIGHT data &ndash; right? You
+can choose to hardcode it into the Profile, or use Hiera, or use some other
+magical data lookup mechanism &ndash; we don&rsquo;t really care (so long as the Profile
+gathers the data and passes it to the correct Puppet class).</p>
+
+<p>&ldquo;BUT GARY! IT&rsquo;S GOING TO MAKE IT HARD TO DEBUG!&rdquo;  Not really. You&rsquo;re going to
+have to open the Profile anyway to see what&rsquo;s going on (whether you pull the
+data from Hiera or hardcode it in the Profile), right? And, arguably, the
+Profile is legible&hellip;doing Hiera lookups gives you flexibility at a cost of
+abstracting away how it got that bit of data (i.e. &ldquo;It used Hiera&rdquo;). For newer
+users of Puppet, having the data in the Profile is easier to follow. So, in the
+end, putting the data into the Profile itself is the least-flexible and most-visible
+option&hellip;so consequently it should be the first available option. This option
+is best for defaults that are applicable for ALL nodes.</p>
+
+<p>Remember when I offered that crazy idea of not having a &ldquo;defaults&rdquo; level in the
+hierarchy?  This is why: erring on the side of visibility in the Profile and
+failing early with Hiera. It also gives you a logical starting point when
+determining WHERE to put your data.  Moving along&hellip;</p>
+
+<p><strong>PROS:</strong></p>
+
+<ul>
+<li>Data is clearly visible and legible in the profile (no need to open additional files)</li>
+</ul>
+
+
+<p><strong>CONS:</strong></p>
+
+<ul>
+<li>Inability to redefine variables in Puppet DSL makes any settings constants by default (i.e. no overriding permitted)</li>
+</ul>
+
+
+<h3>Enter the data into Hiera</h3>
+
+<p>If you find that you need to have different bits of data for different nodes
+(i.e. a different version of Java in the dev tier instead of the prod tier),
+then you can start to put the data into Hiera.</p>
+
+<p><strong>NOTE</strong>: If you subscribe to my &ldquo;no defaults&rdquo; philosophy above, you suddenly
+need to enter the data into as many files as that level of the hierarchy has
+(or more if you override at a higher level). Understand that you&rsquo;re not me,
+and you DON&rsquo;T NEED to subscribe to this &ldquo;no defaults&rdquo; view of the world. Yay
+for being different!</p>
+
+<p>Where to put the data is going to depend on your own needs &ndash; I&rsquo;m trusting that
+you can figure this part out :)</p>
+
+<p>This answers that &ldquo;where&rdquo; question, but doesn&rsquo;t answer the &ldquo;what&rdquo; question&hellip;as
+in &ldquo;What data should I put into Hiera?&rdquo;  For that, we have another section&hellip;</p>
+
+<p><strong>PROS:</strong></p>
+
+<ul>
+<li>Flexibility in returning different values based on different conditions</li>
+</ul>
+
+
+<p><strong>CONS:</strong></p>
+
+<ul>
+<li>Visibility &ndash; you must do a Hiera lookup to find the value (or open Hiera&rsquo;s YAML files)</li>
+</ul>
+
+
+<h2>&ldquo;What exactly goes into Hiera?&rdquo;</h2>
+
+<p>If there were one question that, if answered incorrectly, could make or break
+your Puppet deployment, this would be it. The greatest strength and weakness of
+Hiera is its flexibility.  You can truly put almost anything in Hiera, and, when
+combined with something like the create_resources() function, you can create
+your own YAML configuration language (tip: don&rsquo;t actually do this).</p>
+
+<p>&ldquo;But, seriously, what should go into Hiera, and what shouldn&rsquo;t?&rdquo;</p>
+
+<p>The important thing to consider here is the price you pay by putting data into
+Hiera. You&rsquo;re gaining flexibility at a cost of visibility.  This means that you
+can do things like enter values at all level of the hierarchy that can be
+concatenated together with a single hiera_array() call, BUT, you&rsquo;re losing the
+visibility of having the data right in front of you (i.e. you need to open up
+all the YAML files individually, or use the <code>hiera</code> binary to debug how you got
+those values). Hiera is REALLY COOL until you have to debug why it grabbed (or
+DIDN&rsquo;T grab) a particular value.</p>
+
+<p>Here&rsquo;s what I usually tell people about what should be put into Hiera:</p>
+
+<ul>
+<li>The exact data values that need to be different conditionally (i.e. a different ntp server for different sites, different java versions in dev/prod, a password hash, etc.)</li>
+<li>Dynamic data expressed in multiple levels of the hierarchy (i.e. a lookup for &lsquo;packages&rsquo; that returns back an array of all the values that were found in all the levels of the hierarchy)</li>
+<li>Resources as a hash ONLY WHEN ABSOLUTELY NECESSARY</li>
+</ul>
+
+
+<h3>Puppet manifest vs. create_resources()</h3>
+
+<p>Bullets 1 and 2 above should be pretty straightforward &ndash; you either need to use
+Hiera to grab a specific value or return back a list of ALL the values from ALL
+the levels of the hierarchy. The point here is that Hiera should be returning
+back only the minimal amount of data that is necessary (i.e. instead of
+returning back a hash that contains the title of the resource, all the attributes
+of the resource, and all the attribute values for that resource, just return
+back a specific value that will be assigned to an attribute&hellip;like the password
+hash itself for a user). This data lookup appears to be &ldquo;magic&rdquo; to new users of
+Puppet &ndash; all they see is the magic phrase of &ldquo;hiera&rdquo; and a parameter to search
+for &ndash; and so it becomes slightly confusing. It IS, however, easier to understand
+that this magical phrase will return data, and that that data is going to be used
+to set the value for an attribute. Consider this example:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="nv">$password</span> <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">garypassword</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span><span class="o">&lt;</span><span class="err">/</span><span class="ss">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="ss">p</span><span class="o">&gt;</span><span class="ss">user</span> <span class="err">{</span> <span class="err">&amp;lsquo;gary&amp;rsquo;:</span>
+</span><span class='line'>  <span class="err">ensure</span>   <span class="err">=&gt;</span> <span class="err">present,</span>
+</span><span class='line'>  <span class="err">uid</span>      <span class="err">=&gt;</span> <span class="err">&amp;lsquo;5001&amp;rsquo;,</span>
+</span><span class='line'>  <span class="err">gid</span>      <span class="err">=&gt;</span> <span class="err">&amp;lsquo;gary&amp;rsquo;,</span>
+</span><span class='line'>  <span class="err">shell</span>    <span class="err">=&gt;</span> <span class="err">&amp;lsquo;zsh&amp;rsquo;,</span>
+</span><span class='line'>  <span class="err">password</span> <span class="err">=&gt;</span> <span class="nv">$password</span><span class="err">,</span>
+</span><span class='line'><span class="err">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>This leads us to bullet 3, which is &ldquo;the Hiera + create_resources() solution.&rdquo;
+This solution allows you to lookup data from within Hiera and pass it directly
+to a function where Puppet creates the individual resources as if you had typed
+them into a Puppet manifest itself. The previous example can be entered into
+a Hiera YAML file like so:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>sysadmins.yaml </span></figcaption>
+<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">users</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">gary:&lt;/p&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="l-Scalar-Plain">&lt;pre&gt;&lt;code&gt;ensure</span><span class="p-Indicator">:</span> <span class="s">&#39;present&#39;</span>
+</span><span class='line'><span class="l-Scalar-Plain">uid</span><span class="p-Indicator">:</span> <span class="s">&#39;5001&#39;</span>
+</span><span class='line'><span class="l-Scalar-Plain">gid</span><span class="p-Indicator">:</span> <span class="s">&#39;gary&#39;</span>
+</span><span class='line'><span class="l-Scalar-Plain">shell</span><span class="p-Indicator">:</span> <span class="s">&#39;zsh&#39;</span>
+</span><span class='line'><span class="l-Scalar-Plain">password</span><span class="p-Indicator">:</span> <span class="s">&#39;biglongpasswordhash&#39;</span>
+</span><span class='line'><span class="l-Scalar-Plain">&lt;/code&gt;&lt;/pre&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="l-Scalar-Plain">&lt;p&gt;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>And then a resource can be created inside the Puppet DSL by doing the following:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="nv">$users</span> <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">users</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span>
+</span><span class='line'><span class="nf">create_resources</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">users</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>Both examples are functionally identical, except the first one only uses Hiera
+to get the password hash value, whereas the second one grabs both the
+attributes, and their values, for a specific resource. Imagine Puppet gives you
+an error with the &lsquo;gary&rsquo; user resource and you were using the latter example.
+You grep your Puppet code looking for &lsquo;gary&rsquo;, but you won&rsquo;t find that user
+resource in your Puppet manifest anywhere (because it&rsquo;s being created with the create_resources() function).
+You will instead have to know to go into Hiera&rsquo;s data directory, then the
+correct datafile, and then look for the hash of values for the &lsquo;gary&rsquo; user.</p>
+
+<h3>Functional differences between the two approaches</h3>
+
+<p>Functionally, you COULD do this either way. When you come up with a solution
+using create_resources(), I challenge you to draw up another solution using
+Puppet code in a Puppet manifest (however lengthy it may be) that queries Hiera
+for ONLY the specific values necessary. Consider this example, but, instead,
+you need to manage 500 users.
+If you use create_resources(), you would then need to add 500 more blocks to
+the &lsquo;users&rsquo; parameter in your Hiera datafiles.  That&rsquo;s a lot of YAML. And on
+what level will you add these blocks? <code>prod.yaml</code>? <code>dev.yaml</code>? Are you using a
+<code>common.yaml</code>? Your YAML files suddenly got huge, and the rest of your team
+modifying them will not be so happy to scroll through 500 entries. Now consider
+the first example using Puppet code. Your Puppet manifest suddenly grew, but it
+didn&rsquo;t affect all the OTHER manifests out there: only this file. The Hiera YAML
+files will still grow &ndash; but now 500 individual lines instead of 3000 lines in
+the previous example. Okay, now which one is more LEGIBLE? I would argue that
+the Puppet manifest is more legible, because I consider the Puppet DSL to be
+very legible (again, subject to debate versus YAML). Moreover, when debugging,
+you can stay inside Puppet files more often using Puppet manifests to define
+your resources. Using create_resources, you need to jump into Hiera more often.
+That&rsquo;s a context shift, which adds more annoyance to debugging. Also, it
+creates multiple &ldquo;sources of truth.&rdquo; Suddenly you have the ability of entering
+data in Hiera as well as entering it in the Puppet manifest, which may be clear
+to YOU, but if you leave the company, or you get another person on your team,
+they may choose to abuse the Hiera settings without knowing why.</p>
+
+<p>Now consider an example that you might say is more tailored to create_resources().
+Say you have a defined type that sets up tomcat applications. This defined type
+accepts things like a path to install the application, the application&rsquo;s package
+name, the version, which tomcat installation to target, and etc. Now consider
+that all application servers need application1, but only a couple
+of servers need application2, and a very snowflake server needs application3 (in
+this case, we&rsquo;re NOT saying that all applications are on all boxes and that their
+data, like the version they&rsquo;re using, is different. We&rsquo;re actually saying that
+different machines require entirely different applications).</p>
+
+<p>Using Hiera + create_resources() you could enter the resource for the
+application1 at a low level, then, at a higher level, add the resource for
+application2, and finally add the resource for application3 at the
+node-specific level. In the end, you can do a hiera_hash() lookup to discover
+and concatenate all resources from all levels of the hierarchy and pipe that to
+create_resources.</p>
+
+<p>How would you do this with Puppet code?  Well, I would create profiles for every
+application, and either different roles for the different kinds of servers (i.e.
+the snowflake machine gets its own role), or conditional checks inside the role
+(i.e. if this node is at the London location, it gets these application profiles,
+and etc&hellip;).</p>
+
+<p>Now which is more legible? At this point, I&rsquo;d still say that separate profiles
+and conditional checks in roles (or sub-roles) are more legible &ndash; including
+a class is a logical thing to follow, and conditionals inside Puppet code are
+easy to follow. The create_resources() solution just becomes magic. Suddenly,
+applications are on the node. If you want to know where they came from, you
+have to switch contexts and open Hiera data files or use the <code>hiera</code> binary
+and do a debug run. If you&rsquo;re a small team that&rsquo;s been using Puppet forever,
+then rock on and go for it. If you&rsquo;re just getting started, though, I&rsquo;d shy
+away.</p>
+
+<h3>Final word on create_resources?</h3>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>Some people, when confronted with a problem, think “I know, I&rsquo;ll use create_resources().&ldquo;
+</span><span class='line'>Now they have two problems.</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>The create_resources() function is often called the &ldquo;PSE Swiss Army knife&rdquo;
+(or, Professional Services Engineer &ndash; the people who do what
+I do and consult with our customers) because we like to break it out when we&rsquo;re
+painted into a corner by customer requirements. It will work ANYWHERE, but, again,
+at that cost of visibility. I am okay with someone using it so long as they
+understand the cost of visibility and the potential debugging issues they&rsquo;ll hit.
+I will always argue against using it, however, for those reasons. More code in
+a Puppet manifest is not a bad thing&hellip;especially if it&rsquo;s reasonably legible
+code that can be kept to a specific class. Consider the needs and experience
+level of your team before using create_resources() &ndash; if you don&rsquo;t have a good
+reason for using it, simply don&rsquo;t.</p>
+
+<h3>create_resources()</h3>
+
+<p><strong>PROS:</strong></p>
+
+<ul>
+<li>Dynamically iterate and create resources based on Hiera data</li>
+<li>Using Hiera&rsquo;s hash merging capability, you can functionally override resource values at higher levels of the hierarchy</li>
+</ul>
+
+
+<p><strong>CONS:</strong></p>
+
+<ul>
+<li>Decreased visibility</li>
+<li>Becomes a second &lsquo;source of truth&rsquo; to Puppet</li>
+<li>Can increase confusion about WHERE to manage resources</li>
+<li>When used too much, it creates a DSL to Puppet&rsquo;s DSL (DSLs all the way down)</li>
+</ul>
+
+
+<h3>Puppet DSL + single Hiera lookup</h3>
+
+<p><strong>PROS:</strong></p>
+
+<ul>
+<li>More visible (sans the bit of data you&rsquo;re looking up)</li>
+<li>Using wrapper classes allows for flexibility and conditional inclusion of resources/classes</li>
+</ul>
+
+
+<p><strong>CONS:</strong></p>
+
+<ul>
+<li>Very explicit &ndash; doesn&rsquo;t have the dynamic overriding capability like Hiera does</li>
+</ul>
+
+
+<h2>Using Hiera as an ENC</h2>
+
+<p>One of the early &ldquo;NEAT!&rdquo; moments everyone has with Hiera is using it as an
+External Node Classifier, or ENC. There is a function called <code>hiera_include()</code>
+that allows you to include classes into the catalog as if you were to write
+&ldquo;include (classname)&rdquo; in a Puppet manifest.  It works like this:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>london.yaml </span></figcaption>
+<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">classes</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="nl">&amp;ndash</span><span class="l-Scalar-Plain">; profiles::london::base</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">&amp;ndash; profiles::london::network</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>dev.yaml </span></figcaption>
+<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">classes</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="nl">&amp;ndash</span><span class="l-Scalar-Plain">; profiles::tomcat::application2</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>site.pp</span></figcaption>
+<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="kd">node</span> <span class="s">default</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nf">hiera_include</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">classes</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span>
+</span><span class='line'>}
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>Given the above example, the hiera_include() function will search every level
+of the hierarchy looking for a parameter called &lsquo;classes&rsquo;. It returns
+a concatenated list of classnames, which it then passes to Puppet&rsquo;s include()
+function (in the end, Puppet will declare the profiles::london::base,
+profiles::london::network, and profiles::tomcat::application2 classes). Puppet
+puts the contents of these classes into the catalog, and away we go. This is
+awesome because you can change the classification of a node conditionally
+according to a Hiera lookup, and it&rsquo;s terrible because you can CHANGE THE
+CLASSIFICATION OF A NODE CONDITIONALLY ACCORDING TO A HIERA LOOKUP!  This means
+that anyone with access to the repo holding your Hiera data files can affect
+changes to every node in Puppet just by modifying a magical key. It also means
+that in order to see the classification for a node, you need to do a Hiera
+lookup (i.e. you can&rsquo;t just open a file and see it).</p>
+
+<p>Remember that WHOLE blog post about Roles and Profiles?  I do, because I wrote
+the damn thing. <a href="http://bit.ly/puppetworkflows2">You can even go back and read it again, too, if you want to.</a>
+One of the core tenets of that article was that each node get classified with a
+single role. If you adhere to that (and you should; it makes for a much more
+logical Puppet deployment), a node really only ever needs to be classified
+ONCE. You don&rsquo;t NEED this conditional classification behavior. It&rsquo;s one of those
+&ldquo;It seemed like a good idea at the time&rdquo; moments that I assure you will pass.</p>
+
+<p>Now, you CAN use Roles with hiera_include() &ndash; simply create a Facter fact that
+returns the node&rsquo;s role, add a level to the Hiera hierarchy for this role fact,
+and in the role&rsquo;s YAML file in Hiera, simply do:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>appserver.yaml </span></figcaption>
+<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">classes</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">role::application_server</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>Then you can use the same hiera_include() call in the default node definition
+in <code>site.pp</code>. The ONLY time I recommend this is if you don&rsquo;t already have some
+other classification method. The downside of this method is that if your role
+fact CHANGES, for some reason or another, classification immediately changes.
+Facts are NOT secure &ndash; they can be overridden really easily. I don&rsquo;t like to
+leave classification to an insecure method that anyone with root access on a
+machine can change. Using an ENC or <code>site.pp</code> for classification means that the
+node ABSOLUTELY CANNOT override its classification. It&rsquo;s the difference between
+being authoritative and simply &lsquo;suggesting&rsquo; a classification.</p>
+
+<p><strong>PROS:</strong></p>
+
+<ul>
+<li>Dynamic classification: no need to maintain a site.pp file or group in the Console</li>
+<li>Fact-based: a node&rsquo;s classification can change immediately when its role fact does</li>
+</ul>
+
+
+<p><strong>CONS:</strong></p>
+
+<ul>
+<li>Decreased visibility: need to do a Hiera lookup to determine classification</li>
+<li>Insecure: since facts are insecure and can be overridden, so can classification</li>
+</ul>
+
+
+<h2>Data Bindings</h2>
+
+<p>In Puppet 3, we introduced the concept of &lsquo;data bindings&rsquo; for parameterized classes,
+which meant that Puppet now had another choice for gathering parmeter values.
+Previously, the order Puppet would look to assign a value for parameters to
+classes was:</p>
+
+<ol>
+<li>A value passed to the class via the parameterized class syntax</li>
+<li>A default value provided by the class</li>
+</ol>
+
+
+<p>As of Puppet 3, this is the new parameter assignment order:</p>
+
+<ol>
+<li>A value passed to the class via the parameterized class syntax</li>
+<li>A Hiera lookup for <em>classname::parametername</em></li>
+<li>A default value provided by the class</li>
+</ol>
+
+
+<p>Data bindings is meant to be pluggable to allow for ANY data backend, but,
+as of this writing, there&rsquo;s currently only one: Hiera.  Because of this,
+Puppet will now automatically do a Hiera lookup for every parameter to a
+parameterized class that isn&rsquo;t explicitly passed a value via the parameterized
+class syntax (which means that if you just do <code>include classname</code>, Puppet
+will do a Hiera lookup for EVERY parameter defined to the &ldquo;classname&rdquo; class).</p>
+
+<p>This is really cool because it means that you can just add <em>classname::parametername</em>
+to your Hiera setup, and, as long as you&rsquo;re not EXPLICITLY passing that
+parameter&rsquo;s value to the class, Puppet will do a lookup and find the value.</p>
+
+<p>It&rsquo;s also completely transparent to you unless you know it&rsquo;s happening.</p>
+
+<p>The issue here is that this is new functionality to Puppet, and it feels like
+magic to me. You can make the argument and say &ldquo;If you don&rsquo;t start using it,
+Gary, people will never take to it,&rdquo; however I feel like this kind of magical
+lookup in the background is always going to be a bad thing.</p>
+
+<p>There&rsquo;s also another problem.  Consider a Hiera hierarchy that has 15 levels
+(they exist, TRUST ME).  What happens if you don&rsquo;t define ANY parameters in
+Hiera in the form of <em>classname::parametername</em> and simply want to rely on
+the default values for every class?  Well, it means that Hiera is STILL going
+to be triggered for every parameter to a class that isn&rsquo;t explicitly passed a
+value.  That&rsquo;s a hell of a performance hit.  Fortunately, there&rsquo;s a way to
+disable this lookup.  Simply add the following to the Puppet master&rsquo;s <code>puppet.conf</code>
+file:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>data_binding_terminus = none</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>It&rsquo;s going to be up to how your team needs to work as to whether you use Hiera
+data bindings or not. If you have a savvy team that feels they can debug these
+lookups, then cool &ndash; use the hell out of it. I prefer to err on the side of an
+explicit hiera() lookup for every value I&rsquo;m querying, even if it&rsquo;s a lot of extra
+lines of code. I prefer the visibility, especially for new members to your team.
+For those people with large hierarchies, you may want to weigh the performance
+hit.  Try to disable data bindings and see if your master is more performant. If
+so, then explicit hiera() calls may actually buy you some rewards.</p>
+
+<p><strong>PROS:</strong></p>
+
+<ul>
+<li>Adding parameters to Hiera in the style of <em>classname::parametername</em> will set parameterized class values automatically</li>
+<li>Simplified code &ndash; simply use the include() function everywhere (which is safer than the parameterized class syntax)</li>
+</ul>
+
+
+<p><strong>CONS:</strong></p>
+
+<ul>
+<li>Lookup is completely transparent unless you know what&rsquo;s going on</li>
+<li>Debugging parameter values can be difficult (especially with typos or forgetting to set values in Hiera)</li>
+<li>Performance hit for values you want to be assigned the class default value</li>
+</ul>
+
+]]></content>
+  </entry>
+  
+</feed>

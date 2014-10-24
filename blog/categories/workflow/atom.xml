@@ -4,7 +4,7 @@
   <title><![CDATA[Category: workflow | Shit Gary Says]]></title>
   <link href="http://garylarizza.com/blog/categories/workflow/atom.xml" rel="self"/>
   <link href="http://garylarizza.com/"/>
-  <updated>2014-10-23T14:14:39+02:00</updated>
+  <updated>2014-10-24T14:19:53+02:00</updated>
   <id>http://garylarizza.com/</id>
   <author>
     <name><![CDATA[Gary larizza]]></name>
@@ -12,6 +12,664 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Puppet Workflows 4: Using Hiera in anger]]></title>
+    <link href="http://garylarizza.com/blog/2014/10/24/puppet-workflows-4-using-hiera-in-anger/"/>
+    <updated>2014-10-24T15:13:49+02:00</updated>
+    <id>http://garylarizza.com/blog/2014/10/24/puppet-workflows-4-using-hiera-in-anger</id>
+    <content type="html"><![CDATA[<p>Hiera. That thing nobody is REALLY quite sure how to say (FYI: It&rsquo;s pronounced
+&lsquo;hiera&rsquo;), the tool that everyone says you should be using, and the tool that
+will make you hate YAML syntax errors with a passion. It&rsquo;s a data/code
+separation dream, (potentially) a debugging nightmare, and absolutely vital in
+creating a Puppet workflow that scales better than your company&rsquo;s Wifi strategy
+(FYI: your company&rsquo;s Wifi password just changed. Again. Because they&rsquo;re not
+using certificates). I&rsquo;ve already written a GOOD AMOUNT on why/how to use it,
+but now I&rsquo;m going to give you a couple of edge cases. Call them &ldquo;best
+practices&rdquo; (and I&rsquo;ll cut you), but I like to call it &ldquo;shit I learned
+after using Hiera in anger.&rdquo; Here are a couple of the most popular questions
+I hear, and my usual responses&hellip;</p>
+
+<h2>&ldquo;How should I setup my hierarchy?&rdquo;</h2>
+
+<p>This is such a subjective question because it&rsquo;s specific to your organization
+(because it&rsquo;s your data). I usually ask back &ldquo;What are the things about your
+nodes that are different, and when are they different?&rdquo; Usually I hear something
+back like &ldquo;Well, nodes in this datacenter have different DNS settings&rdquo; or
+&ldquo;Application servers in production use one version of java, and those in dev
+use a different version&rdquo; or &ldquo;All machines in the dev environment in this datacenter
+need to have a specific repository&rdquo;. All of these replies give me ideas to your
+hierarchy.  When you think of Hiera as a giant conditional statment, you can
+start seeing how your hierarchy could be laid out.  With the first response, we
+know we need a <code>location</code> fact to determine where a node is, and then we can
+have a hierarchy level for that location. The second response tells me we need
+a level for the application tier (i.e. dev/test/prod).  The third response tells
+me we need a level that combines both the location and the application tier. When
+you add in that you should probably have a node-specific level at the top (for
+overrides) and a default level at the bottom (or not: see the next section), I&rsquo;m
+starting to picture this:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">:hierarchy</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="nl">&amp;ndash</span><span class="l-Scalar-Plain">; &amp;ldquo;nodes/%{::clientcert}&amp;rdquo;</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">&amp;ndash; &amp;ldquo;%{::location}/%{::applicationtier}&amp;rdquo;</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">&amp;ndash; &amp;ldquo;%{::location}/common&amp;rdquo;</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">&amp;ndash; &amp;ldquo;tier/%{::applicationtier}&amp;rdquo;</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">&amp;ndash; common</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>Every time you have a need, you consider a level.  Now, obviously, it doesn&rsquo;t
+mean that you NEED a level for every request (sometimes if it&rsquo;s an edge case
+you can handle it in the profile or the role). There&rsquo;s a performance hit for
+every level of your Hiera hierarchy, so ideally keep it minimal (or around
+5 levels or so), but we&rsquo;re talking about flexibility here, and, if that&rsquo;s more
+important than performance then you should go for it.</p>
+
+<p>Next comes ordering. This one&rsquo;s SLIGHTLY easier &ndash; your hierarchy should read from
+most-specific to least-specific. Note that when you specify an application tier
+at a specific location that that it is MORE specific than just saying &ldquo;all nodes in
+this application tier.&rdquo; Sometimes you will have levels that might be hard to
+define an order &ndash; such as location vs. application tier. You kinda just have to
+go with your gut here. In many cases you may find that the data you put in those
+two levels will be entirely different (location-based data may not ever overlap
+with application-tier-specific data). Do remember than any time you change the
+order of your hierarchy you&rsquo;re going to introduce the possibility that values
+get flip/flopped.</p>
+
+<p>If you look at level 3 of the hierarchy above, you&rsquo;ll see that I have &lsquo;common&rsquo;
+at the end. Some people like this syntax (where they put a &lsquo;common&rsquo; file in a
+folder that matches the fact they&rsquo;re checking against), and some people prefer
+a filename matching the fact.  Do what makes you happy, but, in this case,
+we can unify the location folder and just put the common file underneath the
+application tier files.</p>
+
+<p>Finally, DO MAKE USE OF FOLDERS!  For the love of god, this. Putting all files
+in a single folder both makes that a BIG folder, but also introduces a namespace
+collision (i.e. what if you have a location named &lsquo;dev&rsquo; for example? Now you have
+both an application tier and a location with the same name.  Oops).</p>
+
+<p>How you setup your hierarchy is up to you, but this should hopefully give you
+somewhere to start.</p>
+
+<h2>An argument AGAINST {global,common}.yaml</h2>
+
+<p>I might as well drum up some controversy now&hellip;</p>
+
+<p>When using Hiera, you need to define a hierarchy that Hiera uses in its search
+for your data. Most often, it looks something like this:</p>
+
+<h2><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>hiera.yaml </span></figcaption>
+<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">&lt;/h2&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="l-Scalar-Plain">&lt;p&gt;:backends</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="nl">&amp;ndash</span><span class="l-Scalar-Plain">; yaml</span>
+</span><span class='line'><span class="l-Scalar-Plain">:yaml</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">:datadir</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">/etc/puppetlabs/puppet/hieradata</span>
+</span><span class='line'><span class="l-Scalar-Plain">:hierarchy</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="nl">&amp;ndash</span><span class="l-Scalar-Plain">; &amp;ldquo;nodes/%{::clientcert}&amp;rdquo;</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">&amp;ndash; &amp;ldquo;location/%{::location}&amp;rdquo;</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">&amp;ndash; &amp;ldquo;environment/%{::applicationtier}&amp;rdquo;</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">&amp;ndash; common</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>Notice that little &ldquo;common&rdquo; at the end?  That means that, failing everything
+else, it&rsquo;s going to look in <code>common.yaml</code> for a value.  This means that
+<code>common.yaml</code> is a storage bin of default values.</p>
+
+<p>Previously, you may have heard me rail against Hiera&rsquo;s optional second argument
+and how I really don&rsquo;t like it.  Take this example:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="nv">$foo</span> <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">port</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">,</span> <span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="m">80</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>Given this code, Hiera is going to look for a parameter called &lsquo;port&rsquo; in its
+hierarchy, and, if it doesn&rsquo;t find one in ANY of the levels, assign back a default
+value of &lsquo;80&rsquo;.  I don&rsquo;t like using this second argument because:</p>
+
+<ol>
+<li>If you forget to enter the &lsquo;port&rsquo; parameter into the hierarchy, or typo it in the YAML file, Hiera will gladly assign the default value of &lsquo;80&rsquo; (which, unless you&rsquo;re checking for this, might sneak and get into production)</li>
+<li>Where is the real &lsquo;default&rsquo; value: the value in <code>common.yaml</code> or the optional second argument?</li>
+</ol>
+
+
+<p>Okay, so we&rsquo;re resigned to never use the second argument.  Cool.  BUT, what
+happens when you already have a value in <code>common.yaml</code> and you typo the name
+of the parameter at a higher level (for example, you write &ldquo;prot: 44&rdquo; inside
+a YAML file at a higher level)?  You&rsquo;re going to get the value in <code>common.yaml</code>,
+and, again, unless you&rsquo;re watching for this, suddenly you get a default value
+when you didn&rsquo;t expect it.</p>
+
+<p>So, what is this value in <code>common.yaml</code> used for anyways? Well, it&rsquo;s a value
+default for every node that needs it.  And where are we going to be getting
+this value?  If you said &ldquo;The Profile&rdquo;, you would be correct.  So what should
+we do about this?  I say you hardcode the value right into the Profile (GASP!!)
+I will talk about this more in the next section (because it&rsquo;s more appropriate
+there), so just hold that thought for another section.</p>
+
+<p>Until then, let me say that I&rsquo;ve started to align myself with the idea that
+<code>hiera.yaml</code> shouldn&rsquo;t have a &ldquo;defaults&rdquo; level.  The idea is that if there&rsquo;s
+a value that every node should have, keep it visible and in the Profile. If
+you need Hiera&rsquo;s dynamic lookup capability, THEN drop it into the hierarchy.
+The downside of this philosophy is that you&rsquo;ll suddenly need to enter a value
+in many different places (i.e. if suddenly you want to define a different port
+in the &lsquo;dev&rsquo; application tier than in all the other application tiers, then you
+need to add the port parameter to EVERY ONE of your application tier files. If
+you have 8 of these tiers, then you need to enter the value into all 8 files).
+This is also less-than-ideal, but what are you optimizing for here?  You&rsquo;re
+optimizing for early failure.  If Hiera can&rsquo;t find a value and it SHOULD, this
+is an early failure at catalog compilation time. You&rsquo;ll know INSTANTLY that
+there&rsquo;s a problem (instead of deploying a default value to production, for
+example).</p>
+
+<p>If you don&rsquo;t need this level of optimization, by all means keep the default
+level.  If you don&rsquo;t want this much redundancy by entering values in multiple
+files, by all means keep the default level.  I simply offer forth a solution
+for those folks who are wanting a &ldquo;fail-early, fail-often&rdquo; approach in their
+data lookup mechanism.</p>
+
+<p><strong>NOTE</strong>: You&rsquo;re never going to completely escape the idea of typos. Even
+if you remove the &ldquo;defaults&rdquo; level in the hierarchy, you could still have the
+case where you enter a port value in every file at the <code>$::applicationtier</code>
+level, but maybe typo the parameter at a higher level.  In this case, Hiera
+DOES return a value, but it&rsquo;s the <code>$::applicationtier</code> value.  This requires
+&ldquo;CONSTANT VIGILANCE!&rdquo; to catch these cases, but the idea is that these edge
+cases are much less than a defaults-level override, so you SHOULD be able to
+spot it easier. No level of automation will totally remove human error (and
+watch The Matrix if you don&rsquo;t believe me).</p>
+
+<h2>Where to data &ndash; Hiera or Profile?</h2>
+
+<p>&ldquo;Does this go right into the Profile or into Hiera?&rdquo;  I get that question
+repeatedly when I&rsquo;m working with customers. It&rsquo;s a good question, and one of
+the quickest ways to blow up your YAML files in Hiera. Here&rsquo;s the order I use
+when deciding where to put data:</p>
+
+<h3>Enter the data into the Profile itself</h3>
+
+<p>Yes, that&rsquo;s exactly what I said &ndash; put it in the Profile.  &ldquo;BUT GARY!&rdquo;, you
+should be thinking, &ldquo;THAT&rsquo;S EMBEDDING DATA INSIDE YOUR PUPPET CODE!&rdquo;  To that
+I say: &ldquo;It depends on how you look at the problem and solution.&rdquo; The profile is
+YOUR implementation.  It describes how YOU define the implementation of a piece
+of technology in YOUR organization. As such, it&rsquo;s less about Puppet code and
+more about pulling data and passing it TO the Puppet code. It&rsquo;s the glue-code
+that grabs the data and wires it up to the model that uses it. How it grabs the
+data is not really a big deal, so long as it grabs the RIGHT data &ndash; right? You
+can choose to hardcode it into the Profile, or use Hiera, or use some other
+magical data lookup mechanism &ndash; we don&rsquo;t really care (so long as the Profile
+gathers the data and passes it to the correct Puppet class).</p>
+
+<p>&ldquo;BUT GARY! IT&rsquo;S GOING TO MAKE IT HARD TO DEBUG!&rdquo;  Not really. You&rsquo;re going to
+have to open the Profile anyway to see what&rsquo;s going on (whether you pull the
+data from Hiera or hardcode it in the Profile), right? And, arguably, the
+Profile is legible&hellip;doing Hiera lookups gives you flexibility at a cost of
+abstracting away how it got that bit of data (i.e. &ldquo;It used Hiera&rdquo;). For newer
+users of Puppet, having the data in the Profile is easier to follow. So, in the
+end, putting the data into the Profile itself is the least-flexible and most-visible
+option&hellip;so consequently it should be the first available option. This option
+is best for defaults that are applicable for ALL nodes.</p>
+
+<p>Remember when I offered that crazy idea of not having a &ldquo;defaults&rdquo; level in the
+hierarchy?  This is why: erring on the side of visibility in the Profile and
+failing early with Hiera. It also gives you a logical starting point when
+determining WHERE to put your data.  Moving along&hellip;</p>
+
+<p><strong>PROS:</strong></p>
+
+<ul>
+<li>Data is clearly visible and legible in the profile (no need to open additional files)</li>
+</ul>
+
+
+<p><strong>CONS:</strong></p>
+
+<ul>
+<li>Inability to redefine variables in Puppet DSL makes any settings constants by default (i.e. no overriding permitted)</li>
+</ul>
+
+
+<h3>Enter the data into Hiera</h3>
+
+<p>If you find that you need to have different bits of data for different nodes
+(i.e. a different version of Java in the dev tier instead of the prod tier),
+then you can start to put the data into Hiera.</p>
+
+<p><strong>NOTE</strong>: If you subscribe to my &ldquo;no defaults&rdquo; philosophy above, you suddenly
+need to enter the data into as many files as that level of the hierarchy has
+(or more if you override at a higher level). Understand that you&rsquo;re not me,
+and you DON&rsquo;T NEED to subscribe to this &ldquo;no defaults&rdquo; view of the world. Yay
+for being different!</p>
+
+<p>Where to put the data is going to depend on your own needs &ndash; I&rsquo;m trusting that
+you can figure this part out :)</p>
+
+<p>This answers that &ldquo;where&rdquo; question, but doesn&rsquo;t answer the &ldquo;what&rdquo; question&hellip;as
+in &ldquo;What data should I put into Hiera?&rdquo;  For that, we have another section&hellip;</p>
+
+<p><strong>PROS:</strong></p>
+
+<ul>
+<li>Flexibility in returning different values based on different conditions</li>
+</ul>
+
+
+<p><strong>CONS:</strong></p>
+
+<ul>
+<li>Visibility &ndash; you must do a Hiera lookup to find the value (or open Hiera&rsquo;s YAML files)</li>
+</ul>
+
+
+<h2>&ldquo;What exactly goes into Hiera?&rdquo;</h2>
+
+<p>If there were one question that, if answered incorrectly, could make or break
+your Puppet deployment, this would be it. The greatest strength and weakness of
+Hiera is its flexibility.  You can truly put almost anything in Hiera, and, when
+combined with something like the create_resources() function, you can create
+your own YAML configuration language (tip: don&rsquo;t actually do this).</p>
+
+<p>&ldquo;But, seriously, what should go into Hiera, and what shouldn&rsquo;t?&rdquo;</p>
+
+<p>The important thing to consider here is the price you pay by putting data into
+Hiera. You&rsquo;re gaining flexibility at a cost of visibility.  This means that you
+can do things like enter values at all level of the hierarchy that can be
+concatenated together with a single hiera_array() call, BUT, you&rsquo;re losing the
+visibility of having the data right in front of you (i.e. you need to open up
+all the YAML files individually, or use the <code>hiera</code> binary to debug how you got
+those values). Hiera is REALLY COOL until you have to debug why it grabbed (or
+DIDN&rsquo;T grab) a particular value.</p>
+
+<p>Here&rsquo;s what I usually tell people about what should be put into Hiera:</p>
+
+<ul>
+<li>The exact data values that need to be different conditionally (i.e. a different ntp server for different sites, different java versions in dev/prod, a password hash, etc.)</li>
+<li>Dynamic data expressed in multiple levels of the hierarchy (i.e. a lookup for &lsquo;packages&rsquo; that returns back an array of all the values that were found in all the levels of the hierarchy)</li>
+<li>Resources as a hash ONLY WHEN ABSOLUTELY NECESSARY</li>
+</ul>
+
+
+<h3>Puppet manifest vs. create_resources()</h3>
+
+<p>Bullets 1 and 2 above should be pretty straightforward &ndash; you either need to use
+Hiera to grab a specific value or return back a list of ALL the values from ALL
+the levels of the hierarchy. The point here is that Hiera should be returning
+back only the minimal amount of data that is necessary (i.e. instead of
+returning back a hash that contains the title of the resource, all the attributes
+of the resource, and all the attribute values for that resource, just return
+back a specific value that will be assigned to an attribute&hellip;like the password
+hash itself for a user). This data lookup appears to be &ldquo;magic&rdquo; to new users of
+Puppet &ndash; all they see is the magic phrase of &ldquo;hiera&rdquo; and a parameter to search
+for &ndash; and so it becomes slightly confusing. It IS, however, easier to understand
+that this magical phrase will return data, and that that data is going to be used
+to set the value for an attribute. Consider this example:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="nv">$password</span> <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">garypassword</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span><span class="o">&lt;</span><span class="err">/</span><span class="ss">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="ss">p</span><span class="o">&gt;</span><span class="ss">user</span> <span class="err">{</span> <span class="err">&amp;lsquo;gary&amp;rsquo;:</span>
+</span><span class='line'>  <span class="err">ensure</span>   <span class="err">=&gt;</span> <span class="err">present,</span>
+</span><span class='line'>  <span class="err">uid</span>      <span class="err">=&gt;</span> <span class="err">&amp;lsquo;5001&amp;rsquo;,</span>
+</span><span class='line'>  <span class="err">gid</span>      <span class="err">=&gt;</span> <span class="err">&amp;lsquo;gary&amp;rsquo;,</span>
+</span><span class='line'>  <span class="err">shell</span>    <span class="err">=&gt;</span> <span class="err">&amp;lsquo;zsh&amp;rsquo;,</span>
+</span><span class='line'>  <span class="err">password</span> <span class="err">=&gt;</span> <span class="nv">$password</span><span class="err">,</span>
+</span><span class='line'><span class="err">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>This leads us to bullet 3, which is &ldquo;the Hiera + create_resources() solution.&rdquo;
+This solution allows you to lookup data from within Hiera and pass it directly
+to a function where Puppet creates the individual resources as if you had typed
+them into a Puppet manifest itself. The previous example can be entered into
+a Hiera YAML file like so:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>sysadmins.yaml </span></figcaption>
+<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">users</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">gary:&lt;/p&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="l-Scalar-Plain">&lt;pre&gt;&lt;code&gt;ensure</span><span class="p-Indicator">:</span> <span class="s">&#39;present&#39;</span>
+</span><span class='line'><span class="l-Scalar-Plain">uid</span><span class="p-Indicator">:</span> <span class="s">&#39;5001&#39;</span>
+</span><span class='line'><span class="l-Scalar-Plain">gid</span><span class="p-Indicator">:</span> <span class="s">&#39;gary&#39;</span>
+</span><span class='line'><span class="l-Scalar-Plain">shell</span><span class="p-Indicator">:</span> <span class="s">&#39;zsh&#39;</span>
+</span><span class='line'><span class="l-Scalar-Plain">password</span><span class="p-Indicator">:</span> <span class="s">&#39;biglongpasswordhash&#39;</span>
+</span><span class='line'><span class="l-Scalar-Plain">&lt;/code&gt;&lt;/pre&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="l-Scalar-Plain">&lt;p&gt;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>And then a resource can be created inside the Puppet DSL by doing the following:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="nv">$users</span> <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">users</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span>
+</span><span class='line'><span class="nf">create_resources</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">users</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>Both examples are functionally identical, except the first one only uses Hiera
+to get the password hash value, whereas the second one grabs both the
+attributes, and their values, for a specific resource. Imagine Puppet gives you
+an error with the &lsquo;gary&rsquo; user resource and you were using the latter example.
+You grep your Puppet code looking for &lsquo;gary&rsquo;, but you won&rsquo;t find that user
+resource in your Puppet manifest anywhere (because it&rsquo;s being created with the create_resources() function).
+You will instead have to know to go into Hiera&rsquo;s data directory, then the
+correct datafile, and then look for the hash of values for the &lsquo;gary&rsquo; user.</p>
+
+<h3>Functional differences between the two approaches</h3>
+
+<p>Functionally, you COULD do this either way. When you come up with a solution
+using create_resources(), I challenge you to draw up another solution using
+Puppet code in a Puppet manifest (however lengthy it may be) that queries Hiera
+for ONLY the specific values necessary. Consider this example, but, instead,
+you need to manage 500 users.
+If you use create_resources(), you would then need to add 500 more blocks to
+the &lsquo;users&rsquo; parameter in your Hiera datafiles.  That&rsquo;s a lot of YAML. And on
+what level will you add these blocks? <code>prod.yaml</code>? <code>dev.yaml</code>? Are you using a
+<code>common.yaml</code>? Your YAML files suddenly got huge, and the rest of your team
+modifying them will not be so happy to scroll through 500 entries. Now consider
+the first example using Puppet code. Your Puppet manifest suddenly grew, but it
+didn&rsquo;t affect all the OTHER manifests out there: only this file. The Hiera YAML
+files will still grow &ndash; but now 500 individual lines instead of 3000 lines in
+the previous example. Okay, now which one is more LEGIBLE? I would argue that
+the Puppet manifest is more legible, because I consider the Puppet DSL to be
+very legible (again, subject to debate versus YAML). Moreover, when debugging,
+you can stay inside Puppet files more often using Puppet manifests to define
+your resources. Using create_resources, you need to jump into Hiera more often.
+That&rsquo;s a context shift, which adds more annoyance to debugging. Also, it
+creates multiple &ldquo;sources of truth.&rdquo; Suddenly you have the ability of entering
+data in Hiera as well as entering it in the Puppet manifest, which may be clear
+to YOU, but if you leave the company, or you get another person on your team,
+they may choose to abuse the Hiera settings without knowing why.</p>
+
+<p>Now consider an example that you might say is more tailored to create_resources().
+Say you have a defined type that sets up tomcat applications. This defined type
+accepts things like a path to install the application, the application&rsquo;s package
+name, the version, which tomcat installation to target, and etc. Now consider
+that all application servers need application1, but only a couple
+of servers need application2, and a very snowflake server needs application3 (in
+this case, we&rsquo;re NOT saying that all applications are on all boxes and that their
+data, like the version they&rsquo;re using, is different. We&rsquo;re actually saying that
+different machines require entirely different applications).</p>
+
+<p>Using Hiera + create_resources() you could enter the resource for the
+application1 at a low level, then, at a higher level, add the resource for
+application2, and finally add the resource for application3 at the
+node-specific level. In the end, you can do a hiera_hash() lookup to discover
+and concatenate all resources from all levels of the hierarchy and pipe that to
+create_resources.</p>
+
+<p>How would you do this with Puppet code?  Well, I would create profiles for every
+application, and either different roles for the different kinds of servers (i.e.
+the snowflake machine gets its own role), or conditional checks inside the role
+(i.e. if this node is at the London location, it gets these application profiles,
+and etc&hellip;).</p>
+
+<p>Now which is more legible? At this point, I&rsquo;d still say that separate profiles
+and conditional checks in roles (or sub-roles) are more legible &ndash; including
+a class is a logical thing to follow, and conditionals inside Puppet code are
+easy to follow. The create_resources() solution just becomes magic. Suddenly,
+applications are on the node. If you want to know where they came from, you
+have to switch contexts and open Hiera data files or use the <code>hiera</code> binary
+and do a debug run. If you&rsquo;re a small team that&rsquo;s been using Puppet forever,
+then rock on and go for it. If you&rsquo;re just getting started, though, I&rsquo;d shy
+away.</p>
+
+<h3>Final word on create_resources?</h3>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>Some people, when confronted with a problem, think “I know, I&rsquo;ll use create_resources().&ldquo;
+</span><span class='line'>Now they have two problems.</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>The create_resources() function is often called the &ldquo;PSE Swiss Army knife&rdquo;
+(or, Professional Services Engineer &ndash; the people who do what
+I do and consult with our customers) because we like to break it out when we&rsquo;re
+painted into a corner by customer requirements. It will work ANYWHERE, but, again,
+at that cost of visibility. I am okay with someone using it so long as they
+understand the cost of visibility and the potential debugging issues they&rsquo;ll hit.
+I will always argue against using it, however, for those reasons. More code in
+a Puppet manifest is not a bad thing&hellip;especially if it&rsquo;s reasonably legible
+code that can be kept to a specific class. Consider the needs and experience
+level of your team before using create_resources() &ndash; if you don&rsquo;t have a good
+reason for using it, simply don&rsquo;t.</p>
+
+<h3>create_resources()</h3>
+
+<p><strong>PROS:</strong></p>
+
+<ul>
+<li>Dynamically iterate and create resources based on Hiera data</li>
+<li>Using Hiera&rsquo;s hash merging capability, you can functionally override resource values at higher levels of the hierarchy</li>
+</ul>
+
+
+<p><strong>CONS:</strong></p>
+
+<ul>
+<li>Decreased visibility</li>
+<li>Becomes a second &lsquo;source of truth&rsquo; to Puppet</li>
+<li>Can increase confusion about WHERE to manage resources</li>
+<li>When used too much, it creates a DSL to Puppet&rsquo;s DSL (DSLs all the way down)</li>
+</ul>
+
+
+<h3>Puppet DSL + single Hiera lookup</h3>
+
+<p><strong>PROS:</strong></p>
+
+<ul>
+<li>More visible (sans the bit of data you&rsquo;re looking up)</li>
+<li>Using wrapper classes allows for flexibility and conditional inclusion of resources/classes</li>
+</ul>
+
+
+<p><strong>CONS:</strong></p>
+
+<ul>
+<li>Very explicit &ndash; doesn&rsquo;t have the dynamic overriding capability like Hiera does</li>
+</ul>
+
+
+<h2>Using Hiera as an ENC</h2>
+
+<p>One of the early &ldquo;NEAT!&rdquo; moments everyone has with Hiera is using it as an
+External Node Classifier, or ENC. There is a function called <code>hiera_include()</code>
+that allows you to include classes into the catalog as if you were to write
+&ldquo;include (classname)&rdquo; in a Puppet manifest.  It works like this:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>london.yaml </span></figcaption>
+<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">classes</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="nl">&amp;ndash</span><span class="l-Scalar-Plain">; profiles::london::base</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">&amp;ndash; profiles::london::network</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>dev.yaml </span></figcaption>
+<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">classes</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="nl">&amp;ndash</span><span class="l-Scalar-Plain">; profiles::tomcat::application2</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>site.pp</span></figcaption>
+<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="kd">node</span> <span class="s">default</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nf">hiera_include</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">classes</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span>
+</span><span class='line'>}
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>Given the above example, the hiera_include() function will search every level
+of the hierarchy looking for a parameter called &lsquo;classes&rsquo;. It returns
+a concatenated list of classnames, which it then passes to Puppet&rsquo;s include()
+function (in the end, Puppet will declare the profiles::london::base,
+profiles::london::network, and profiles::tomcat::application2 classes). Puppet
+puts the contents of these classes into the catalog, and away we go. This is
+awesome because you can change the classification of a node conditionally
+according to a Hiera lookup, and it&rsquo;s terrible because you can CHANGE THE
+CLASSIFICATION OF A NODE CONDITIONALLY ACCORDING TO A HIERA LOOKUP!  This means
+that anyone with access to the repo holding your Hiera data files can affect
+changes to every node in Puppet just by modifying a magical key. It also means
+that in order to see the classification for a node, you need to do a Hiera
+lookup (i.e. you can&rsquo;t just open a file and see it).</p>
+
+<p>Remember that WHOLE blog post about Roles and Profiles?  I do, because I wrote
+the damn thing. <a href="http://bit.ly/puppetworkflows2">You can even go back and read it again, too, if you want to.</a>
+One of the core tenets of that article was that each node get classified with a
+single role. If you adhere to that (and you should; it makes for a much more
+logical Puppet deployment), a node really only ever needs to be classified
+ONCE. You don&rsquo;t NEED this conditional classification behavior. It&rsquo;s one of those
+&ldquo;It seemed like a good idea at the time&rdquo; moments that I assure you will pass.</p>
+
+<p>Now, you CAN use Roles with hiera_include() &ndash; simply create a Facter fact that
+returns the node&rsquo;s role, add a level to the Hiera hierarchy for this role fact,
+and in the role&rsquo;s YAML file in Hiera, simply do:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>appserver.yaml </span></figcaption>
+<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">classes</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">role::application_server</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>Then you can use the same hiera_include() call in the default node definition
+in <code>site.pp</code>. The ONLY time I recommend this is if you don&rsquo;t already have some
+other classification method. The downside of this method is that if your role
+fact CHANGES, for some reason or another, classification immediately changes.
+Facts are NOT secure &ndash; they can be overridden really easily. I don&rsquo;t like to
+leave classification to an insecure method that anyone with root access on a
+machine can change. Using an ENC or <code>site.pp</code> for classification means that the
+node ABSOLUTELY CANNOT override its classification. It&rsquo;s the difference between
+being authoritative and simply &lsquo;suggesting&rsquo; a classification.</p>
+
+<p><strong>PROS:</strong></p>
+
+<ul>
+<li>Dynamic classification: no need to maintain a site.pp file or group in the Console</li>
+<li>Fact-based: a node&rsquo;s classification can change immediately when its role fact does</li>
+</ul>
+
+
+<p><strong>CONS:</strong></p>
+
+<ul>
+<li>Decreased visibility: need to do a Hiera lookup to determine classification</li>
+<li>Insecure: since facts are insecure and can be overridden, so can classification</li>
+</ul>
+
+
+<h2>Data Bindings</h2>
+
+<p>In Puppet 3, we introduced the concept of &lsquo;data bindings&rsquo; for parameterized classes,
+which meant that Puppet now had another choice for gathering parmeter values.
+Previously, the order Puppet would look to assign a value for parameters to
+classes was:</p>
+
+<ol>
+<li>A value passed to the class via the parameterized class syntax</li>
+<li>A default value provided by the class</li>
+</ol>
+
+
+<p>As of Puppet 3, this is the new parameter assignment order:</p>
+
+<ol>
+<li>A value passed to the class via the parameterized class syntax</li>
+<li>A Hiera lookup for <em>classname::parametername</em></li>
+<li>A default value provided by the class</li>
+</ol>
+
+
+<p>Data bindings is meant to be pluggable to allow for ANY data backend, but,
+as of this writing, there&rsquo;s currently only one: Hiera.  Because of this,
+Puppet will now automatically do a Hiera lookup for every parameter to a
+parameterized class that isn&rsquo;t explicitly passed a value via the parameterized
+class syntax (which means that if you just do <code>include classname</code>, Puppet
+will do a Hiera lookup for EVERY parameter defined to the &ldquo;classname&rdquo; class).</p>
+
+<p>This is really cool because it means that you can just add <em>classname::parametername</em>
+to your Hiera setup, and, as long as you&rsquo;re not EXPLICITLY passing that
+parameter&rsquo;s value to the class, Puppet will do a lookup and find the value.</p>
+
+<p>It&rsquo;s also completely transparent to you unless you know it&rsquo;s happening.</p>
+
+<p>The issue here is that this is new functionality to Puppet, and it feels like
+magic to me. You can make the argument and say &ldquo;If you don&rsquo;t start using it,
+Gary, people will never take to it,&rdquo; however I feel like this kind of magical
+lookup in the background is always going to be a bad thing.</p>
+
+<p>There&rsquo;s also another problem.  Consider a Hiera hierarchy that has 15 levels
+(they exist, TRUST ME).  What happens if you don&rsquo;t define ANY parameters in
+Hiera in the form of <em>classname::parametername</em> and simply want to rely on
+the default values for every class?  Well, it means that Hiera is STILL going
+to be triggered for every parameter to a class that isn&rsquo;t explicitly passed a
+value.  That&rsquo;s a hell of a performance hit.  Fortunately, there&rsquo;s a way to
+disable this lookup.  Simply add the following to the Puppet master&rsquo;s <code>puppet.conf</code>
+file:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>data_binding_terminus = none</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>It&rsquo;s going to be up to how your team needs to work as to whether you use Hiera
+data bindings or not. If you have a savvy team that feels they can debug these
+lookups, then cool &ndash; use the hell out of it. I prefer to err on the side of an
+explicit hiera() lookup for every value I&rsquo;m querying, even if it&rsquo;s a lot of extra
+lines of code. I prefer the visibility, especially for new members to your team.
+For those people with large hierarchies, you may want to weigh the performance
+hit.  Try to disable data bindings and see if your master is more performant. If
+so, then explicit hiera() calls may actually buy you some rewards.</p>
+
+<p><strong>PROS:</strong></p>
+
+<ul>
+<li>Adding parameters to Hiera in the style of <em>classname::parametername</em> will set parameterized class values automatically</li>
+<li>Simplified code &ndash; simply use the include() function everywhere (which is safer than the parameterized class syntax)</li>
+</ul>
+
+
+<p><strong>CONS:</strong></p>
+
+<ul>
+<li>Lookup is completely transparent unless you know what&rsquo;s going on</li>
+<li>Debugging parameter values can be difficult (especially with typos or forgetting to set values in Hiera)</li>
+<li>Performance hit for values you want to be assigned the class default value</li>
+</ul>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[R10k + Directory Environments]]></title>
@@ -2204,7 +2862,7 @@ To <a href="https://github.com/glarizza/puppet-notifyme.git">https://github.com/
 
 <p>└(~/src/puppet-notifyme)▷ git log
 commit bc3975bb5c75ada86bfc2c45db628b5a156f85ce
-Author: Gary Larizza <a href="&#x6d;&#97;&#105;&#108;&#116;&#x6f;&#x3a;&#103;&#97;&#x72;&#121;&#64;&#112;&#117;&#x70;&#x70;&#101;&#x74;&#x6c;&#x61;&#x62;&#x73;&#x2e;&#99;&#x6f;&#109;">&#103;&#x61;&#114;&#x79;&#x40;&#x70;&#117;&#x70;&#x70;&#101;&#x74;&#108;&#97;&#x62;&#115;&#46;&#99;&#111;&#x6d;</a>
+Author: Gary Larizza <a href="&#109;&#97;&#x69;&#108;&#x74;&#x6f;&#x3a;&#103;&#97;&#114;&#121;&#64;&#112;&#117;&#112;&#112;&#x65;&#x74;&#108;&#97;&#98;&#x73;&#x2e;&#x63;&#111;&#x6d;">&#103;&#97;&#x72;&#121;&#x40;&#x70;&#117;&#x70;&#x70;&#x65;&#116;&#108;&#x61;&#98;&#x73;&#x2e;&#x63;&#x6f;&#x6d;</a>
 Date:   Wed Feb 19 13:55:26 2014 -0800</p>
 
 <pre><code>Change the Message
@@ -2259,7 +2917,7 @@ To <a href="https://github.com/glarizza/puppet_repository.git">https://github.co
 
 <p>└(~/src/puppet_repository)▷ git log -p
 commit 89b139c8c2faa888a402b98ea76e4ca138b3463d
-Author: Gary Larizza <a href="&#x6d;&#x61;&#x69;&#108;&#116;&#111;&#x3a;&#x67;&#x61;&#x72;&#121;&#64;&#112;&#x75;&#112;&#x70;&#x65;&#x74;&#x6c;&#97;&#98;&#x73;&#x2e;&#99;&#x6f;&#x6d;">&#103;&#97;&#x72;&#x79;&#x40;&#112;&#117;&#112;&#x70;&#x65;&#116;&#108;&#97;&#98;&#115;&#x2e;&#99;&#111;&#109;</a>
+Author: Gary Larizza <a href="&#x6d;&#97;&#105;&#108;&#116;&#111;&#58;&#x67;&#97;&#114;&#x79;&#x40;&#112;&#x75;&#112;&#112;&#101;&#x74;&#108;&#x61;&#98;&#x73;&#46;&#x63;&#111;&#109;">&#103;&#x61;&#x72;&#x79;&#64;&#x70;&#x75;&#112;&#x70;&#x65;&#116;&#108;&#97;&#98;&#115;&#x2e;&#99;&#111;&#109;</a>
 Date:   Wed Feb 19 14:04:18 2014 -0800</p>
 
 <pre><code>Update garysawesomeenvironment
@@ -2391,7 +3049,7 @@ To <a href="https://github.com/glarizza/puppet_repository.git">https://github.co
 
 <p>└(~/src/puppet_repository)▷ git log -p
 commit a74f26975102f3786eedddace89bda086162d801
-Author: Gary Larizza <a href="&#109;&#x61;&#x69;&#x6c;&#x74;&#111;&#x3a;&#103;&#x61;&#x72;&#121;&#64;&#112;&#117;&#x70;&#x70;&#x65;&#116;&#x6c;&#x61;&#x62;&#115;&#x2e;&#x63;&#x6f;&#x6d;">&#x67;&#97;&#x72;&#x79;&#64;&#x70;&#x75;&#112;&#112;&#101;&#116;&#x6c;&#97;&#x62;&#x73;&#46;&#99;&#x6f;&#109;</a>
+Author: Gary Larizza <a href="&#109;&#97;&#x69;&#108;&#116;&#111;&#58;&#x67;&#97;&#x72;&#x79;&#x40;&#x70;&#117;&#112;&#x70;&#101;&#x74;&#108;&#97;&#x62;&#115;&#46;&#x63;&#111;&#x6d;">&#x67;&#97;&#x72;&#x79;&#64;&#x70;&#x75;&#x70;&#x70;&#x65;&#116;&#108;&#97;&#98;&#x73;&#x2e;&#x63;&#x6f;&#x6d;</a>
 Date:   Wed Feb 19 14:24:05 2014 -0800</p>
 
 <pre><code>Add notifyme module to Production environment
@@ -2637,531 +3295,6 @@ comments below and I&rsquo;ll be happy to respond when I&rsquo;m not flying from
 gig! :)  Cheers!</p>
 
 <p><strong>EDIT</strong>: 2/19/2014 &ndash; correct librarian-puppet assumption thanks to Reid Vandewiele</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Building a Functional Puppet Workflow Part 2: Roles and Profiles]]></title>
-    <link href="http://garylarizza.com/blog/2014/02/17/puppet-workflow-part-2/"/>
-    <updated>2014-02-17T23:01:37+01:00</updated>
-    <id>http://garylarizza.com/blog/2014/02/17/puppet-workflow-part-2</id>
-    <content type="html"><![CDATA[<p>In my <a href="http://www.garylarizza.com/blog/2014/02/17/puppet-workflow-part-1/">first post</a>, I talked about writing functional component
-modules. Well, I didn&rsquo;t really do much detailing other than pointing out
-key bits of information that tend to cause problems. In this post, I&rsquo;ll
-describe the next layer to the functional Puppet module workflow.</p>
-
-<p>People usually stop once they have a library of component modules (whether
-hand-written, taken from Github, or pulled from <a href="http://forge.puppetlabs.com">The Forge</a>). The idea
-is that you can classify all of your nodes in <code>site.pp</code>, the Puppet
-Enterprise Console, The Foreman, or with some other ENC, so why not just
-declare all your classes for every node when you need them?</p>
-
-<p>Because that&rsquo;s a lot of extra work and opportunities for fuckups.</p>
-
-<p>People recognized this, so in the EARLY days of Puppet they would create node
-blocks in <code>site.pp</code> and use inheritance to inherit from those blocks. This was
-the right IDEA, but probably not the best PLACE for it. Eventually, &lsquo;Profiles&rsquo;
-were born.</p>
-
-<p>The idea of &lsquo;Roles and Profiles&rsquo; originally came from a piece that
-<a href="http://www.craigdunn.org/2012/05/239/">Craig Dunn wrote</a> while he worked for the BBC, and then
-<a href="http://sysadvent.blogspot.com/2012/12/day-13-configuration-management-as-legos.html">Adrien Thebo also wrote a piece</a> that documents the same sort of pattern.
-So why am I writing about it a THIRD time? Well, because I feel it&rsquo;s only a PIECE
-of an overall puzzle. The introduction of Hiera and other awesome tools (like R10k,
-which we will get to on the next post) still make Roles and Profiles VIABLE, but
-they also extend upon them.</p>
-
-<p>One final note before we move on &ndash; the terms &lsquo;Roles&rsquo; and &lsquo;Profiles&rsquo; are ENTIRELY
-ARBITRARY. They&rsquo;re not magic reserve words in Puppet, and you can call them
-whatever the hell you want. It&rsquo;s also been pointed out that Craig MIGHT have
-misnamed them (a ROLE should be a model for an individual piece of tech, and a
-PROFILE should probably be a group of roles), but, like all good Puppet Labs
-employees &ndash; we suck at naming things.</p>
-
-<h2>Profiles: technology-specific wrapper classes</h2>
-
-<p>A profile is simply a wrapper class that groups Hiera lookups and class
-declarations into one functional unit. For example, if you wanted Wordpress
-installed on a machine, you&rsquo;d probably need to declare the apache class to
-get Apache setup, declare an <code>apache::vhost</code> for the Wordpress directory,
-setup a MySQL database with the appropriate classes, and so on. There are
-a lot of components that go together when you setup a piece of technology,
-it&rsquo;s not just a single class.</p>
-
-<p>Because of this, a profile exists to give you a single class you can include
-that will setup all the necessary bits for that piece of technology (be it
-Wordpress, or Tomcat, or whatever).</p>
-
-<p>Let&rsquo;s look at a simple profile for Wordpress:</p>
-
-<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>profiles/manifests/wordpress.pp </span></figcaption>
-<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-<span class='line-number'>49</span>
-<span class='line-number'>50</span>
-<span class='line-number'>51</span>
-<span class='line-number'>52</span>
-<span class='line-number'>53</span>
-<span class='line-number'>54</span>
-<span class='line-number'>55</span>
-<span class='line-number'>56</span>
-<span class='line-number'>57</span>
-<span class='line-number'>58</span>
-<span class='line-number'>59</span>
-<span class='line-number'>60</span>
-<span class='line-number'>61</span>
-<span class='line-number'>62</span>
-<span class='line-number'>63</span>
-<span class='line-number'>64</span>
-<span class='line-number'>65</span>
-<span class='line-number'>66</span>
-<span class='line-number'>67</span>
-<span class='line-number'>68</span>
-<span class='line-number'>69</span>
-<span class='line-number'>70</span>
-</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="kd">class</span> <span class="nc">profiles::wordpress</span> <span class="p">{</span><span class="err">&lt;/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;p&gt;</span><span class="c-Singleline">  ## Hiera lookups</span>
-</span><span class='line'>  <span class="nv">$site_name</span>               <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">profiles</span><span class="err">::</span><span class="ss">wordpress</span><span class="err">::</span><span class="ss">site_name</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span>
-</span><span class='line'>  <span class="nv">$wordpress_user_password</span> <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">profiles</span><span class="err">::</span><span class="ss">wordpress</span><span class="err">::</span><span class="ss">wordpress_user_password</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span>
-</span><span class='line'>  <span class="nv">$mysql_root_password</span>     <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">profiles</span><span class="err">::</span><span class="ss">wordpress</span><span class="err">::</span><span class="ss">mysql_root_password</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span>
-</span><span class='line'>  <span class="nv">$wordpress_db_host</span>       <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">profiles</span><span class="err">::</span><span class="ss">wordpress</span><span class="err">::</span><span class="ss">wordpress_db_host</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span>
-</span><span class='line'>  <span class="nv">$wordpress_db_name</span>       <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">profiles</span><span class="err">::</span><span class="ss">wordpress</span><span class="err">::</span><span class="ss">wordpress_db_name</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span>
-</span><span class='line'>  <span class="nv">$wordpress_db_password</span>   <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">profiles</span><span class="err">::</span><span class="ss">wordpress</span><span class="err">::</span><span class="ss">wordpress_db_password</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span>
-</span><span class='line'>  <span class="nv">$wordpress_user</span>          <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">profiles</span><span class="err">::</span><span class="ss">wordpress</span><span class="err">::</span><span class="ss">wordpress_user</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span>
-</span><span class='line'>  <span class="nv">$wordpress_group</span>         <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">profiles</span><span class="err">::</span><span class="ss">wordpress</span><span class="err">::</span><span class="ss">wordpress_group</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span>
-</span><span class='line'>  <span class="nv">$wordpress_docroot</span>       <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">profiles</span><span class="err">::</span><span class="ss">wordpress</span><span class="err">::</span><span class="ss">wordpress_docroot</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span>
-</span><span class='line'>  <span class="nv">$wordpress_port</span>          <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">profiles</span><span class="err">::</span><span class="ss">wordpress</span><span class="err">::</span><span class="ss">wordpress_port</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span><span class="o">&lt;</span><span class="err">/</span><span class="ss">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="ss">p</span><span class="o">&gt;</span>  <span class="c-Singleline">## Create user</span>
-</span><span class='line'>  <span class="nc">group</span> <span class="p">{</span> <span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">wordpress</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">:</span><span class="err">&lt;/</span><span class="ss">p</span><span class="err">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;</span><span class="ss">pre</span><span class="err">&gt;&lt;</span><span class="ss">code</span><span class="err">&gt;</span><span class="ss">ensure</span> <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="ss">present</span><span class="err">,</span>
-</span><span class='line'><span class="ss">name</span>   <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="nv">$wordpress_group</span><span class="err">,</span>
-</span><span class='line'><span class="err">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="ss">pre</span><span class="err">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;</span><span class="ss">p</span><span class="err">&gt;</span>  <span class="p">}</span>
-</span><span class='line'>  <span class="ss">user</span> <span class="p">{</span> <span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">wordpress</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;:&lt;/</span><span class="ss">p</span><span class="err">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;</span><span class="ss">pre</span><span class="err">&gt;&lt;</span><span class="ss">code</span><span class="err">&gt;</span><span class="ss">ensure</span>   <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="ss">present</span><span class="p">,</span>
-</span><span class='line'><span class="ss">gid</span>      <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="nv">$wordpress_group</span><span class="p">,</span>
-</span><span class='line'><span class="ss">password</span> <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="nv">$wordpress_user_password</span><span class="p">,</span>
-</span><span class='line'><span class="ss">name</span>     <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="nv">$wordpress_group</span><span class="p">,</span>
-</span><span class='line'><span class="ss">home</span>     <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="nv">$wordpress_docroot</span><span class="p">,</span>
-</span><span class='line'><span class="err">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="ss">pre</span><span class="err">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;</span><span class="ss">p</span><span class="err">&gt;</span>  <span class="p">}</span><span class="err">&lt;/</span><span class="ss">p</span><span class="err">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;</span><span class="ss">p</span><span class="err">&gt;</span><span class="c-Singleline">  ## Configure mysql</span>
-</span><span class='line'>  <span class="ss">class</span> <span class="p">{</span> <span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">mysql</span><span class="err">::</span><span class="ss">server</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;:&lt;/</span><span class="ss">p</span><span class="err">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;</span><span class="ss">pre</span><span class="err">&gt;&lt;</span><span class="ss">code</span><span class="err">&gt;</span><span class="ss">root_password</span> <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="nv">$wordpress_root_password</span><span class="p">,</span>
-</span><span class='line'><span class="err">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="ss">pre</span><span class="err">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;</span><span class="ss">p</span><span class="err">&gt;</span>  <span class="p">}</span><span class="err">&lt;/</span><span class="ss">p</span><span class="err">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;</span><span class="ss">p</span><span class="err">&gt;</span>  <span class="ss">class</span> <span class="p">{</span> <span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">mysql</span><span class="err">::</span><span class="ss">bindings</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;:&lt;/</span><span class="ss">p</span><span class="err">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;</span><span class="ss">pre</span><span class="err">&gt;&lt;</span><span class="ss">code</span><span class="err">&gt;</span><span class="ss">php_enable</span> <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="ss">true</span><span class="p">,</span>
-</span><span class='line'><span class="err">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="ss">pre</span><span class="err">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;</span><span class="ss">p</span><span class="err">&gt;</span>  <span class="p">}</span><span class="err">&lt;/</span><span class="ss">p</span><span class="err">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;</span><span class="ss">p</span><span class="err">&gt;</span><span class="c-Singleline">  ## Configure apache</span>
-</span><span class='line'>  <span class="ss">include</span> <span class="ss">apache</span>
-</span><span class='line'>  <span class="ss">include</span> <span class="ss">apache</span><span class="p">::</span><span class="ss">mod</span><span class="p">::</span><span class="ss">php</span>
-</span><span class='line'>  <span class="ss">apache</span><span class="p">::</span><span class="ss">vhost</span> <span class="p">{</span> <span class="nv">$::fqdn</span><span class="err">:&lt;/</span><span class="ss">p</span><span class="err">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;</span><span class="ss">pre</span><span class="err">&gt;&lt;</span><span class="ss">code</span><span class="err">&gt;</span><span class="ss">port</span>    <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="nv">$wordpress_port</span><span class="p">,</span>
-</span><span class='line'><span class="ss">docroot</span> <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="nv">$wordpress_docroot</span><span class="p">,</span>
-</span><span class='line'><span class="err">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="ss">pre</span><span class="err">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;</span><span class="ss">p</span><span class="err">&gt;</span>  <span class="p">}</span><span class="err">&lt;/</span><span class="ss">p</span><span class="err">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;</span><span class="ss">p</span><span class="err">&gt;</span><span class="c-Singleline">  ## Configure wordpress</span>
-</span><span class='line'>  <span class="ss">class</span> <span class="p">{</span> <span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;::</span><span class="ss">wordpress</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;:&lt;/</span><span class="ss">p</span><span class="err">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;</span><span class="ss">pre</span><span class="err">&gt;&lt;</span><span class="ss">code</span><span class="err">&gt;</span><span class="ss">install_dir</span> <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="nv">$wordpress_docroot</span><span class="p">,</span>
-</span><span class='line'><span class="ss">db_name</span>     <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="nv">$wordpress_db_name</span><span class="p">,</span>
-</span><span class='line'><span class="ss">db_host</span>     <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="nv">$wordpress_db_host</span><span class="p">,</span>
-</span><span class='line'><span class="ss">db_password</span> <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="nv">$wordpress_db_password</span><span class="p">,</span>
-</span><span class='line'><span class="err">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="ss">pre</span><span class="err">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;</span><span class="ss">p</span><span class="err">&gt;</span>  <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
-
-<h3>Name your profiles according to the technology they setup</h3>
-
-<p>Profiles are technology-specific, so you&rsquo;ll have one to setup wordpress, and
-tomcat, and jenkins, and&hellip;well, you get the picture. You can also namespace
-your profiles so that you have <code>profiles::ssh::server</code> and
-<code>profiles::ssh::client</code> if you want. You can even have
-<code>profiles::jenkins::tomcat</code> and <code>profiles::jenkins::jboss</code> or however you need
-to namespace according to the TECHNOLOGIES you use. You don&rsquo;t need to include
-your environment in the profile name (a la <code>profiles::dev::tomcat</code>) as the bits
-of data that make the dev environment different from production should come
-from <strong>HIERA</strong>, and thus aren&rsquo;t going to be different on a per-profile basis.
-You CAN setup profiles according to your business unit if multiple units use
-Puppet and have different setups (a la <code>security::profiles::tomcat</code> versus
-<code>ops::profiles::tomcat</code>), but the GOAL of Puppet is to have one main set of
-modules that every group uses (and the Hiera data being different for every
-group). That&rsquo;s the GOAL, but I&rsquo;m pragmatic enough to understand that not
-everywhere is a shiny, happy &lsquo;DevOps Garden.&rsquo;</p>
-
-<h3>Do all Hiera lookups in the profile</h3>
-
-<p>You&rsquo;ll see that I declared variables and set their values with Hiera lookups.
-The profile is the place for these lookups because the profile collects all
-external data and declares all the classes you&rsquo;ll need. In reality, you&rsquo;ll
-<strong>USUALLY</strong> only see profiles looking up parameters and declaring classes
-(i.e. declaring users and groups like I did above will USUALLY be left to
-component classes).</p>
-
-<p>I do the Hiera lookups first to make it easy to debug from where those values
-came. I don&rsquo;t rely on <a href="http://docs.puppetlabs.com/hiera/1/puppet.html#automatic-parameter-lookup">&lsquo;Automatic Parameter Lookup&rsquo;</a> in Puppet
-3.x.x because it can be &lsquo;magic&rsquo; for people who aren&rsquo;t aware of it (for people
-new to Puppet, it&rsquo;s much easier to see a function call and trace back what it
-does rather than experience Puppet doing something unseen and wondering what
-the hell happened).</p>
-
-<p>Finally, you&rsquo;ll notice that my Hiera lookups have <strong>NO DEFAULT VALUES</strong> &ndash; this
-is <strong>BY DESIGN!</strong>  For most people, their Hiera data is <strong>PROBABLY</strong> located in
-a separate repository as their Puppet module data. Imagine making a change to
-your profile to have it lookup a bit of data from Hiera, and then imagine you
-FORGOT to put that data into Hiera. What happens if you provide a default value
-to Hiera? The catalog compiles, that default value gets passed down to the
-component module, and gets enforced on disk. If you have good tests, you MIGHT
-see that the component you configured has a bit of data that&rsquo;s not correct, but
-what if you don&rsquo;t have a great post-Puppet testing workflow? Puppet will
-correctly set this default value, according to Puppet everything is green and
-worked just fine, but now your component is setup incorrectly. That&rsquo;s one of
-the WORST failures &ndash; the ones that you don&rsquo;t catch.  Now, imagine you DON&rsquo;T
-provide a default value. In THIS case, Puppet will raise a compilation error
-because a Hiera lookup didn&rsquo;t return a value. You&rsquo;ll catch your error before
-anything gets pushed to Production and you can catch the screwup. This is
-a MUCH better solution.</p>
-
-<h3>Use parameterized class declarations and explicitly pass values you care about</h3>
-
-<p>The parameterized class declaration syntax can be dangerous. The difference
-between the <code>include</code> function and the parameterized class syntax is that
-the <code>include</code> function is idempotent. You can do the following in a Puppet
-manifest, and Puppet doesn&rsquo;t raise an error:</p>
-
-<p><code>
-include apache
-include apache
-include apache
-</code></p>
-
-<p>This is because the <code>include</code> function checks to see if the class is in the
-catalog. If it ISN&rsquo;T, then it adds it. If it IS, then it exits cleanly. The
-<code>include</code> function is your pal.</p>
-
-<p>Consider THIS manifest:</p>
-
-<p><code>
-class { 'apache': }
-include apache
-include apache
-</code></p>
-
-<p>Does this work?  Yep.  The parameterized class syntax adds the class to the
-catalog, the include function detects this and exits cleanly twice.  What
-about THIS manifest:</p>
-
-<p><code>
-include apache
-class { 'apache': }
-include apache
-</code></p>
-
-<p>Does THIS work?  Nope!  Puppet raises a compilation error because a class was
-declared more than once in a catalog.  Why?  Well, consider that Puppet is
-&lsquo;declarative&rsquo;&hellip;all the way up until it isn&rsquo;t.  Puppet&rsquo;s PARSER reads from the
-top of the file to the bottom of the file, and we have a single-pass parser
-when it comes to things like setting variables and declaring classes. When
-the parser hits the first include function, it adds the class to the catalog.
-The parameterized class syntax, however, is a honey badger: it doesn&rsquo;t give
-a shit. It adds a class to the catalog regardless of whether it already exists
-or not. So why would we EVER use the parameterized class declaration syntax?
-We need to use it because the include function doesn&rsquo;t allow you to pass
-parameters when you declare a class.</p>
-
-<p>So wait &ndash; why did I spend all this time explaining why the parameterized class
-syntax is more dangerous than the include function <strong>ONLY</strong> to recommend its
-use in profiles?  For two reasons:</p>
-
-<ul>
-<li>We need to use it to pass parameters to classes</li>
-<li>We&rsquo;re wrapping its use in a class that we can <strong>IN TURN</strong> declare with the <code>include</code> function</li>
-</ul>
-
-
-<p>Yes, we can get the best of BOTH worlds, the ability to pass parameters and
-the use of our pal the <code>include</code> function, with this wrapper class. We&rsquo;ll see
-the latter usage when we come to roles, but for now let&rsquo;s focus on passing
-parameter values.</p>
-
-<p>In the first section, we set variables with Hiera lookups, now we can pass
-those variables to classes we&rsquo;re declaring with the parameterized class syntax.
-This allows the declaration of the class to be static, but the parameters we
-pass to that class to change according to the Hiera hierarchy. We&rsquo;ve explicitly
-called the <code>hiera</code> function, so it makes it easier to debug, and we&rsquo;re explicitly
-passing parameter values so we know definitively which parameters are being
-passed (and thus are overriding default values) to the component module. Finally,
-since our component modules do NOT use Hiera at all, we can be sure that if we&rsquo;re
-not passing a parameter that it&rsquo;s getting its value from the default set in the
-module&rsquo;s <code>::params</code> class.</p>
-
-<p>Everything we do here is meant to make things easier to debug when it&rsquo;s 3am and
-things aren&rsquo;t working. Any asshole can do crazy shit in Puppet, but a seasoned
-sysadmin writes their code for ease of debugging during 3am pages.</p>
-
-<h3>An annoying Puppet bug &ndash; top-level class declarations and profiles</h3>
-
-<p><a href="http://projects.puppetlabs.com/issues/2053">Oh, ticket 2053</a>, how terrible are you? This is one of those bug numbers
-that I can remember by heart (like <a href="http://projects.puppetlabs.com/issues/8040">8040</a> and <a href="http://projects.puppetlabs.com/issues/86">86</a>). Puppet has
-the ability to do &lsquo;relative namespacing&rsquo;, which allows you to declare a variable
-called <code>$port</code> in a class called <code>$apache</code> and refer to it as <code>$port</code> instead
-of fully-namespacing the variable, and thus having to call it <code>$apache::port</code>
-inside the <code>apache</code> class. It&rsquo;s a shortcut &ndash; you can STILL refer to the variable
-as <code>$apache::port</code> in the class &ndash; but it comes in handy. The PROBLEM occurs when
-you create a profile, as we did above, called <code>profiles::wordpress</code> and you try
-to declare a class called <code>wordpress</code>.  If you do the following inside the
-<code>profiles::wordpress</code> class, what class is being declared:</p>
-
-<p><code>
-include wordpress
-</code></p>
-
-<p>If you think you&rsquo;re declaring a wordpress class from within a wordpress module
-in your Puppet modulepath, you would be wrong.  Puppet ACTUALLY thinks you&rsquo;re
-trying to declare <code>profiles::wordpress</code> because you&rsquo;re INSIDE the <code>profiles::wordpress</code>
-class and it&rsquo;s doing relative namespacing (i.e. in the same way you refer to <code>$port</code>
-and ACTUALLY mean <code>$apache::port</code> it thinks you&rsquo;re referring to <code>wordpress</code> and
-ACTUALLY mean <code>profiles::wordpress</code>.</p>
-
-<p>Needless to say, this causes LOTS of confusion.</p>
-
-<p>The solution here is to declare a class called <code>::wordpress</code> which tells Puppet
-to go to the top-level namespace and look for a module called <code>wordpress</code> which
-has a top-level class called <code>wordpress</code>. It&rsquo;s the same reason that we refer to
-Facter Fact values as <code>$::osfamily</code> instead of <code>$osfamily</code> in class definitions
-(because you can declare a local variable called <code>$osfamily</code> in your class).
-This is why in the profile above you see this:</p>
-
-<p><code>
-class { '::wordpress':
-  install_dir =&gt; $wordpress_docroot,
-  db_name     =&gt; $wordpress_db_name,
-  db_host     =&gt; $wordpress_db_host,
-  db_password =&gt; $wordpress_db_password,
-}
-</code></p>
-
-<p>When you use profiles and roles, you&rsquo;ll need to do this namespacing trick when
-declaring classes because you&rsquo;re frequently going to have a <code>profile::&lt;sometech&gt;</code>
-that will declare the <code>&lt;sometech&gt;</code> top-level class.</p>
-
-<h2>Roles: business-specific wrapper classes</h2>
-
-<p>How do you refer to your machines? When I ask you about that cluster over
-there, do you say &ldquo;Oh, you mean the machines with java 1.6, apache, mysql,
-etc&hellip;&rdquo;?  I didn&rsquo;t think so. You usually have names for them, like the
-&ldquo;internal compute cluster&rdquo; or &ldquo;app builder nodes&rdquo; or &ldquo;DMZ repo machines&rdquo; or
-whatever. These names are your Roles. Roles are just the mapping of your
-machine&rsquo;s names to the technology that should be ON them. In the past we had
-descriptive hostnames that afforded us a code for what the machine &lsquo;did&rsquo; &ndash;
-roles are just that mapping for Puppet.</p>
-
-<p>Roles are namespaced just like profiles, but now it&rsquo;s up to your organization
-to fill in the blanks. Some people immediately want to put environments into
-the roles (a la <code>roles::uat::compute_cluster</code>), but that&rsquo;s usually not necessary
-(as MOST LIKELY the compute cluster nodes have the SAME technology on them
-when they&rsquo;re in dev versus when they&rsquo;re in prod, it&rsquo;s just the DATA &ndash; like
-database names, VIP locations, usernames/passwords, etc &ndash; that&rsquo;s different.
-Again, these data differences will come from Hiera, so there should be no reason
-to put the environment name in your role). You still CAN put the environment
-name in the role if it makes you feel better, but it&rsquo;ll probably be useless.</p>
-
-<h3>Roles ONLY include profiles</h3>
-
-<p>So what exactly is in the role wrapper class? That depends on what technology
-is on the node that defines that role. What I can tell you for CERTAIN is that
-roles should ONLY use the <code>include</code> function and should ONLY include profiles.
-What does this give us? This gives us our pal the <code>include</code> function back! You
-can include the same profile 100 times if you want, and Puppet only puts it in
-the catalog once.</p>
-
-<h3>Every node is classified with one role. Period.</h3>
-
-<p>The beautiful thing about roles and profiles is that the GOAL is that you
-should be able to classify a node with a SINGLE role and THAT&rsquo;S IT. This makes
-classification simple and static &ndash; the node gets its role, the role includes
-profiles, profiles call out to Hiera for data, that data is passed to component
-modules, and away we go. Also, since classification is static, you can use
-version control to see what changes were introduced to the role (i.e. what
-profiles were added or removed).  In my opinion, if you need to apply more
-than one role to a node, you&rsquo;ve introduced a new role (see below).</p>
-
-<h3>Roles CAN use inheritance&hellip;if you like</h3>
-
-<p>I&rsquo;ve seen people implement roles a couple of different ways, and one of them
-is to use inheritance to build a catalog.  For example, you can define a base
-<code>roles</code> class that includes something like a base security profile (i.e.
-something that EVERY node in your infrastructure should have). Moving down the
-line, you COULD namespace according to function like <code>roles::app</code> for your
-application server machines. The <code>roles::app</code> class could inherit from the <code>roles</code>
-class (which gets the base security profile), and could then include the profiles
-necessary to setup an application server. Next, you could subclass down to
-<code>roles::app::site_foo</code> for an application server that supports some site in
-your organization.  That class inherits from the <code>roles::app</code> class, and then
-adds profiles that are specific to that site (maybe they use Jboss instead of
-Tomcat, and thus that&rsquo;s where the differentiation occurs). This is great
-because you don&rsquo;t have a lot of repeated use of the <code>include</code> function, but
-it also makes it hard to definitively look at a specific role to see exactly
-what&rsquo;s being declared (i.e. all the profiles). You have to weigh what you
-value more: less typing or greater visibility. I will err on the side of
-greater visibility (just due to that whole 3am outage thing), but it&rsquo;s up
-to you to decide what to optimize for.</p>
-
-<h3>A role similar, yet different, from another role is: a new role</h3>
-
-<p>EVERYBODY says to me &ldquo;Gary, I have this machine that&rsquo;s an AWFUL LOT like
-this role over here, but&hellip;it&rsquo;s different.&rdquo; My answer to them is: &ldquo;Great,
-that&rsquo;s another role.&rdquo;  If the thing that&rsquo;s different is data (i.e. which
-database to connect to, or what IP address to route traffic through),
-then that difference should be put in HIERA and the classification should
-remain the same. If that difference is technology-specific (i.e. this server
-uses JBoss instead of Tomcat) then first look and see if you can isolate
-how you know this machine is different (maybe it&rsquo;s on a different subnet,
-maybe it&rsquo;s at a different location, something like that). If you can figure
-that out and write a Fact for it (or use similar conditional logic to determine
-this logically), then you can just drop that conditional logic in your role
-and let it do the heavy lifting. If, in the end, this bit of data is totally
-arbitrary, then you&rsquo;ll need to create another role (perhaps a subclass using
-the above namespacing) and assign it to your node.</p>
-
-<p>The hardest thing about this setup is naming your roles. Why? Every site is
-different.  It&rsquo;s hard for me to account for differences in your setup because
-your workplace is dysfunctional (seriously).</p>
-
-<h2>Review: what does this get you?</h2>
-
-<p>Let&rsquo;s walk through every level of this setup from the top to the bottom and see
-what it gets you. Every node is classified to a single role, and, for the most
-part, that classification isn&rsquo;t going to change. Now you can take all the extra
-work off your classifier tool and put it back into the manifests (that are
-subject to version control, so you can <code>git blame</code> to your heart&rsquo;s content and
-see who last changed the role/profile). Each role is going to include one or
-more profile, which gives us the added idempotent protection of the include
-function (of course, if profiles have collisions with classes you&rsquo;ll have to
-resolve those. Say one or more profiles tries to include an apache class &ndash;
-simply break that component out into a separate profile, extract the parameters
-from Hiera, and include that profile at a higher level). Each profile is going
-to do Hiera lookups which should give you the ability to provide different data
-for different host types (i.e. different data on a per-environment level, or
-however you lay out your Hiera hierarchy), and that data will be passed
-directly to class that is declared. Finally, each component module will
-accept parameters as variables internal to that module, default
-parameters/variables to sane values in the <code>::params</code> class, and use those
-variables when declaring each resource throughtout its classes.</p>
-
-<ul>
-<li>Roles abstract profiles</li>
-<li>Profiles abstract component modules</li>
-<li>Hiera abstracts configuration data</li>
-<li>Component modules abstract resources</li>
-<li>Resources abstract the underlying OS implementation</li>
-</ul>
-
-
-<h2>Choose your level of comfortability</h2>
-
-<p>The roles and profiles pattern also buys you something else &ndash; the ability for
-less-skilled and more-skilled Puppet users to work with the same codebase.
-Let&rsquo;s say you use some GUI classifier (like the Puppet Enterprise Console),
-someone who&rsquo;s less skilled at Puppet looks and sees that a node is classified
-with a certain role, so they open the role file and see something like this:</p>
-
-<p><code>
-include profiles::wordpress
-include profiles::tomcat
-include profiles::git::repo_server
-</code></p>
-
-<p>That&rsquo;s pretty legible, right? Someone who doesn&rsquo;t regularly use Puppet can
-probably make a good guess as to what&rsquo;s on the machine. Need more information?
-Open one of the profiles and look specifically at the classes that are being
-declared. Need to know the data being passed? Jump into Hiera. Need to know
-more information? Dig into each component module and see what&rsquo;s going on there.</p>
-
-<p>When you have everything abstracted correctly, you can have developers
-providing data (like build versions) to Hiera, junior admins grouping nodes for
-classification, more senior folk updating profiles, and your best Puppet people
-creating/updating component modules and building plugins like custom
-facts/functions/whatever.</p>
-
-<h2>Great! Now go and refactor&hellip;</h2>
-
-<p>If you&rsquo;ve used Puppet for more than a month, you&rsquo;re probably familiar with the
-&ldquo;Oh shit, I should have done it THAT way&hellip;let me refactor this&rdquo; game. I know,
-it sucks, and we at Puppet Labs haven&rsquo;t been shy of incorporating something that
-we feel will help people out (but will also require some refactoring). This
-pattern, though, has been in use by the Professional Services team at Puppet Labs
-for over a year without modification. I&rsquo;ve used this on sites GREAT and small,
-and every site with which I&rsquo;ve consulted and implemented this pattern has been
-able to both understand its power and derive real value within a week. If you&rsquo;re
-contemplating a refactor, you can&rsquo;t go wrong with Roles and Profiles (or
-whatever names you decide to use).</p>
 ]]></content>
   </entry>
   
