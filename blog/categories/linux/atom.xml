@@ -4,7 +4,7 @@
   <title><![CDATA[Category: linux | Shit Gary Says]]></title>
   <link href="http://garylarizza.com/blog/categories/linux/atom.xml" rel="self"/>
   <link href="http://garylarizza.com/"/>
-  <updated>2014-10-28T15:41:05+00:00</updated>
+  <updated>2015-11-16T13:15:52-08:00</updated>
   <id>http://garylarizza.com/</id>
   <author>
     <name><![CDATA[Gary larizza]]></name>
@@ -16,7 +16,7 @@
   <entry>
     <title type="html"><![CDATA[When to Hiera (aka: How do I Module?)]]></title>
     <link href="http://garylarizza.com/blog/2013/12/08/when-to-hiera/"/>
-    <updated>2013-12-08T23:31:54+00:00</updated>
+    <updated>2013-12-08T15:31:54-08:00</updated>
     <id>http://garylarizza.com/blog/2013/12/08/when-to-hiera</id>
     <content type="html"><![CDATA[<p>I&rsquo;m convinced that writing Puppet modules is the ultimate exercise in bikeshedding:
 if it works, someone&rsquo;s probably going to tell you that you could have done it better,

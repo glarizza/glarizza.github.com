@@ -4,7 +4,7 @@
   <title><![CDATA[Category: MOAR | Shit Gary Says]]></title>
   <link href="http://garylarizza.com/blog/categories/moar/atom.xml" rel="self"/>
   <link href="http://garylarizza.com/"/>
-  <updated>2014-10-28T15:41:05+00:00</updated>
+  <updated>2015-11-16T13:15:52-08:00</updated>
   <id>http://garylarizza.com/</id>
   <author>
     <name><![CDATA[Gary larizza]]></name>
@@ -16,7 +16,7 @@
   <entry>
     <title type="html"><![CDATA[On Dependencies and Order]]></title>
     <link href="http://garylarizza.com/blog/2014/10/19/on-dependencies-and-order/"/>
-    <updated>2014-10-19T14:09:53+01:00</updated>
+    <updated>2014-10-19T06:09:53-07:00</updated>
     <id>http://garylarizza.com/blog/2014/10/19/on-dependencies-and-order</id>
     <content type="html"><![CDATA[<p>This blog post was born out of a number of conversations that I&rsquo;ve had about
 Puppet, its dependency model, and why &lsquo;ordering&rsquo; is not necessarily the way to

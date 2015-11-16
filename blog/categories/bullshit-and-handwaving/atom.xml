@@ -4,7 +4,7 @@
   <title><![CDATA[Category: bullshit and handwaving | Shit Gary Says]]></title>
   <link href="http://garylarizza.com/blog/categories/bullshit-and-handwaving/atom.xml" rel="self"/>
   <link href="http://garylarizza.com/"/>
-  <updated>2014-10-28T15:41:05+00:00</updated>
+  <updated>2015-11-16T13:15:52-08:00</updated>
   <id>http://garylarizza.com/</id>
   <author>
     <name><![CDATA[Gary larizza]]></name>
@@ -16,7 +16,7 @@
   <entry>
     <title type="html"><![CDATA[Building a Functional Puppet Workflow Part 3b: More R10k Madness]]></title>
     <link href="http://garylarizza.com/blog/2014/03/07/puppet-workflow-part-3b/"/>
-    <updated>2014-03-07T16:00:00+00:00</updated>
+    <updated>2014-03-07T08:00:00-08:00</updated>
     <id>http://garylarizza.com/blog/2014/03/07/puppet-workflow-part-3b</id>
     <content type="html"><![CDATA[<p><a href="http://garylarizza.com/blog/2014/02/18/puppet-workflow-part-3/">In the last workflows post,</a> I talked about dynamic Puppet
 environments and introduced R10k, which is an awesome tool for mapping modules

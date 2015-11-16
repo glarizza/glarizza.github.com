@@ -4,7 +4,7 @@
   <title><![CDATA[Category: profiles | Shit Gary Says]]></title>
   <link href="http://garylarizza.com/blog/categories/profiles/atom.xml" rel="self"/>
   <link href="http://garylarizza.com/"/>
-  <updated>2014-10-28T15:41:05+00:00</updated>
+  <updated>2015-11-16T13:15:52-08:00</updated>
   <id>http://garylarizza.com/</id>
   <author>
     <name><![CDATA[Gary larizza]]></name>
@@ -16,7 +16,7 @@
   <entry>
     <title type="html"><![CDATA[Building a Functional Puppet Workflow Part 2: Roles and Profiles]]></title>
     <link href="http://garylarizza.com/blog/2014/02/17/puppet-workflow-part-2/"/>
-    <updated>2014-02-17T22:01:37+00:00</updated>
+    <updated>2014-02-17T14:01:37-08:00</updated>
     <id>http://garylarizza.com/blog/2014/02/17/puppet-workflow-part-2</id>
     <content type="html"><![CDATA[<p>In my <a href="http://www.garylarizza.com/blog/2014/02/17/puppet-workflow-part-1/">first post</a>, I talked about writing functional component
 modules. Well, I didn&rsquo;t really do much detailing other than pointing out

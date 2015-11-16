@@ -4,7 +4,7 @@
   <title><![CDATA[Shit Gary Says]]></title>
   <link href="http://garylarizza.com/atom.xml" rel="self"/>
   <link href="http://garylarizza.com/"/>
-  <updated>2014-10-28T15:41:05+00:00</updated>
+  <updated>2015-11-16T13:15:52-08:00</updated>
   <id>http://garylarizza.com/</id>
   <author>
     <name><![CDATA[Gary larizza]]></name>
@@ -14,9 +14,581 @@
 
   
   <entry>
+    <title type="html"><![CDATA[Workflows Evolved: Even Besterer Practices]]></title>
+    <link href="http://garylarizza.com/blog/2015/11/16/workflows-evolved-even-besterer-practices/"/>
+    <updated>2015-11-16T07:00:24-08:00</updated>
+    <id>http://garylarizza.com/blog/2015/11/16/workflows-evolved-even-besterer-practices</id>
+    <content type="html"><![CDATA[<p>It&rsquo;s nearly been two years since I posted the Puppet Workflow series and
+several things have changed:</p>
+
+<ul>
+<li>R10k now ships with Puppet Enterprise and <a href="http://docs.puppetlabs.com/pe/latest/r10k.html">there are docs for it!</a></li>
+<li>There&rsquo;s even a <a href="http://docs.puppetlabs.com/pe/latest/r10k_config_console.html"><code>pe_r10k</code> module</a> that ships with Puppet Enterprise 2015.2.x and higher to configure R10k</li>
+<li><a href="https://github.com/puppetlabs/control-repo">Control repos are the standard and are popping up all over the place</a></li>
+<li>Most people are bundling Hiera data with their Control repo (unless they have a very good reason not to)</li>
+<li>Ditto for Roles and Profiles</li>
+<li>The one-role-per-node rule is a good start, but PE&rsquo;s rules-based classification engine allows us to relax that rule</li>
+<li>Roles still include Profiles, but conditional logic is allowed and recommended to keep Hiera hierarchy levels minimal</li>
+<li>&lsquo;Data&rsquo; goes in Hiera, but the definition of &lsquo;data&rsquo; changes between organizations</li>
+<li>There&rsquo;s now a (somewhat) defined path for whether &lsquo;data&rsquo; is included in a profile or Hiera</li>
+<li>Automatic Parameter Lookup + Hiera&hellip;it&rsquo;s still hard to debug, but we&rsquo;re getting there</li>
+<li>I&rsquo;m incredibly wary of taking Uber during peak travel times with rate multipliers</li>
+</ul>
+
+
+<p>It&rsquo;s been awhile since I&rsquo;ve had a good rant, so let&rsquo;s get right into it!</p>
+
+<h2>Code Management with R10k</h2>
+
+<p>As of PE 3.8, R10k became bundled with Puppet Enterprise (PE) and was referred
+to as &ldquo;Code Management&rdquo; which initially confused people because the only thing
+about PE that was changed was that the R10k gem was preinstalled into PE&rsquo;s Ruby
+installation.  The purpose of this act was twofold:</p>
+
+<ol>
+<li>The Professional Services team was installing R10k in essentially EVERY services engagement, and so it made sense to ship R10k and thus officially support its installation</li>
+<li>We&rsquo;ve always had plans to keep the functionality that R10k provided but not NECESSARILY the tool-known-as-R10k, so calling the service it provided something OTHER than R10k would allow us to swap out the implementation underneath the hood while still being able to talk about the functionality it provided</li>
+</ol>
+
+
+<p>Of course, if you didn&rsquo;t live inside Puppet Labs it&rsquo;s possible that you might not have gotten this
+memo, but, hey: better late than never?</p>
+
+<p>For various reasons, we also never initially shipped a PE-specific module to
+configure R10k, so you ALSO had to either manually setup <code>r10k.yaml</code> or use
+<a href="https://github.com/acidprime/r10k">Zack Smith&rsquo;s R10k module</a> to manage that file. Of course, that
+module did all kinds of OTHER things (like installing the R10k gem, setting up
+webhooks, and making my breakfast), which meant that if you used it with the
+version of PE that shipped R10k, you had to be careful to use the version of
+the module that didn&rsquo;t ALSO try to upgrade that gem on your system (and whoops
+if the module actually upgraded the version of R10k that we shipped). This is
+why that module is Puppet Approved but not an offical Puppet Labs module: it
+does things that we would consider &ldquo;unsupported&rdquo; outside of a professional
+services engagement (i.e. the webhook stuff). Finally, the path to
+<code>r10k.yaml</code> was changed to <code>/etc/puppetlabs/r10k/r10k.yaml</code>, but, in its
+absence, the old path of <code>/etc/r10k.yaml</code> would be used and a message would
+be displayed to inform you of the new file path (in the case that both files
+were present, the file at <code>/etc/puppetlabs/r10k/r10k.yaml</code> would win).</p>
+
+<p>When PE version 2015.2.0 shipped (I&rsquo;m still not used to these version numbers
+either, folks), we FINALLY shipped a <code>pe_r10k</code> module with similar structure to
+Zack&rsquo;s R10k module &ndash; this meant you could FINALLY setup R10k immediatly without
+having to install additional Puppet modules. Even better(er), in PE 2015.2.2 we
+expose <a href="http://docs.puppetlabs.com/pe/latest/r10k_config_answers.html">a couple of PE installer answer file questions</a> that allow
+you to configure R10k DURING INSTALL TIME &ndash; so now your servers could be
+immediately bootstrapped with a single answers file (seriously, I know, it&rsquo;s
+about time; I do this shit every week, you have no idea). It finally feels like
+R10k has grown into the first-class citizen we all wanted it to be!</p>
+
+<p>Which means it&rsquo;s time to dump it.</p>
+
+<p>I kid. Mostly. The fact of the matter is that we&rsquo;re introducing a new service
+to manage code within Puppet Enterprise, <a href="https://puppetlabs.com/blog/managing-infrastructure-as-code-now-easier-than-ever">and if you&rsquo;re interested in reading more about it, check out this blog post by Lindsay Smith about Code Manager.</a>
+For you, the consumer, the process will be the same: you have a control
+repo, you push changes, a service is triggered on your Puppet masters, and code
+is synchronized on the Puppet master. What WILL change is the setup of this tool
+(there will still be PE installer answer file questions that allow you to configure
+this service, don&rsquo;t fret, and you&rsquo;ll still be able to configure this service through
+a Puppet module, but the name of said module and configuration files on disk
+will probably be different. Welcome to IT).</p>
+
+<p>Be on the lookout for this service, and, as always, check out the <a href="http://docs.puppetlabs.com">PE docs site</a> for
+more information on the Code Management service.</p>
+
+<h2>Control (repo) freak</h2>
+
+<p>With the explosion of R10k came the explosion of &ldquo;Control Repos&rdquo; all over the place.
+Everyone had one, everyone had an opinion on what worked best, and, well, we didn&rsquo;t
+really do a good job at offering a good startup control repo for you. Because of
+that, <a href="https://github.com/puppetlabs/control-repo">we recently posted a &lsquo;starter&rsquo; control repo on Github</a> in the Puppet Labs
+namespace that could be used to get started with R10k. Yes, it&rsquo;s definitely long
+overdue, but there it is! I use it on all engagements I do with new customers, so
+you can guarantee it&rsquo;ll have the use of Puppet Labs&#8217; PS team behind it. If you&rsquo;ve
+not started with R10k yet (or if you have but you wanna see what kinda crazy shit
+we&rsquo;re doing now), check it out. It&rsquo;s got great stuff in there like a config_version
+script to spit out the most recent commit of the current branch of the control repo
+(read: also current Puppet environment) as the &ldquo;Config Version&rdquo; string that Puppet
+prints out during every Puppet run (<a href="https://docs.puppetlabs.com/puppet/latest/reference/config_file_environment.html#configversion">see here for more info on this functionality</a>).
+We&rsquo;re also slowly adding things like inital bootstrapping profiles that will do
+things like configure R10k/Code Manager, manage the SSH key necessary to contact
+the control repo (should you be using an internal git repository server and
+also require an SSH key to access that repo), and so on. Star that repo and keep
+checking back, especially around PE releases, to see if we&rsquo;ve updated things in
+a way that will help you out!</p>
+
+<h2>&ldquo;Just put it in the control repo&rdquo;</h2>
+
+<p>Look, if there&rsquo;s one thing that my blog emphasizes (other than the fact that I&rsquo;ve
+got a hairpin trigger for cursing and an uncomfortable Harry Potter fetish) it&rsquo;s
+that &ldquo;best practices&rdquo; are inversely related to the insecurities of the speaker.
+Fortunately, I have no problem saying when I&rsquo;m wrong. If you&rsquo;ve got the time,
+allow me my mea culpa moment. In the past I had recommended:</p>
+
+<ul>
+<li>Using a separate git repo for Hiera data</li>
+<li>Using separate git repos for Roles and Profiles</li>
+<li>The Dave Matthews Band</li>
+</ul>
+
+
+<p>Time, experience, and the legalization of recreational marijuana in Oregon have
+helped me see the error in my ways (though, look, #41 is a good goddamn song,
+especially on the Dave &amp; Tim Live at Luther College album), so allow me to provide
+some insight into WHY I&rsquo;ve reconsidered my message(s)&hellip;</p>
+
+<h3>Hiera Data</h3>
+
+<p>In the past, I recommended a separate git repo for Hiera data along with
+a separate entry in <code>r10k.yaml</code> that would allow R10k to clone the Hiera data repo
+along the same vein as the control repo. The pro was that a separate Hiera data
+repo would afford you different access rights to this repo as you would the
+control repo (especially if different people needed different access to each
+function). The con was that now the branch structure of your Hiera data repo
+needed to EXACTLY MIRROR the structure of your control repo&hellip;.even if certain
+branches had EXACTLY THE SAME Hiera data and no changes were necessary.</p>
+
+<p>Puppet has enough moving parts, why did we need to complicate this if most
+people didn&rsquo;t care about access levels differing between the two repos? The
+solution was to bundle the Hiera data inside the control repo all the way up
+until you had a specific need to split it out. Truth be told both methods
+work with Puppet, so the choice is up to you (read: I DON&rsquo;T CARE WHICH METHOD
+YOU USE OH MY GOD WILL YOU QUIT TRYING TO PICK A FIGHT WITH ME OVER THIS LOL) :)</p>
+
+<p>Finally, there&rsquo;s an added benefit of putting this data inside the control repo,
+and it&rsquo;s ALSO the reason for the next recommendation&hellip;</p>
+
+<h3>Roles and Profiles</h3>
+
+<p>This is one that I actually fought when someone suggested it&hellip;I even started to
+recommend that a customer NOT do the thing I&rsquo;m about to recommend to you until they
+very eloquently explained why they did it. In the end, they were right, and I&rsquo;m
+passing this tip on to you:  Unless you have a very specific reason NOT to,
+put your &lsquo;roles&rsquo; and &lsquo;profiles&rsquo; modules in your control repo.</p>
+
+<p>Here&rsquo;s the thing about the control repo &ndash; you can set a post-receive hook on
+the repository (or setup a Jenkins/Bamboo/whatever job) that will update all your
+Puppet masters whenever changes are pushed to the remote git repository (i.e.
+your git repository server). This means that anytime the control repo is updated
+your Puppet masters will be updated. That&rsquo;s why it&rsquo;s CALLED the control repo &ndash; it
+effectively CONTROLS your Puppet masters.</p>
+
+<p>Understanding THAT, think about when you want your Puppet masters updated? Well,
+you usually want to update them when you&rsquo;re testing something out &ndash; you made a
+change to a couple of modules, then a profile (and possibly also a role), and
+now you wanna see if that code works on more than just your local laptop.
+But the Puppet landscape has changed a bit as the Puppet Forge has matured &ndash; most
+people are using modules off the Forge and are at least TRYING not to use their
+own component modules. This means that changes to your infrastructure are being
+controlled from within roles/profiles. But even IF you&rsquo;re one of those people
+who aren&rsquo;t using the Forge or who have to update an internal component module,
+you&rsquo;re probably not wanting to update all your Puppet masters every time you
+update a component module. There&rsquo;s probably lots of tinkering there, and every
+change isn&rsquo;t &ldquo;update-worthy&rdquo;. Conversely, changes to your profiles probably
+ARE &ldquo;update-worthy&rdquo;: &ldquo;Okay, let&rsquo;s pull this bit from Hiera, pass it as a parameter,
+and now I&rsquo;m ready to check it out on a couple of machines.&rdquo;</p>
+
+<p>If your roles and profiles modules are separate from your control repo, you
+end up having to push changes to, say, a class in the profiles module, then
+updating the Puppetfile in the control repo, then trigger an R10k run/sync.
+If things aren&rsquo;t correct, you end up changing the profile, pushing that change
+to the profile repo, and THEN having to trigger an R10k run/sync (and if you
+don&rsquo;t have SSH access to your masters, you have to make a dummy commit to the
+control repo so it triggers an R10k run OR doing a curl to some endpoint that
+will update your Puppet master for you). That last step is the thing that ends
+up wasting a bit of your time: why do we need to push a profile and then manually
+do an R10k run of we&rsquo;ve established that roles and profiles will pretty much
+ALWAYS be &ldquo;update-worthy&rdquo;? We don&rsquo;t. If you put the roles and profiles module
+inside the control repo, then it will automatically update your Puppet masters
+every time you make a change to one or the other. Bam &ndash; step saved. ALSO, if
+you do this, you can take Roles/Profiles out of Puppetfile, which means you
+no longer need to pin them! No more will you have to tie that module to a topic
+branch during development time: just create a branch of the control repo and
+go to town!  Wow, that saves even more time! I&rsquo;m uncomfortable with this level
+of excitement!</p>
+
+<p>The one thing you WILL need to do is to update <code>environment.conf</code> so that it
+knows to look for the roles/profiles modules in a different path from all the
+other modules (because removing it from Puppetfile means that it will no longer
+go to the same modulepath as every other module managed inside Puppetfile).
+For the purposes of cleanliness, we usually end up putting both roles/profiles
+inside a <code>site</code> folder in the control repo. If you do that, your modulepath
+in <code>environment.conf</code> looks a little something like this:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>modulepath = site:modules:$basemodulepath</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This means that Puppet will look for modules first in the &lsquo;site&rsquo; directory of
+its current environment (this is the directory where we put roles/profiles),
+and then inside the &lsquo;modules&rsquo; directory (this is where modules managed in Puppetfile
+are cloned by default), and then in $basemodulepath (i.e. modules common to all
+environments and also modules that Puppet Enterprise ships).</p>
+
+<p>LOOK, BEFORE YOU FREAK OUT, YES, SITE COMES FIRST HERE, AND OTHER PEOPLE HAVE
+SITE COME SECOND! Basically, if you have roles/profiles in the &lsquo;site&rsquo; directory
+AND you manage to still have the module in Puppetfile, then the module in the &lsquo;site&rsquo;
+directory will win. Feel free to flip/flop that if you want.</p>
+
+<p><strong>TL;AR: (yes, you already read all of this so it&rsquo;s futile) put roles/profiles
+inside the site directory of the control repo to save you time, but also don&rsquo;t
+do it if you have a specific reason not to&hellip;or if you like being contrarian.</strong></p>
+
+<h3>Dave Matthews</h3>
+
+<p>The &ldquo;Everyday&rdquo; album was the &ldquo;jump the shark&rdquo; moment for the Dave Matthews band,
+while the leaked &ldquo;Lillywhite Sessions&rdquo; that would largely make it to &ldquo;Busted Stuff&rdquo;
+definitely indicated where the band wanted to go. They never recovered after that,
+and, just like Boone&rsquo;s Farm &lsquo;wine&rsquo;, I stopped partaking in them.</p>
+
+<p>Also, not ONCE did being able to play most every Dave Matthews song on the
+acoustic guitar ever get me laid&hellip;though I can&rsquo;t tell exactly whose fault that
+was. On second thought, that was probably me. Though Tim Reynolds is an absolute
+beast of a musician; I&rsquo;m still #teamtim.</p>
+
+<h2>One role per node, until you don&rsquo;t want to</h2>
+
+<p>Why do we even make these rules if you&rsquo;re not gonna follow them? It&rsquo;s getting
+awfully &ldquo;Who&rsquo;s Line Is It Anyways?&rdquo; up in here. Before PE 3.7, and its
+rules-based classification engine, we recommended not assigning more than one
+role to a node.  Why? Well, the Puppet Enterprise Console around that time
+wasn&rsquo;t the best at tracking changes or providing authentication around tasks
+like classification.  This meant if you tried to manage ALL of your
+classification within the console you could have a hard time telling when
+things changed or why. Fortunately, git provides you with this functionality.
+Because of that, we (and when I say &lsquo;we&rsquo; I mean &lsquo;everyone in the field trying
+to design a Puppet workflow that not only made sense but also had some level of
+accountability&rsquo;) tried to displace most classification tasks from the Console
+into flat files that could be managed with git. This is largely the impetus for
+Roles and Profiles when you think about it: Profiles connect Puppet to external
+ata and give you a layer to express dependencies between multiple Puppet
+classes, and Roles is a mechanism for boiling down classification to a single
+unit.</p>
+
+<p>Once we launched a new Node Classifier that had a rules-based classification
+engine AND role-based authentication control, we became more comfortable
+delegating some of these classification tasks BACK to the console. The Node
+Classifier ALSO made it easy to click on a node and not only see what was
+classified to that node, but also WHERE it got that bit of classification
+from (&ldquo;This node is getting the JBoss profile because it was put into the
+App Servers nodegroup&rdquo;). With that level of accountability, we could start
+relaxing our &ldquo;One Role Per Node™&rdquo; mandate, OR eliminate the roles module
+altogether (and use nodegroups in the Node Classifier in place of roles).</p>
+
+<p>The goal has always been to err on the side of &ldquo;debugability&rdquo; (I like making words).
+I will usually try to optimize a task for tracing errors later, because I&rsquo;ve been
+a sysadmin where the world is falling apart around you and you need to quickly
+determine what caused this mess. Using one role per node makes sense if you
+don&rsquo;t use a node classifier that gives you this flexibility, but MIGHT not if
+you DO use a classifier that has some level of accountability.</p>
+
+<h2>Roles, conditional logic, Hiera, and you</h2>
+
+<p>Over time as I&rsquo;ve talked to people that ended up building Puppet workflows
+based on the things I&rsquo;ve written (which still feels batshit crazy to me,
+by the way, since I&rsquo;ve known myself for over 34 years), I&rsquo;ve noticed that people
+seem to take the things I say VERY LITERALLY. And to this I say: &ldquo;You should
+probably send me money via Paypal.&rdquo; Also &ndash; note that I&rsquo;m writing these things
+to address the 80% of people out there using/getting started with Puppet. You
+don&rsquo;t HAVE to do what I say, especially if you have a good reason not to, and
+you SHOULDN&rsquo;T do what I say, especially if you&rsquo;re the one that&rsquo;s going to stay
+with that organization forever and manage the entire Puppet deployment. For
+everyone else out there, let&rsquo;s talk some more about roles.</p>
+
+<p>The talking points around roles has always been &ldquo;Roles include profiles; that&rsquo;s it.&rdquo;
+Again, going back to the idea that roles exist to support classification, this
+makes sense &ndash; you don&rsquo;t want to add resources at a very high level like a roles
+class because, well, honestly, there&rsquo;s probably a better place for it, but any
+logic added to simply classification is a win.</p>
+
+<p>Consider an organization that has both Windows and Linux application servers.
+The question of whether to have separate roles for Linux and Windows
+application servers is always one of the first questions to be surfaced. At
+a low level, everything you do in a Puppet manifest is solely for the
+purpose of getting resources into the catalog (a JSON object containing
+a list of all resource Puppet is to be managing ond their desired end-state).
+Whether you have two different roles matters not to Puppet so long as the
+right node gets the right catalog. For a Puppet developer writing code, having
+two separate roles also might not matter (and, in reality, based on the amount
+of code assigned to either role, it might be cleaner to have different roles
+for each). For the person in charge of classifying nodes with their assigned
+role, it&rsquo;s probably easier to have a single role (<code>roles::application_server</code>, for example)
+that can be assigned to ALL application servers, and then logic inside the role
+to determine whether this will be a Windows application server using IIS or
+a Linux application server using JBoss (or, going further, a Linux application
+server running Weblogic, or Websphere, or Tomcat, whatever). Like we mentioned
+in the previous point, if you&rsquo;re using the &ldquo;One role per node&rdquo; philosophy, then
+you probably want a single role with conditional logic to determine Windows/Linux,
+and then determine Tomcat/JBoss, and so on. If you&rsquo;re using the Puppet Enterprise
+Console&rsquo;s node classifier, and thus the rule-based engine, you can afford not
+to care about the number of node groups you create because you can create a rule
+to match for application servers, and then a rule to match on operating system,
+and create as many rules as you want to dynamically discover and classify nodes
+on the fly.</p>
+
+<p>The point here is that the PURPOSE of the Role is to aid classification, and
+the focus on creating a role is to start small, use conditional logic to
+determine which profiles to include, and then simply include them. If that
+conditional logic uses Facter facts, awesome. If you need to look at a variable
+coming from the Console to do the job, fine &ndash; go for it! But if you&rsquo;re using
+the Role as a substitute for a Profile (i.e. data lookups, declaring classes,
+even declaring resources), then you&rsquo;re probably going down a path that&rsquo;s gonna
+make it confusing for people follow what&rsquo;s going on.</p>
+
+<p>Bottom line: technology-agnostic roles that utilize conditional logic around
+including profiles is a win, but keep tasks like declaring resources and
+component modules to Profiles. Doing this provides a top-down path for
+debugging and a cleaner overall Puppet codebase.</p>
+
+<h2>What the hell is &lsquo;Data&rsquo; anyhow?</h2>
+
+<p>This point has single-handedly caused more people to come up and argue with me.
+I&rsquo;m not kidding. I shit you not, I&rsquo;ve had people legitimately *SCREAM* at me
+about how wrong I was with my opinions here. The cool thing is that people LOVE
+the idea of Hiera &ndash; it lets you keep the business-specific data out of your
+Puppet manifests, it&rsquo;s expressed in YAML and not the Puppet DSL, and when it
+works, it&rsquo;s magical.</p>
+
+<p>The problem is that it&rsquo;s fucking magical. Seriously.</p>
+
+<p>So what IS a good use of Hiera? Anytime you have a bit of data that is subject
+to override (for example: the classical NTP problem where everyone should use
+the generic company NTP server, except nodes at this location should use a
+different NTP server, and this particular node should use ITSELF as its NTP
+server), that bit of data goes into Hiera (and by &lsquo;that bit of data&rsquo;, I mean
+&lsquo;the value of the NTP server&rsquo; or &lsquo;the NTP server&rsquo;s FQDN&rsquo;), which would look
+SOMETHING like this:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">ntpserver</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">pool.ntp.org</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>What does NOT go into Hiera is a hash-based representation of the Puppet
+resource that would then be passed to create_resources() and used to create
+the resource in the catalog&hellip;which would look something like this:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">ntpfiles</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="s">&#39;/etc/ntp/ntpd.conf&#39;</span><span class="p-Indicator">:</span>
+</span><span class='line'>    <span class="l-Scalar-Plain">ensure</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">file</span>
+</span><span class='line'>    <span class="l-Scalar-Plain">owner</span><span class="p-Indicator">:</span>  <span class="l-Scalar-Plain">0</span>
+</span><span class='line'>    <span class="l-Scalar-Plain">group</span><span class="p-Indicator">:</span>  <span class="l-Scalar-Plain">0</span>
+</span><span class='line'>    <span class="l-Scalar-Plain">mode</span><span class="p-Indicator">:</span>   <span class="l-Scalar-Plain">0644</span>
+</span><span class='line'>    <span class="l-Scalar-Plain">source</span><span class="p-Indicator">:</span> <span class="s">&#39;puppet:///modules/ntp/ntpd.conf&#39;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&hellip;which would then be passed into Puppet like this:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="nf">create_resources</span><span class="p">(</span><span class="s1">&#39;file&#39;</span><span class="p">,</span> <span class="nf">hiera_hash</span><span class="p">(</span><span class="err">&#39;</span><span class="ss">ntpfiles</span><span class="p">))</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Yes, this is an exaggeration based on a very narrow use case, but what I&rsquo;m trying
+to highlight is that the &lsquo;data&rsquo; bit in all that above mess is SOLELY an FQDN,
+and everything else is arguably the &ldquo;Model&rdquo;, or your Puppet code.</p>
+
+<p>Organizations LOVE that you can put as much &ldquo;stuff&rdquo; into Hiera as you want and
+then Puppet can call Hiera, create resources based on what it tells you, and
+merrily be on your way. Well, they &ldquo;love&rdquo; it until it doesn&rsquo;t work or does
+something unexpected, and then debugging Hiera is a right bastard.</p>
+
+<p>Understand that the problem I have would be with unexpected Hiera behavior. If
+you&rsquo;re skilled in the ways of the Hiera and its (sometimes cloudy) interaction
+with Puppet, then by ALL means use it for whatever ya like. BUT, if you&rsquo;re
+still new to Puppet, then you may have a very loose mental map for how Hiera
+works and where it interacts with Puppet&hellip;and nobody should have to have that
+advanced level of knowledge just to debug the damn thing.</p>
+
+<p>The Hiera + create_resources() use above is of particular nastiness simply
+because it turns your Hiera YAML files into a potential mechanized weapon of Puppet
+destruction.  If I know that you&rsquo;re doing this under the hood, I could
+POTENTIALLY slip data into Hiera that would end up creating resources on a node
+to do what I want. Frequently Puppet code is more heavily scrutinized than
+Hiera data, and I could see something like this getting overlooked (especially
+if you don&rsquo;t have a ton of testing around your Puppet code before it gets
+deployed).</p>
+
+<p>The REASON why create_resources() was created was because Puppet lacked the
+ability to do things like recursion and loops inside the DSL, and sometimes
+you WANT to automate very repeated tasks. Consider the case where you truly
+DON&rsquo;T know how many of something is going to be on a node ahead of time &ndash; maybe
+you&rsquo;re using VMware vRO/vRA and someone is building a node on-the-fly with
+the web GUI. For every checkbox someone ticks there will be another application
+to be installed, or another series of firewall rules, or SOMETHING like that.
+You can choose to model these individually with profiles, OR, if the task is
+repetitive, you can accept their choices as data and feed it back into Puppet
+like a defined resource type. In fact, most use-cases for Hiera + create_resources()
+is passing data into a defined resource type. As of Puppet 4.x.x, we have
+looping constructs inside the DSL, so we can finally AUTOMATE these tasks
+without having to use an extra function (of course, in THIS use case, whether
+you use recursion/looping in the DSL or create_resources() matters not &ndash; you
+get the same thing in the end).</p>
+
+<p>For one last point, the Puppet DSL is still pretty easy to read (as of right now),
+and most people can follow what&rsquo;s going on even if they&rsquo;re NOT PuppEdumicated.
+Having 10 resource declarations in a row seems like a pain in the ass to write
+when you&rsquo;re doing it, but READING it makes sense. Later on, if you need to know
+what&rsquo;s going on with this profile, you can scan it and see exactly what&rsquo;s there.
+If you start slipping lots of data into Hiera and looping logic into the DSL,
+you&rsquo;re gonna force the person who manages Puppet to go back and forth between
+reading Hiera code, then back to Puppet code, then back to the node, and so on.
+Again, it&rsquo;s totally possible to do now, and frequently NECESSARY when you have
+a more complex deployment and well-trained Puppet administrators, but initially
+it&rsquo;s possible to build your own DSL to Puppet by slipping things into Hiera and
+running away laughing.</p>
+
+<p>So when do I put this &lsquo;data&rsquo; into the Profile and when is a good time to put it
+into Hiera?  I&rsquo;m glad you asked&hellip;</p>
+
+<h2>A path to Hiera data</h2>
+
+<p>These last two points I&rsquo;ve written about before. I may be repeating myself, but
+bytes are cheap. Like I wrote above (and before), putting data directly into a
+Profile is the easiest and most legible way of providing &ldquo;external data&rdquo; into
+Puppet. Yes, you&rsquo;ll argue, putting the data into a Profile, which is Puppet code,
+is ARGUABLY NOT being very &ldquo;external&rdquo; about it. In my opinion it is &ndash; your Profile
+is YOUR IMPLEMENTATION of a technology stack, and thus isn&rsquo;t going to be shared
+outside your organization. I consider that external to all the component modules
+out there, but, again, potato/potato. I recommend STARTING HERE when you&rsquo;re getting
+started with Puppet. Hiera comes in when you have a very clear-cut need for
+overriding data (a la: this NTP server everywhere, except here and here). The second
+you might need to have different data, you can either start building conditional logic
+inside the Profile, OR use the conditional logic that Hiera provides.</p>
+
+<p>So &ndash; which do you use?</p>
+
+<p>The point of Hiera is to solve 80% or better of all conditional choices in your
+organization. Consider this data organization model:</p>
+
+<ul>
+<li>Everyone shares most of the same data items</li>
+<li>San Francisco/London do their own things sometimes</li>
+<li>Application tiers get their own level for dev/test/qa/prod-specific overrides</li>
+<li>Combinations of tiers/locations/and business units want their own overrides</li>
+<li>Node specific data is the most specific (and least-used) level</li>
+</ul>
+
+
+<p>If you&rsquo;re providing some data to Puppet that follows this model, then cool
+&ndash; use Hiera. What about specific &ldquo;exceptions&rdquo; that don&rsquo;t fit this model? Do you
+try to create specialized layers in Hiera just for these exceptions? Certain
+organizations absolutely do &ndash; I see it all the time. What you find is that
+certain layers in Hiera go together (this location/tier/business_unit level
+goes right above location/tier, which goes right above location), and we
+start referring to those coupled layers as &ldquo;Chains&rdquo;. Chains are usually tied
+to some specific need (deploying applications, for example). Sometimes you
+create a chain just to solve a VERY SPECIFIC hard problem (populating
+<code>/etc/sudoers</code> in large organizations, for example).</p>
+
+<p>The question is &ndash; do I create another &ldquo;Chain&rdquo; of layers in the hierarchy
+solely because deploying <code>sudoers</code> is hard, or do I throw a couple of case
+statements into the <code>sudoers</code> profile and keep it out of Hiera altogether?</p>
+
+<p>My answer is to start with conditional logic in the <code>sudoers</code> profile and break
+it out into Hiera if you see that &ldquo;Chain&rdquo; being needed elsewhere. Why? Because, like
+I&rsquo;ve said many times before, debugging Hiera kinda sucks right now &ndash; there&rsquo;s no
+way currently to get a dump of all variables and parameters for a particular node
+and determine which were set by Hiera, which were set with variables in the DSL, which
+came out of the console, and so on. If we HAD that tool, I&rsquo;d be all about using
+it and polluting your hierarchy all day long (I expand upon this slightly in the
+next point about the Automatic Parameter Lookup + Hiera).</p>
+
+<p>Bottom line: Start with the data in the Profile, then move it to Hiera when you
+need to override. Start with conditional logic in the Profile, then create a
+&ldquo;Chain&rdquo; in the Hierarchy if you need to use it in more than one place.</p>
+
+<h2>Hiera, APL, Refactoring, WTF</h2>
+
+<p>Like I said, I&rsquo;ve written about this before. I like the Automatic Parameter
+Lookup functionality in Puppet &ndash; it&rsquo;s ace. I like Hiera. But if you don&rsquo;t know
+how it works, or that it exists, it feels too much like Magic. There are certain
+things in the product that can ONLY be set by putting data inside Hiera and running
+Puppet, and that is truly an awesome thing: just tell a customer &ldquo;drop this bit
+of data somewhere in Hiera, run Puppet, and you&rsquo;re all set.&rdquo; But, again, if you
+need to know how a particular line got into a particular config file on your
+node, and it was set with the APL, then you&rsquo;ve got some digging to do.</p>
+
+<p>There&rsquo;s still no tool, like I mentioned in the last item, to give me full
+introspection into all variables/parameters set for a node and that
+variable/parameter&rsquo;s origin.  Part of the reason as to WHY this tool doesn&rsquo;t
+exist is because the internals of Puppet don&rsquo;t necessarily make it easy for you
+to determine where a parameter/variable was set.  That&rsquo;s OUR problem, and
+I feel like we&rsquo;re slowly making progress on marking these things internally so
+we can expose them to our customers. Until then, you have to trace through code
+and Hiera data.</p>
+
+<p>I know the second I publish and tweet about this, I&rsquo;m gonna get a message from
+R.I. Pienaar saying that I&rsquo;ve crazy for NOT pushing people toward using Hiera
+more with the Automatic Parameter Lookup, because the more we use it, the faster
+we can move away from things like params classes, and profiles, and everything
+else, but the reality is I&rsquo;m ALL ABOUT PEOPLE using it if they know how it works.
+I&rsquo;m ACTUALLY fucking happy that it works well for you &ndash; please continue to use
+it and do awesome Puppet things. I only recommend to people who are getting
+started to NOT USE it FIRST, and then, when you understand how it would help
+you by clocking some hours of Puppet code writing and debugging, do some refactoring
+and move to it!</p>
+
+<p>Yes, refactoring is involved.</p>
+
+<p>Look, refactoring is a way of life. You&rsquo;re gonna re-tool your Puppet code for
+the purposes of legibility, or efficiency, or any of the many other reasons why
+you refactor code &ndash; it&rsquo;s unavoidable. Also, if I come into your org and setup
+Puppet for the most efficient use-case, and then I leave that into your
+relatively-new-to-Puppet hands, it&rsquo;s probably not gonna be the best situation
+because you won&rsquo;t have known WHY I made the decisions I did (and, even if I
+document them, you might have gaps of knowledge that would help you understand
+the problems I&rsquo;m helping you avoid).</p>
+
+<p>Sometimes hitting the problem so you have first-hand knowledge of why you need
+to avoid it in the future isn&rsquo;t the WORST thing in the world.</p>
+
+<p>To move to any configuration management system means you&rsquo;re gonna be
+refactoring.  Embrace it. Start small, get things working, then clean it up.
+Don&rsquo;t try to build the &ldquo;fortress of sysadmin perfection&rdquo; with your first bit of
+Puppet code &ndash; just get shit done! Allow yourself time during the month simply
+to unwind some misgivings you realize after-the fact, and definitely seek
+advice before doing something you feel might be particularly complex or
+overarching, but getting shit done is gonna trump &ldquo;not working&rdquo; any day (or
+whatever the manager-y buzzspeak is this week).</p>
+
+<p>Bottom Line: APL if you understand it, start small, get shit done, refactor, repeat</p>
+
+<h2>Hopefully this leads to more posts</h2>
+
+<p>Holy shit, you&rsquo;re still reading?! Ohh, you skimmed down this far to see how long
+this post was gonna be &ndash; got it. Either way, I&rsquo;m glad I finally got this out there.
+It&rsquo;s been months, yes, but that doesn&rsquo;t mean I haven&rsquo;t been writing. We&rsquo;ve been
+doing lots of internal work to try and get more official docs out to you and
+less of &ldquo;Go read Gary&rsquo;s blog!&rdquo; You&rsquo;ll notice <a href="http://docs.puppetlabs.com/pe/latest/r10k.html">R10k has some official docs, right?!</a>
+Yeah, that&rsquo;s awesome! We want more of that. BUT, there&rsquo;s still going to be times
+where I feel like what I&rsquo;m gonna say isn&rsquo;t necessarily the &ldquo;party line&rdquo;, and that&rsquo;s
+what this blog is about.</p>
+
+<p>Thanks to everyone at Puppetconf and beyond who approached me and told me how
+much they love what I write. I&rsquo;m gonna be humble as fuck in person, but I really
+do get excited whenever someone says that. It&rsquo;s also crazy as hell when someone
+from Wal-mart approaches you and says they built part of their deployment based
+on the shit you wrote. From a guy who came from a town in Ohio with a population
+of less than 8000 people, it&rsquo;s crazy to see where you&rsquo;re &ldquo;recognized.&rdquo;</p>
+
+<p>So thank you, again, for all the support.</p>
+
+<p>And sorry, Dave Matthews &ndash; it&rsquo;s not you, it&rsquo;s me. Actually, that&rsquo;s a lie; it was you.</p>
+]]></content>
+  </entry>
+  
+  <entry>
     <title type="html"><![CDATA[Puppet Workflows 4: Using Hiera in Anger]]></title>
     <link href="http://garylarizza.com/blog/2014/10/24/puppet-workflows-4-using-hiera-in-anger/"/>
-    <updated>2014-10-24T14:13:49+01:00</updated>
+    <updated>2014-10-24T06:13:49-07:00</updated>
     <id>http://garylarizza.com/blog/2014/10/24/puppet-workflows-4-using-hiera-in-anger</id>
     <content type="html"><![CDATA[<p>Hiera. That thing nobody is REALLY quite sure how to say (FYI: It&rsquo;s pronounced
 &lsquo;hiera&rsquo;), the tool that everyone says you should be using, and the tool that
@@ -674,7 +1246,7 @@ being authoritative and simply &lsquo;suggesting&rsquo; a classification.</p>
   <entry>
     <title type="html"><![CDATA[Puppetconf 2014 Talk - the Refactor Dance]]></title>
     <link href="http://garylarizza.com/blog/2014/10/23/puppetconf-2014-talk/"/>
-    <updated>2014-10-23T14:15:42+01:00</updated>
+    <updated>2014-10-23T06:15:42-07:00</updated>
     <id>http://garylarizza.com/blog/2014/10/23/puppetconf-2014-talk</id>
     <content type="html"><![CDATA[<p>This year at Puppetconf 2014, I presented a 1.5 hour talk entitled &ldquo;The Refactor
 Dance&rdquo; that comprised nearly EVERYTHING that I&rsquo;ve written about in my Puppet
@@ -691,7 +1263,7 @@ arms grow in an attractive grey Puppet Labs shirt.  What&rsquo;s not to love?</p
   <entry>
     <title type="html"><![CDATA[On Dependencies and Order]]></title>
     <link href="http://garylarizza.com/blog/2014/10/19/on-dependencies-and-order/"/>
-    <updated>2014-10-19T14:09:53+01:00</updated>
+    <updated>2014-10-19T06:09:53-07:00</updated>
     <id>http://garylarizza.com/blog/2014/10/19/on-dependencies-and-order</id>
     <content type="html"><![CDATA[<p>This blog post was born out of a number of conversations that I&rsquo;ve had about
 Puppet, its dependency model, and why &lsquo;ordering&rsquo; is not necessarily the way to
@@ -961,7 +1533,7 @@ kids (and by &lsquo;kids&rsquo;, I mean &lsquo;XBox&rsquo;).</p>
   <entry>
     <title type="html"><![CDATA[R10k + Directory Environments]]></title>
     <link href="http://garylarizza.com/blog/2014/08/31/r10k-plus-directory-environments/"/>
-    <updated>2014-08-31T20:00:00+01:00</updated>
+    <updated>2014-08-31T12:00:00-07:00</updated>
     <id>http://garylarizza.com/blog/2014/08/31/r10k-plus-directory-environments</id>
     <content type="html"><![CDATA[<p>If you&rsquo;ve read anything I&rsquo;ve posted in the past year, you know my feelings about
 the word &lsquo;environments&rsquo; and about how well we tend to name things here at
@@ -1688,7 +2260,7 @@ that comes as unexpected or stops you from using your existing workflow. Cheers!
   <entry>
     <title type="html"><![CDATA[On R10k and 'Environments']]></title>
     <link href="http://garylarizza.com/blog/2014/03/26/random-r10k-workflow-ideas/"/>
-    <updated>2014-03-26T08:00:00+00:00</updated>
+    <updated>2014-03-26T01:00:00-07:00</updated>
     <id>http://garylarizza.com/blog/2014/03/26/random-r10k-workflow-ideas</id>
     <content type="html"><![CDATA[<p>There have been more than a couple of moments where I&rsquo;m on-site with a customer
 who asks a seemingly simple question and I&rsquo;ve gone &ldquo;Oh shit; that&rsquo;s a great
@@ -1840,9 +2412,9 @@ free to comment below &ndash; I look forward to making the process better for al
   
   <entry>
     <title type="html"><![CDATA[When Yellow Ruled the World]]></title>
-    <link href="http://garylarizza.com/blog/2014/03/12/when-yellow-ruled-the-world/"/>
-    <updated>2014-03-12T01:04:55+00:00</updated>
-    <id>http://garylarizza.com/blog/2014/03/12/when-yellow-ruled-the-world</id>
+    <link href="http://garylarizza.com/blog/2014/03/11/when-yellow-ruled-the-world/"/>
+    <updated>2014-03-11T18:04:55-07:00</updated>
+    <id>http://garylarizza.com/blog/2014/03/11/when-yellow-ruled-the-world</id>
     <content type="html"><![CDATA[<p><em>&ldquo;The universe (including ourselves) is made up of energy &ndash; it&rsquo;s important to
 keep it positive! Be as wonderful as the world you want to live in!&rdquo;</em></p>
 
@@ -2698,7 +3270,7 @@ Tanny operated on Tanny Time (I mentioned before that &ldquo;Tanny Time&rdquo; w
   <entry>
     <title type="html"><![CDATA[Building a Functional Puppet Workflow Part 3b: More R10k Madness]]></title>
     <link href="http://garylarizza.com/blog/2014/03/07/puppet-workflow-part-3b/"/>
-    <updated>2014-03-07T16:00:00+00:00</updated>
+    <updated>2014-03-07T08:00:00-08:00</updated>
     <id>http://garylarizza.com/blog/2014/03/07/puppet-workflow-part-3b</id>
     <content type="html"><![CDATA[<p><a href="http://garylarizza.com/blog/2014/02/18/puppet-workflow-part-3/">In the last workflows post,</a> I talked about dynamic Puppet
 environments and introduced R10k, which is an awesome tool for mapping modules
@@ -3530,7 +4102,7 @@ note, and I hope I&rsquo;m providing some good info you can actually use! Cheers
   <entry>
     <title type="html"><![CDATA[Building a Functional Puppet Workflow Part 3: Dynamic Environments With R10k]]></title>
     <link href="http://garylarizza.com/blog/2014/02/18/puppet-workflow-part-3/"/>
-    <updated>2014-02-18T17:48:18+00:00</updated>
+    <updated>2014-02-18T09:48:18-08:00</updated>
     <id>http://garylarizza.com/blog/2014/02/18/puppet-workflow-part-3</id>
     <content type="html"><![CDATA[<p>Workflows are like kickball games: everyone knows the general idea of what&rsquo;s
 going on, there&rsquo;s an orderly progression towards an end-goal, nobody wants to
@@ -5203,7 +5775,7 @@ gig! :)  Cheers!</p>
   <entry>
     <title type="html"><![CDATA[Building a Functional Puppet Workflow Part 2: Roles and Profiles]]></title>
     <link href="http://garylarizza.com/blog/2014/02/17/puppet-workflow-part-2/"/>
-    <updated>2014-02-17T22:01:37+00:00</updated>
+    <updated>2014-02-17T14:01:37-08:00</updated>
     <id>http://garylarizza.com/blog/2014/02/17/puppet-workflow-part-2</id>
     <content type="html"><![CDATA[<p>In my <a href="http://www.garylarizza.com/blog/2014/02/17/puppet-workflow-part-1/">first post</a>, I talked about writing functional component
 modules. Well, I didn&rsquo;t really do much detailing other than pointing out
@@ -5706,7 +6278,7 @@ whatever names you decide to use).</p>
   <entry>
     <title type="html"><![CDATA[Building a Functional Puppet Workflow Part 1: Module Structure]]></title>
     <link href="http://garylarizza.com/blog/2014/02/17/puppet-workflow-part-1/"/>
-    <updated>2014-02-17T22:01:37+00:00</updated>
+    <updated>2014-02-17T14:01:37-08:00</updated>
     <id>http://garylarizza.com/blog/2014/02/17/puppet-workflow-part-1</id>
     <content type="html"><![CDATA[<p>Working as a professional services engineer for <a href="http://www.puppetlabs.com">Puppet Labs</a>,
 my life consists almost entirely of either correcting some of the worst code
@@ -5927,7 +6499,7 @@ that I could be entirely full of shit.</p>
   <entry>
     <title type="html"><![CDATA[Seriously, What Is This Provider Doing?]]></title>
     <link href="http://garylarizza.com/blog/2013/12/15/seriously-what-is-this-provider-doing/"/>
-    <updated>2013-12-15T16:44:17+00:00</updated>
+    <updated>2013-12-15T08:44:17-08:00</updated>
     <id>http://garylarizza.com/blog/2013/12/15/seriously-what-is-this-provider-doing</id>
     <content type="html"><![CDATA[<p>Clarke&rsquo;s third law states: &ldquo;Any sufficiently advanced technology is
 indistinguishable from magic.&rdquo; In the case of Ruby and Puppet provider
@@ -7446,7 +8018,7 @@ providers do their dirty work&hellip;</p>
   <entry>
     <title type="html"><![CDATA[When to Hiera (Aka: How Do I Module?)]]></title>
     <link href="http://garylarizza.com/blog/2013/12/08/when-to-hiera/"/>
-    <updated>2013-12-08T23:31:54+00:00</updated>
+    <updated>2013-12-08T15:31:54-08:00</updated>
     <id>http://garylarizza.com/blog/2013/12/08/when-to-hiera</id>
     <content type="html"><![CDATA[<p>I&rsquo;m convinced that writing Puppet modules is the ultimate exercise in bikeshedding:
 if it works, someone&rsquo;s probably going to tell you that you could have done it better,
@@ -8201,7 +8773,7 @@ in files that AREN&rsquo;T the Puppet DSL (i.e. not inside the code).</p>
   <entry>
     <title type="html"><![CDATA[Who Abstracted My Ruby?]]></title>
     <link href="http://garylarizza.com/blog/2013/11/26/fun-with-providers-part-2/"/>
-    <updated>2013-11-26T16:01:00+00:00</updated>
+    <updated>2013-11-26T16:01:00-08:00</updated>
     <id>http://garylarizza.com/blog/2013/11/26/fun-with-providers-part-2</id>
     <content type="html"><![CDATA[<p>Previously, on Lost, I said a lot of words about Puppet Types;
 <a href="http://garylarizza.com/blog/2013/11/25/fun-with-providers/">you should totally check it out.</a>
@@ -8868,7 +9440,7 @@ get a response. Maybe.)  Cheers!</p>
   <entry>
     <title type="html"><![CDATA[Fun With Puppet Providers - Part 1 of Whatever]]></title>
     <link href="http://garylarizza.com/blog/2013/11/25/fun-with-providers/"/>
-    <updated>2013-11-25T20:47:00+00:00</updated>
+    <updated>2013-11-25T20:47:00-08:00</updated>
     <id>http://garylarizza.com/blog/2013/11/25/fun-with-providers</id>
     <content type="html"><![CDATA[<p>I don&rsquo;t know why I write blog posts &ndash; everybody in open-source software knows
 that the code <em>IS</em> the documentation. If you&rsquo;ve ever tried to write a Puppet
@@ -9314,7 +9886,7 @@ stay tuned for more brain-dumping-goodness&hellip;</p>
   <entry>
     <title type="html"><![CDATA[From the Archive: Using Crankd]]></title>
     <link href="http://garylarizza.com/blog/2013/07/10/from-the-archive-using-crankd/"/>
-    <updated>2013-07-10T09:51:00+01:00</updated>
+    <updated>2013-07-10T09:51:00-07:00</updated>
     <id>http://garylarizza.com/blog/2013/07/10/from-the-archive-using-crankd</id>
     <content type="html"><![CDATA[<p>Supporting laptops in a managed environment is tricky (and doubly so if you allow them to be taken off your corporate network).  While you can be reasonably assured that your desktops will remain on and connected during the workday, it&rsquo;s not uncommon for laptops to go to sleep, change wireless access points, and even change between an Ethernet or AirPort connection several times during the day.  It&rsquo;s important to have a tool that can &ldquo;tweak&rdquo; certain settings in response to these changes.</p>
 
@@ -9411,7 +9983,7 @@ stay tuned for more brain-dumping-goodness&hellip;</p>
   <entry>
     <title type="html"><![CDATA[Puppet + Github = Laptop <3]]></title>
     <link href="http://garylarizza.com/blog/2013/02/15/puppet-plus-github-equals-laptop-love/"/>
-    <updated>2013-02-15T00:00:00+00:00</updated>
+    <updated>2013-02-15T00:00:00-08:00</updated>
     <id>http://garylarizza.com/blog/2013/02/15/puppet-plus-github-equals-laptop-love</id>
     <content type="html"><![CDATA[<p>Everybody wants to be special (I blame our moms). The price of special, when
 it comes to IT, is time. Consider how long you&rsquo;ve spent on just your damn
@@ -10477,7 +11049,7 @@ for more information!</p>
   <entry>
     <title type="html"><![CDATA[Repeatable Puppet Development With Vagrant]]></title>
     <link href="http://garylarizza.com/blog/2013/02/01/repeatable-puppet-development-with-vagrant/"/>
-    <updated>2013-02-01T00:00:00+00:00</updated>
+    <updated>2013-02-01T00:00:00-08:00</updated>
     <id>http://garylarizza.com/blog/2013/02/01/repeatable-puppet-development-with-vagrant</id>
     <content type="html"><![CDATA[<p>I miss testing code in production. In smaller organizations, &lsquo;testing&rsquo; and
 &lsquo;development&rsquo; can sometimes consist of making changes directly on a server,
@@ -11220,7 +11792,7 @@ everyone at <a href="http://www.puppetlabs.com">Puppet Labs</a>!</p>
   <entry>
     <title type="html"><![CDATA[Using Veewee to Build OS X VMs]]></title>
     <link href="http://garylarizza.com/blog/2013/01/20/using-veewee-to-build-os-x-vms/"/>
-    <updated>2013-01-20T19:36:00+00:00</updated>
+    <updated>2013-01-20T19:36:00-08:00</updated>
     <id>http://garylarizza.com/blog/2013/01/20/using-veewee-to-build-os-x-vms</id>
     <content type="html"><![CDATA[<p>I hate <a href="http://github.com/timsutton">Tim Sutton</a> in the same way I hate <a href="http://ihatestevensinger.com/">Steven Singer</a>. I hate Tim
 because he actually IMPLEMENTS some of the things on my list of &lsquo;shit to tinker
@@ -11531,7 +12103,7 @@ the ##osx-server chatroom on Freenode, or by checking them out on Twitter.</p>
   <entry>
     <title type="html"><![CDATA[Managing a Blog Is Insane; Octopress FTW!]]></title>
     <link href="http://garylarizza.com/blog/2013/01/17/managing-a-blog-is-insane/"/>
-    <updated>2013-01-17T00:00:00+00:00</updated>
+    <updated>2013-01-17T00:00:00-08:00</updated>
     <id>http://garylarizza.com/blog/2013/01/17/managing-a-blog-is-insane</id>
     <content type="html"><![CDATA[<p>Masochists are everywhere. Managing a system by hand appeals to a certain subset
 of the population, but I joined <a href="http://www.puppetlabs.com">Puppet Labs</a> because
@@ -11848,173 +12420,6 @@ FTPing things up to a host, and any of that crap. I&rsquo;ve done that. &lsquo;T
 
 <p>You now have no excuse to NOT share all the cool things you&rsquo;re doing. Seriously,
 if you can EDIT A TEXT FILE then you can &lsquo;maintain&rsquo; a blog.</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[JAMF NetSUS Appliance]]></title>
-    <link href="http://garylarizza.com/blog/2012/02/06/jamf-netsus-appliance/"/>
-    <updated>2012-02-06T11:22:00+00:00</updated>
-    <id>http://garylarizza.com/blog/2012/02/06/jamf-netsus-appliance</id>
-    <content type="html"><![CDATA[<h2>JAMF&rsquo;s NetSUS Appliance &ndash; Netboot in a Box</h2>
-
-<p><a href="https://jamfnation.jamfsoftware.com/viewProduct.html?id=180">Today, JAMF released a new appliance VM</a> based on Ubuntu 10.04 LTS (Lucid) that, for once, provides an &lsquo;out of the box&rsquo; implementation of Netboot and Software Update Service WITHOUT requiring OS X hardware (based on <a href="http://github.com/wdas/reposado">Reposado</a>) and <a href="http://twitpic.com/8glygw">other open-source technologies.</a></p>
-
-<p>For those people who are relatively new to Linux, I thought I&rsquo;d provide an easy walkthrough of how to get started using this VM on your Laptop.  I&rsquo;m going to demo this using VMware Fusion instead of VirtualBox mainly because I prefer how Fusion handles Networking.  I&rsquo;ve used many VMs, and Fusion always tends to be much more solid and stable for me.  If you don&rsquo;t have Fusion or don&rsquo;t WANT to use Fusion, feel free to use VirtualBox.</p>
-
-<h2>Download and Convert the OVA File</h2>
-
-<p><a href="https://jamfnation.jamfsoftware.com/viewProduct.html?id=180">The appliance can be downloaded directly from JAMF</a> and comes as a VirtualBox OVA file.  <a href="http://derflounder.wordpress.com/2012/02/06/converting-jamfs-netbootsus-appliance-to-vmware/">Rich Trouton has provided a great walkthrough</a> on converting the OVA file to a VMX file, so I&rsquo;ll link you to that post (since he did it so well).</p>
-
-<h2>Start up the VM</h2>
-
-<p>Once you have your VMX file, you can open it up with Fusion and import it into your Virtual Machine Library.  There is one change we&rsquo;ll want to make, so click on the VM and open its Settings panel (this is different from Fusion 3.0 and 4.0 &ndash; I&rsquo;ll be describing the 4.0 method).  In the Settings panel, you&rsquo;ll want to select the Network Adapter icon and make sure the radio button next to &ldquo;Share the Mac&rsquo;s network connection (NAT)&rdquo; is selected.  This will create a local IP address so we can contact it directly from our Laptop.  Once you&rsquo;ve done that, start the VM and get to the login screen (you&rsquo;ll need to click the Ok button through the message about logging into the NetSUS instance).  Feel free to login with the username &lsquo;shelluser&rsquo; and the password &lsquo;shelluser&rsquo;.  You should see a Message of the Day splash with one of the sections being &ldquo;IP address for eth0:&rdquo;.  Note the IP address, we&rsquo;ll need it in the next section (if you don&rsquo;t see this, just run <code>ifconfig</code> from the command line and look for the IP address for the eth0 adapter &ndash; it should be in the format of 192.168.x.x).</p>
-
-<h2>Prepare to Break Free!</h2>
-
-<p>It really sucks to work with VMs from WITHIN the VM window for various reasons (lack of Copy/Paste, loss of mouse, etc…), so we&rsquo;re going to setup a host entry on your local laptop so we can SSH into the VM as we need.  I&rsquo;m going to give my VM a hostname of &lsquo;netsus.puppetlabs.vm&rsquo; but you can name it whatever you want.  Let&rsquo;s first edit the /etc/hosts file on your laptop (NOT within the VM, this is ON your laptop) by running the following from the command line:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>sudo vim /etc/hosts</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Feel free to use pico/nano to edit /etc/hosts in case you don&rsquo;t have any experience with vim.  We want to add the following line in the /etc/hosts file:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>192.168.217.154 netsus.puppetlabs.vm</span></code></pre></td></tr></table></div></figure>
-
-
-<p><strong>NOTE</strong> SUBSTITUTE 192.168.217.154 WITH THE IP ADDRESS YOU GOT FROM THE PREVIOUS STEP!  That&rsquo;s the IP address that was assigned on MY laptop, and it will definitely be different from the IP address you got on YOUR computer.  Also, you don&rsquo;t HAVE to use &lsquo;netsus.puppetlabs.vm&rsquo; &ndash; you can assign it any name you want.  Save and close /etc/hosts and then let&rsquo;s test connectivity from the command line by doing a ping:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>ping 192.168.217.154</span></code></pre></td></tr></table></div></figure>
-
-
-<p>As long as we have connection, we&rsquo;re fine (remember, substitute your IP Address for mine).  If you DON&rsquo;T have connectivity, make sure your VM is running and review your /etc/hosts file to make sure the changes were saved (also, check the IP address on your VM again).</p>
-
-<h2>Snapshot Time</h2>
-
-<p>The beauty of Fusion is that you can take snapshots and revert to them should you mess things up.  Let&rsquo;s take a snapshot now in case we screw things up in the following steps.  I&rsquo;m using VMware Fusion 4.0, so I take a snapshot by clicking on the VM window, clicking on the Virtual Machine menu at the top, and then down to Snapshots.  From there, you can click the &lsquo;Take Snapshot&rsquo; button and let it do its thing.  When it&rsquo;s done, hit the close button and return to the VM</p>
-
-<h2>Enable SSH and Login</h2>
-
-<p>By default, the VM doesn&rsquo;t have the SSHD process running, so we can&rsquo;t yet SSH in from our laptop.  Enable this by doing the following from within the VM:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>sudo apt-get install openssh-server</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Hit &ldquo;Y&rdquo; when it asks if it should download and install.  When it completes, switch back to your LAPTOP (i.e. NOT inside the VM), open up Terminal, and do the following:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>ssh shelluser@netsus.puppetlabs.vm</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Type yes to add the SSH key to your known_hosts file and use the password &lsquo;shelluser&rsquo; to login.  Tada! Now you can work directly from Terminal and enable copy/pasting directly from your Terminal window.  You can always type <code>exit</code> to close the ssh connection when you&rsquo;re done.</p>
-
-<h2>Install Puppet</h2>
-
-<p>So, it wouldn&rsquo;t be one of my write-ups if I DIDN&rsquo;T get Puppet installed.  Actually, if you&rsquo;ve only managed Macs, then you might not have seen the benefit of Puppet before.  Now that we&rsquo;re on Linux, you&rsquo;ll definitely see the benefit of Puppet (especially if you&rsquo;re not familiar with the service/package manipulation commands).  Puppet can help abstract that for you, so we&rsquo;re going to enable it.</p>
-
-<p>The version of Puppet that&rsquo;s in the main package repository is quite old (0.25 as opposed to the current 2.7.10 version we support).  Let&rsquo;s add Puppet Labs&#8217; Apt Repository to the list of repositories queried so we can get a recent version of Puppet.  Do that by opening up the /etc/apt/sources.list file for editing with the following:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>sudo vim /etc/apt/sources.list</span></code></pre></td></tr></table></div></figure>
-
-
-<p>If it prompts you for your password, go ahead and enter it.  Also, if you&rsquo;re not familiar with vi or vim, I&rsquo;ll try and help you with the basics.  Arrow down to the line JUST above the line that begins with &ldquo;deb <a href="http://">http://</a>&rdquo; and press the i button on your keyboard to insert the following lines:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>deb http://apt.puppetlabs.com/ubuntu lucid main
-</span><span class='line'>deb-src http://apt.puppetlabs.com/ubuntu lucid main</span></code></pre></td></tr></table></div></figure>
-
-
-<p>When you&rsquo;re done, hit the escape key and press ZZ (hold shift and hit Z twice, you want two capital-Z&rsquo;s) to save and close the file.  This will add Puppet Labs&#8217; repository to the list of repos queried.</p>
-
-<p>Next, we&rsquo;ll need to add Puppet Labs&#8217; GPG key to the system so we can validate the packages that are downloaded.  From the terminal, execute the following:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'> gpg --recv-key 4BD6EC30</span></code></pre></td></tr></table></div></figure>
-
-
-<p>The first time you run it, it will bother you about needing to create the keyserver file and won&rsquo;t run correctly.  Let&rsquo;s execute it correctly to receive the key:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'> gpg --recv-key 4BD6EC30</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Great, we should have the key, now we want to load it.  Do that with this command:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>gpg -a --export 4BD6EC30 | sudo apt-key add -</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Finally, let&rsquo;s update apt so that it knows about the repository.  Do that with this command:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>sudo apt-get update</span></code></pre></td></tr></table></div></figure>
-
-
-<p>When it finishes running, you can finally install Puppet with the following command:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>sudo apt-get install puppet</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Type &ldquo;Y&rdquo; when it asks you if it should download and install all the dependencies.  That&rsquo;s it!  Puppet should be installed!  Run the following to see what version we&rsquo;ve installed:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>puppet --version</span></code></pre></td></tr></table></div></figure>
-
-
-<p>As of this writing, 2.7.10 is the current version.  As long as you don&rsquo;t have version 0.25 you should be good!</p>
-
-<h2>Snapshots away</h2>
-
-<p>It would be wise to take another snapshot at this point.  Don&rsquo;t worry, I&rsquo;ll wait.</p>
-
-<h2>Inspect the System</h2>
-
-<p>Puppet lets us see what&rsquo;s been installed on the VM.  Take a look at all the packages on the system by doing the following:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>sudo puppet resource package</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Type your password when prompted and Puppet will return you with a list of all packages on the system and the versions that are running.  Similarly, you can see what services are running with the following:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>sudo puppet resource service</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Notice that sshd is running and other services like netatalk (that enables AFP on Linux) should also be running.  Sweet.  We&rsquo;ll come back to Puppet later.</p>
-
-<h2>Login to the Web GUI</h2>
-
-<p>If your VM is running, you should be able to open a web browser on your Laptop and navigate to the following address:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>https://netsus.puppetlabs.vm</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Note the httpS as we&rsquo;ll need to use SSL to get into the Web GUI.  When it asks if you want to accept the self-signed cert, make sure to choose Yes.  You can login with the user &lsquo;webadmin&rsquo; and the password &lsquo;webadmin&rsquo;</p>
-
-<p>Once you&rsquo;re logged in, <a href="https://s3.amazonaws.com/jamfsoftware-content/downloads/NetBootSUS+Appliance_v1.0.pdf">feel free to read through JAMF&rsquo;s instructions for enabling their services.</a>  They do a much better job than I about walking you through that.</p>
-
-<h2>Access to the Raw Files</h2>
-
-<p>Back in the Terminal window, you can access all the PHP/Shell magic that comprises the Web GUI in the /var/www/webadmin directory.  You can poke around through all the files (and use sudo to open some of the key bits) at your leisure.</p>
-
-<p>Note that /etc/dhcpd.conf is the main configuration file for the DHCPD service and it&rsquo;s got some special bits to accommodate Apple Hardware.</p>
-
-<p>Also, /var/appliance has some magic (and the /var/appliance/configurefornetboot script has some sed statements for fixing a stock dhcpd.conf file and enabling those Apple Hardware bits).</p>
-
-<h2>More Later?</h2>
-
-<p>That&rsquo;s it for now &ndash; I just wanted to get something online to show people how to setup and poke around in the VM.  Later I can show you how to manipulate and manage the VM with Puppet, which is pretty fun.  Your VM should get you started and let you play around locally, but if you want to test out Netboot and the like then you&rsquo;ll need an externally-accessible IP address (as apposed to the 192.168.x.x IP, which is only accessible from your Laptop).  You can change the settings in VMware Fusion to enable that (like we did in step 2).</p>
-
-<p>Hope this helped you out!</p>
 ]]></content>
   </entry>
   

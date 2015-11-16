@@ -4,7 +4,7 @@
   <title><![CDATA[Category: ruby | Shit Gary Says]]></title>
   <link href="http://garylarizza.com/blog/categories/ruby/atom.xml" rel="self"/>
   <link href="http://garylarizza.com/"/>
-  <updated>2014-10-28T15:41:05+00:00</updated>
+  <updated>2015-11-16T13:15:52-08:00</updated>
   <id>http://garylarizza.com/</id>
   <author>
     <name><![CDATA[Gary larizza]]></name>
@@ -16,7 +16,7 @@
   <entry>
     <title type="html"><![CDATA[Seriously, what is this provider doing?]]></title>
     <link href="http://garylarizza.com/blog/2013/12/15/seriously-what-is-this-provider-doing/"/>
-    <updated>2013-12-15T16:44:17+00:00</updated>
+    <updated>2013-12-15T08:44:17-08:00</updated>
     <id>http://garylarizza.com/blog/2013/12/15/seriously-what-is-this-provider-doing</id>
     <content type="html"><![CDATA[<p>Clarke&rsquo;s third law states: &ldquo;Any sufficiently advanced technology is
 indistinguishable from magic.&rdquo; In the case of Ruby and Puppet provider
