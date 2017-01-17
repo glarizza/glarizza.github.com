@@ -1,0 +1,513 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Roles and Profiles in a Control Repo? - Shit Gary Says</title>
+  <meta name="author" content="Gary larizza">
+
+  
+  <meta name="description" content="In the past, the thing that got me to make a blog post was answering a question
+more than once and not having a good source to point someone to after &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://garylarizza.com/blog/2017/01/17/roles-and-profiles-in-a-control-repo">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Shit Gary Says" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-37766331-2']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Shit Gary Says</a></h1>
+  
+    <h2>...things I don't want to forget</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:garylarizza.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+  <li><a href="/about">About</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Roles and Profiles in a Control Repo?</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2017-01-17T11:14:36-08:00" pubdate data-updated="true">Jan 17<span>th</span>, 2017</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>In the past, the thing that got me to make a blog post was answering a question
+more than once and not having a good source to point someone to after-the-fact.
+As the docs at <a href="http://docs.puppet.com">docs.puppet.com</a> have become more
+comprehensive, I find that I&rsquo;m wanting to write about things infrequently. But,
+all it takes is a question or two from a customer to kick things in the
+ass and remind me that there&rsquo;s still a <em>LOT</em> of tribal knowledge around Puppet
+(let alone the greater community). It&rsquo;s with THAT theme that we talk about
+Roles &amp; Profiles, and the Control Repo.</p>
+
+<p><a href="https://docs.puppet.com/pe/latest/cmgmt_control_repo.html">Like many things nowadays, there are official Puppet docs on the Control Repo.</a>
+In a nutshell, the Control Repo is the repository that Puppet&rsquo;s Code Manager
+(or R10k in the open source) uses to track Puppet Environments and the versions
+of all Puppet modules within each Puppet Environment. On a greater scale, the
+Control Repo is an organization&rsquo;s implementation of Puppet to the extent that
+it can (and eventually will) fully represent your organization&rsquo;s
+infrastructure. Changes to the Control Repo WILL incur changes to your Puppet
+Master(s), and in most cases will also bubble down to your managed nodes
+(i.e. if you&rsquo;re changing a profile that&rsquo;s being used by 1000 nodes, then that
+change will be definitely change the file that&rsquo;s on each Puppet Master but will
+also change the enforcement of Puppet on those 1000 nodes).</p>
+
+<p><a href="https://docs.puppet.com/pe/latest/r_n_p_intro.html">Similarly, Roles &amp; Profiles has its own official docs page!</a>
+As a recap, &ldquo;Role &amp; Profiles&rdquo; is a design pattern (that&rsquo;s all!) that has been
+employed by Puppet Users for several years as a way to make sense of wiring
+up public Puppet modules with site-specific implementations and data. It allows
+organizations to share common modules while also having the ability to add their
+own customizations and implement a separate configuration management data layer
+(i.e. Hiera).</p>
+
+<p>Both the Control Repo and Roles &amp; Profiles (R&amp;P) have undergone several evolutions to
+get them to the reliable state we know today, and they&rsquo;ve had their shared
+history: R&amp;P originally were separate Puppet modules that lived outside the
+Control Repo (before finally settling there around 2013 or so). It&rsquo;s that history
+that warrants some exploration&hellip;</p>
+
+<h2>Roles and Profiles outside the Control Repo</h2>
+
+<p>Roles &amp; Profiles were (was?) created before the Control Repo because the problem of
+disentangling data from Puppet code was a greater priority than automating
+code-consistency across multiple Puppet masters. When the idea of using a git
+repo to implement dynamic Puppet Environments came along, the success of
+being able to ensure module consistency across all your masters was pretty
+landmark. The workflow, however, needed some work &ndash; there were a LOT of steps.
+Git workflow automation loves it some hooks, and so the idea of a post-receive hook
+that would immediately update a Puppet environment was a logical landing point.
+The idea was that all modules would be listed and &lsquo;pinned&rsquo; to their correct
+version/tag/commit within <code>Puppetfile</code> that lived at the root of the Control
+Repo. R10k/Code Manager would read that file, pull down all the modules at their
+correct versions, and then move along. That entire workflow looked like this:</p>
+
+<ol>
+<li>Create/Modify a Profile and push changes to the Profile module repo</li>
+<li>Create a branch to the Control Repo and modify <code>Puppetfile</code> to target the new Profile changes</li>
+<li>Push the Control Repo changes up to the remote (where the git webhook catches that change and deploys it to Puppet Masters)</li>
+<li>Classify your node (if needed) and/or test the changes</li>
+<li>If changes are necessary, go back to step 1 and repeat up to step 4</li>
+<li>Once everything works, submit a Pull Request to the Control Repo</li>
+</ol>
+
+
+<p>This workflow works regardless of whether a Role or Profile was changed, but
+the biggest thing to understand is that ONLY the Control Repo has the git webhook
+that will deploy code changes to your Puppet Masters, so if you want to trigger
+a code deploy then you&rsquo;ll need to change the Control Repo and push that change
+up (or have access to trigger R10k/Code Manager on the Puppet Master). This
+resulted in a lot of &lsquo;dummy&rsquo; changes that were necessary SOLELY to trigger a
+code change. Conversely, changes to the Roles or Profiles module (they&rsquo;re separate)
+don&rsquo;t get automatically replicated, so even if there&rsquo;s a small change to a
+Profile you&rsquo;ll still need to either trigger R10k/Code Manager by hand or make
+a small dummy commit to the Control Repo to trigger a code deploy.</p>
+
+<p>We implemented Roles &amp; Profiles and the Control Repo this way for awhile until
+it was realized that you could save steps by putting both the Roles and Profiles
+module into the Control Repo itself&hellip;</p>
+
+<h2>Roles and Profiles inside the Control Repo</h2>
+
+<p>Since the entire contents of the Control Repo are already cloned down to disk by
+R10k/Code Manager, the idea came about to store the Roles and Profiles modules
+in a special directory of the Control Repo (usually called &lsquo;site&rsquo; which is short
+for &lsquo;site-specific modules&rsquo;), and then change <code>$modulepath</code> within Puppet to
+look for the &lsquo;site&rsquo; folder within every Puppet Environment&rsquo;s directory path as
+another place for Puppet modules to live. This worked for two reasons:</p>
+
+<ol>
+<li>It shortened the workflow (since changes to Roles and Profiles were done
+within the history of the Control Repo, there was no need to change the
+version &lsquo;pin&rsquo; inside <code>Puppetfile</code> as a separate step)</li>
+<li>Because Roles and Profiles are now within the Control Repo, changes made to
+Roles and Profiles will now trigger a code deploy</li>
+</ol>
+
+
+<p>For the vast majority of customers, putting Roles &amp; Profiles inside the Control
+Repo made sense and kept the workflow shorter than it was before. It also had
+the added benefit of turning the Control Repo into the important artifact that
+it is today (thanks to the git webhook).</p>
+
+<h2>Can/Should we also put other modules inside the Control Repo?</h2>
+
+<p>Once you add the site directory to <code>$modulepath</code>, it opens up that directory to
+be used as a place for storing ANY Puppet modules. The question then remains:
+should the site directory be used for anything else other than Roles and Profiles?</p>
+
+<p>Maybe?</p>
+
+<p>Just like Puppet, though, just because you CAN do things, doesn&rsquo;t immediately
+mean you SHOULD. It&rsquo;s important to understand that the Control Repo is
+fundamental to ensuring code consistency across multiple Puppet Masters. For
+that reason, commits to the Control Repo should be scruitinized closely. If
+you&rsquo;re a large team with many Puppet contributers and many Puppet masters, then
+it&rsquo;s best to keep modules within their own git repositories so multiple team
+members can work independenly and the Control Repo can be used to &ldquo;tie it all
+together&rdquo; in the end. If you&rsquo;re the only Puppet contributor, you&rsquo;re using 80%
+of your modules from the Puppet Forge, but you have 3 relatively-static modules
+outside of Roles and Profiles that you&rsquo;ve written specifically for your
+organization and you want them in the site directory of the Control Repo then
+you&rsquo;re probably fine. See the difference?</p>
+
+<h2>So what are the OFFICIAL RECOMMENDATIONS THEN?!?!</h2>
+
+<p>We officially recommend you calm down with that punctuation. Beyond that, here it is:</p>
+
+<ul>
+<li>Put Roles &amp; Profiles within the site directory of the Control Repo unless you
+have a specific reason NOT to.</li>
+</ul>
+
+
+<p>Do you have multiple Puppet contributors and separate modules for EACH
+INDIVIDUAL Profile?  Then you might want to have separate repos for each
+Profile and put them in <code>Puppetfile</code> to keep the development history separate.
+You ALSO might want to put each individual Profile module in the site directory
+of the Control Repo and just run with it that way. The bottom line here would
+be access: who can/should access Profiles, who can/should access the Control
+Repo, are those people the same, and do you need to restrict access for some
+reason? Start with doing it this way and change WHEN YOU HIT THAT COMPLEXITY!
+Don&rsquo;t deviate because you &lsquo;anticipate something&rsquo; &ndash; change when you&rsquo;re ready
+for it and don&rsquo;t overarchitect early.</p>
+
+<ul>
+<li>If you&rsquo;re a smaller team with the same people who own the Puppet infrastructure
+as who own Puppet module development and you have a couple of small internal modules
+that don&rsquo;t change very often, AND putting them inside the &lsquo;site&rsquo; folder of
+the Control Repo is easier for you than managing individual git repos, then by
+all means do it!</li>
+</ul>
+
+
+<p>Whew that was a lot. Basically, yes, I&rsquo;ve outlined a narrow case because usually
+creating a new git repository is a very small cost for an organization. If
+you&rsquo;re in an organization where that&rsquo;s NOT the case, then the site directory
+solution might appeal to you. What you gain in simplicity you lose in access
+and security, though, so consider that ahead of time.</p>
+
+<ul>
+<li>Have an internal Puppet Policy/Style Guide for where Puppet modules &ldquo;go.&rdquo;</li>
+</ul>
+
+
+<p>If you&rsquo;ve had the conversation and made the decision, DOCUMENT IT! It&rsquo;s more
+important to have an escalation path/policy for new Puppet users in your
+organization to ensure consistency (the last thing you want to do is to keep
+having this conversation every other month).</p>
+
+<ul>
+<li>Moving a module from the &lsquo;site&rsquo; directory to its own repository is not
+difficult, but it does add workflow steps.</li>
+</ul>
+
+
+<p>Remember that if a module doesn&rsquo;t live in the &lsquo;site&rsquo; directory then it needs
+to get &lsquo;pinned&rsquo; in <code>Puppetfile</code>, and that adds an extra step anytime that
+module needs updated within a Puppet Environment.</p>
+
+<h2>Summary</h2>
+
+<p>First, if you&rsquo;ve read this post it&rsquo;s probably because you&rsquo;re Googling for
+material to support your cause (or someone cited this post as evidence to back
+their position). You might have even skipped down here for &ldquo;the answer.&rdquo; Guess
+what &ndash; shit doesn&rsquo;t work like that! Storing Roles &amp; Profiles (and/or other
+Puppet modules) within the &lsquo;site&rsquo; directory is an organizational choice based
+on the workflow that best jives with an organization&rsquo;s existing developmental
+cycle. The costs/benefits for each choice boil down to access, security, and
+saving time. The majority of the time putting Roles &amp; Profiles in the Control
+Repo saves time and keeps all organizational-specific information in one place.
+If you don&rsquo;t have a great reason to change that, then don&rsquo;t.</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Gary larizza</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2017-01-17T11:14:36-08:00" pubdate data-updated="true">Jan 17<span>th</span>, 2017</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/control-repo/'>control repo</a>, <a class='category' href='/blog/categories/profiles/'>profiles</a>, <a class='category' href='/blog/categories/puppet/'>puppet</a>, <a class='category' href='/blog/categories/r10k/'>r10k</a>, <a class='category' href='/blog/categories/roles/'>roles</a>, <a class='category' href='/blog/categories/workflow/'>workflow</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://garylarizza.com/blog/2017/01/17/roles-and-profiles-in-a-control-repo/" data-via="glarizza" data-counturl="http://garylarizza.com/blog/2017/01/17/roles-and-profiles-in-a-control-repo/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2015/11/16/workflows-evolved-even-besterer-practices/" title="Previous Post: Workflows Evolved: Even Besterer Practices">&laquo; Workflows Evolved: Even Besterer Practices</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2017/01/17/roles-and-profiles-in-a-control-repo/">Roles and Profiles in a Control Repo?</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/11/16/workflows-evolved-even-besterer-practices/">Workflows Evolved: Even Besterer Practices</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/10/24/puppet-workflows-4-using-hiera-in-anger/">Puppet Workflows 4: Using Hiera in Anger</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/10/23/puppetconf-2014-talk/">Puppetconf 2014 Talk - the Refactor Dance</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/10/19/on-dependencies-and-order/">On Dependencies and Order</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/glarizza">@glarizza</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'glarizza',
+            count: 0,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+<section>
+  <h1>Twitter</h1>
+  <a class="twitter-timeline" href="https://twitter.com/glarizza" data-widget-id="406925439601348608">Tweets by @glarizza</a>
+  <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+"://platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
+</section>
+
+
+
+
+
+<section>
+  <h1>Coderwall Badges</h1>
+  <ul id="cw_badges">
+    <li class="loading">Status updating...</li>
+  </ul>
+  <p id="badges"></p>
+  <script type="text/javascript">
+    function show_achievements(args) {
+      var badges = args["data"]["badges"];
+      var achievements = "";
+      for (var i = 0; i < badges.length; i++) {
+        var alt_text = badges[i]["name"];
+        var title_text = badges[i]["name"] + ' - ' + badges[i]["description"];
+        achievements += '<a href="http://coderwall.com/glarizza/"><img src="'
+          + badges[i]["badge"]
+          + '" width="48" height="48" alt="' + alt_text
+          + '" title="' + title_text
+          + '" style="margin-top: 7px;margin-right: 4px;"'
+          + '"/></a>';
+      };
+      document.getElementById("cw_badges").style.display = "none";
+      document.getElementById("badges").innerHTML = achievements;
+    }
+  </script>
+  <script src="http://coderwall.com/glarizza.json?callback=show_achievements"></script>
+  
+</section>
+
+<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- shit gary says ad -->
+<ins class="adsbygoogle"
+     style="display:inline-block;width:336px;height:280px"
+     data-ad-client="ca-pub-7679900559570586"
+     data-ad-slot="2428332156"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2017 - Gary larizza -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'shitgarysays';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://garylarizza.com/blog/2017/01/17/roles-and-profiles-in-a-control-repo/';
+        var disqus_url = 'http://garylarizza.com/blog/2017/01/17/roles-and-profiles-in-a-control-repo/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

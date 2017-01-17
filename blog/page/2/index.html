@@ -9,8 +9,9 @@
   <meta name="author" content="Gary larizza">
 
   
-  <meta name="description" content="Clarke&rsquo;s third law states: &ldquo;Any sufficiently advanced technology is
-indistinguishable from magic.&rdquo; In the case of Ruby and Puppet &hellip;">
+  <meta name="description" content="Working as a professional services engineer for Puppet Labs,
+my life consists almost entirely of either correcting some of the worst code
+atrocities &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -79,6 +80,254 @@ indistinguishable from magic.&rdquo; In the case of Ruby and Puppet &hellip;">
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/02/17/puppet-workflow-part-1/">Building a Functional Puppet Workflow Part 1: Module Structure</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-02-17T14:01:37-08:00" pubdate data-updated="true">Feb 17<span>th</span>, 2014</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>Working as a professional services engineer for <a href="http://www.puppetlabs.com">Puppet Labs</a>,
+my life consists almost entirely of either correcting some of the worst code
+atrocities you&rsquo;ve seen in your life, or helping people get started with Puppet
+so that they don&rsquo;t need to call us again due to: A.) Said code atrocities or
+B.) Refactor the work we JUST helped them start.  It wasn&rsquo;t ALWAYS like this &ndash;
+I can remember some of my earliest gigs, and I almost feel like I should go
+revisit them if only to correct some of the previous &lsquo;best practices&rsquo; that
+didn&rsquo;t quite pan out.</p>
+
+<p>This would be exactly why I&rsquo;m wary of &lsquo;Best Practices&rsquo; &ndash; because one person&rsquo;s
+&lsquo;Best Practice&rsquo; is another person&rsquo;s &lsquo;What the fuck did you just do?!&rsquo;</p>
+
+<p>Having said that, I&rsquo;m finding myself repeating a story over and over again when
+I train/consult, and that&rsquo;s the story of &lsquo;The Usable Puppet Workflow.&rsquo;  Everybody
+wants to know &lsquo;The Right Way™&rsquo;, and I feel like we finally have a way that survives
+a reasonable test of time. I&rsquo;ve been promoting this workflow for over a year (which
+is a HELL of a long time in Startup time), and I&rsquo;ve yet to really see an edge case
+it couldn&rsquo;t handle.</p>
+
+<p>(If you&rsquo;re already savvy: yes, this is the Roles and Profiles talk)</p>
+
+<p>I&rsquo;ll be breaking this workflow down into separate blog posts for every component,
+and, as always, your comments are welcome&hellip;</p>
+
+<h2>It all starts with the component module</h2>
+
+<p>The first piece of a functional Puppet deployment starts with what we call
+&lsquo;component modules&rsquo;.  Component modules are the lowest level in your
+deployment, and are modules that configure specific pieces of technology (like
+apache, ntp, mysql, and etc&hellip;).  Component modules are well-encapsulated, have
+a reasonable API, and focus on doing small, specific things really well (i.e.
+the *nix way).</p>
+
+<p>I don&rsquo;t want to write thousands of words on building component modules because
+I feel like others have done this better than I. As examples, check out
+<a href="http://www.devco.net/archives/2012/12/13/simple-puppet-module-structure-redux.php">RI&rsquo;s Post on a simple module structure</a>,
+<a href="http://docs.puppetlabs.com/guides/module_guides/bgtm.html">Puppet Labs&#8217; very own docs on the subject</a>,
+<a href="http://www.confreaks.com/videos/1651-puppetconf2012-puppet-modules-for-fun-and-profit">and even Alessandro&rsquo;s Puppetconf 2012 session.</a> Instead, I&rsquo;d like to
+provide some pointers on what I feel makes a good component module, and some
+&lsquo;gotchas&rsquo; we&rsquo;ve noticed.</p>
+
+<h3>Parameters are your API</h3>
+
+<p>In the current world of Puppet, you MUST define the parameters your module will
+accept in the Puppet DSL. Also, every parameter MUST ultimately have a value
+when Puppet compiles the catalog (whether by explicitly passing this parameter
+value when declaring the class, or by assuming a default value). Yes, it&rsquo;s
+funny that, when writing a Puppet class, if you typo a VARIABLE Puppet will
+not alert you to this (in a NON <code>use strict</code>-ian sort of approach) and will
+happily accept a variable in an undefined state, but the second you don&rsquo;t pass
+a value to your class parameter you&rsquo;re in for a rude compilation error.
+This is the way of Puppet classes at the time of this writing, so you&rsquo;re going
+to see Puppet classes with LINES of defined parameters. I expect this to change
+in the future (please let this change in the near future), but for now, it&rsquo;s
+a necessary evil.</p>
+
+<p>The parameters you expose to your top-level class (i.e. given class names like
+<code>apache</code> and <code>apache::install</code>, I&rsquo;m talking specifically about <code>apache</code>) should
+be treated as an API to your module. IDEALLY, they&rsquo;re the ONLY THING that
+a user needs to modify when using your module. Also, whenever possible, it
+should be the case that a user need ONLY interact with the top-level class when
+using your module (of course, defined resource types like <code>apache::vhost</code> are
+used on an ad-hoc basis, and thus are the exception here).</p>
+
+<h3>Inherit the <code>::params</code> class</h3>
+
+<p>We&rsquo;re starting to make enemies at this point. It&rsquo;s been a convention for modules
+to use a <code>::params</code> class to assign values to all variables that are going to
+be used for all classes inside the module. The idea is that the <code>::params</code> class
+is the one-stop-shop to see where a variable is set. Also, to get access to a
+variable that&rsquo;s set in a Puppet class, you have to declare the class (i.e. use
+the <code>include()</code> function or inherit from that class). When you declare a class
+that has both variables AND resources, those resources get put into the catalog,
+which means that Puppet ENFORCES THE STATE of those resources. What if you only
+needed a variable&rsquo;s value and didn&rsquo;t want to enforce the rest of the resources
+in that class? There&rsquo;s no good way in Puppet to do that. Finally, when you inherit
+from a class in Puppet that has assigned variable values, you ALSO get access
+to those variables in the parameter definition section of your class (i.e. the
+following section of the class:</p>
+
+<pre><code>class apache (
+  $port = $apache::params::port,
+  $user = $apache::params::user,
+) inherits apache::params {
+</code></pre>
+
+<p>See how I set the default value of <code>$apache::port</code> to <code>$apache::params::port</code>?
+I could only access the value of the variable <code>$apache::params::port</code> in that
+section by inheriting from the <code>apache::params</code> class.  I couldn&rsquo;t insert
+<code>include apache::params</code> below that section and be allowed access to the variable
+up in the parameter defaults section (due to the way that Puppet parses classes).</p>
+
+<p><strong>FOR THIS REASON, THIS IS THE </strong><em>ONLY</em><strong> RECOMMENDED USAGE OF INHERITANCE IN
+PUPPET!</strong></p>
+
+<p>We do NOT recommend using inheritance anywhere else in Puppet and for any other
+reason because there are better ways to achieve what you want to do INSTEAD of
+using inheritance.  Inheritance is a holdover from a scarier, more lawless time.</p>
+
+<p><strong>NOTE: Data in Modules</strong> &ndash; There&rsquo;s a &lsquo;Data in Modules&rsquo; pattern out there that
+attempts to eliminate the <code>::params</code> class.  <a href="http://garylarizza.com/blog/2013/12/08/when-to-hiera/">I wrote about it in a previous post</a>,
+and I recommend you read that post for more info (it&rsquo;s near the bottom).</p>
+
+<h3>Do <strong>NOT</strong> do Hiera lookups in your component modules!</h3>
+
+<p>This is something that&rsquo;s really only RECENTLY been pushed. When Hiera was
+released, we quickly recognized that it would be the answer to quite a few
+problems in Puppet. In the rush to adopt Hiera, many people started adding
+Hiera calls to their modules, and suddenly you had &lsquo;Hiera-compatible&rsquo; modules
+out there. This caused all kinds of compatibility problems, and it was largely
+because there wasn&rsquo;t a better module structure and workflow by which to integrate
+Hiera. The pattern that I&rsquo;ll be pushing DOES INDEED use Hiera, <strong>BUT</strong> it
+confines all Hiera calls to a higher-level wrapper class we call a &lsquo;profile&rsquo;.
+The reasons for NOT using Hiera in your module are:</p>
+
+<ul>
+<li>By doing Hiera calls at a higher level, you have a greater visibility on
+exactly what parameters were set by Hiera and which were set explicitly or by
+default values.</li>
+<li>By doing Hiera calls elsewhere, your module is backwards-compatible for
+those folks who are NOT using Hiera</li>
+</ul>
+
+
+<p>Remember &ndash; your module should just accept a value and use it somewhere. Don&rsquo;t
+get <strong>TOO</strong> smart with your component module &ndash; leave the logic for other
+places.</p>
+
+<h3>Keep your component modules generic</h3>
+
+<p>We always get asked &ldquo;How do I know if I&rsquo;m writing a good module?&rdquo; We USED to
+say &ldquo;Well, does it work?&rdquo; (and trust me, that was a BIG hurdle). Now, with
+data separation models out there like Hiera, I have a couple of other questions
+that I ask (you know, BEYOND asking if it compiles and actually installs the
+thing it&rsquo;s supposed to install). The best way I&rsquo;ve found to determine if your
+module is &lsquo;generic enough&rsquo; is if I asked you TODAY to give me your module,
+would you give it to me, or would you be worried that there was some
+company-specific data locked in there? If you have company-specific data in
+your module, then you need to refactor the module, store the data in Hiera, and
+make your module more generic/reusable. Also, does your module focus on installing
+one piece of technology, or are you declaring packages for shared libraries
+or other components (like gcc, apache, or other common components)? You&rsquo;re
+not going to win any prizes for having the biggest, most monolithic module
+out there. Rather, if your module is that large and that complex, you&rsquo;re
+going to have a hell of a time debugging it. Err on the side of making your
+modules smaller and more task-specific. So what if you end up needing to
+declare 4 classes where you previously declared 1? In the roles and profiles
+pattern we will show you in the next blog post, you can abstract that away
+ANYHOW.</p>
+
+<h3>Don&rsquo;t play the &ldquo;what if&rdquo; game</h3>
+
+<p>I&rsquo;ve had more than a couple of gigs where the customer says something along the
+lines of &ldquo;What if we need to introduce FreeBSD/Solaris/etc&hellip; nodes into our
+organization, shouldn&rsquo;t I account for them now?&rdquo; This leads more than a few
+people down a path of entirely too-complex modules that become bulky and
+unwieldy. Yes, your modules should be formatted so that you can simply add
+another case in your <code>::params</code> class for another OS&rsquo;s parameters, and yes,
+your module should be formatted so that your <code>::install</code> or <code>::config</code>
+class can handle another OS, but if you currently only manage Redhat, and
+you&rsquo;ve only EVER managed Redhat, then don&rsquo;t start adding Debian parameters
+RIGHT NOW just because you&rsquo;re afraid you might inherit Ubuntu machines. The
+goal of Puppet is to automate the tasks that eat up the MAJORITY of your time
+so you can focus on the edge cases that really demand your time. If you can
+eventually automate those edge cases, then AWESOME! Until then, don&rsquo;t spend
+the majority of your time trying to automate the edge cases only to drown
+under the weight of deadlines from simple work that you COULD have already
+automated (but didn&rsquo;t, because you were so worried about the exceptions)!</p>
+
+<h3>Store your modules in version control</h3>
+
+<p>This should go without saying, but your modules should be stored in version
+control (a la git, svn, hg, whatever). We tend to prefer git due to its lightweight
+branching and merging (most of our tooling and solutions will use git because
+we&rsquo;re big git users), but you&rsquo;re free to use whatever you want. The bigger
+question is HOW to store your modules in version control. There are usually
+two schools of thought:</p>
+
+<ul>
+<li>One repository per module</li>
+<li>All modules in a single repository</li>
+</ul>
+
+
+<p>Each model has its pros and cons, but we tend to recommend one module per
+repository for the following reasons:</p>
+
+<ul>
+<li>Individual repos mean individual module development histories</li>
+<li>Most VCS solutions don&rsquo;t have per-folder ACLs for a single repositories;
+having multiple repos allows per-module security settings.</li>
+<li>With the one-repository-per-module solution, modules you pull down from the
+Forge (or Github) must be committed to your repo. Having multiple
+repositories for each module allow you to keep everything separate</li>
+</ul>
+
+
+<p><strong>NOTE:</strong> This becomes important in the third blog post in the series when we
+talk about moving changes to each Puppet Environment, but it&rsquo;s important to
+introduce it NOW as a &lsquo;best practice&rsquo;. If you use our recommended module/environment
+solution, then one-module-per-repo is the best practice. If you DON&rsquo;T use our
+solution, then the single repository per for all modules will STILL work,
+but you&rsquo;ll have to manage the above issues. Also note that even if you currently
+have every module in a single repository, you can STILL use our solution in
+part 3 of the series (you&rsquo;ll just need to perform a couple of steps to conform).</p>
+
+<h2>Best practices are shit</h2>
+
+<p>In general, &lsquo;best practices&rsquo; are only recommended if they fit into your organizational
+workflow. The best and worst part of Puppet is that it&rsquo;s infinitely customizable,
+so &lsquo;best practices&rsquo; will invariably be left wanting for a certain subset of the
+community. As always, take what I say under consideration; it&rsquo;s quite possible
+that I could be entirely full of shit.</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -6250,200 +6499,6 @@ if you can EDIT A TEXT FILE then you can &lsquo;maintain&rsquo; a blog.</p>
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/02/06/jamf-netsus-appliance/">JAMF NetSUS Appliance</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-02-06T11:22:00-08:00" pubdate data-updated="true">Feb 6<span>th</span>, 2012</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h2>JAMF&rsquo;s NetSUS Appliance &ndash; Netboot in a Box</h2>
-
-<p><a href="https://jamfnation.jamfsoftware.com/viewProduct.html?id=180">Today, JAMF released a new appliance VM</a> based on Ubuntu 10.04 LTS (Lucid) that, for once, provides an &lsquo;out of the box&rsquo; implementation of Netboot and Software Update Service WITHOUT requiring OS X hardware (based on <a href="http://github.com/wdas/reposado">Reposado</a>) and <a href="http://twitpic.com/8glygw">other open-source technologies.</a></p>
-
-<p>For those people who are relatively new to Linux, I thought I&rsquo;d provide an easy walkthrough of how to get started using this VM on your Laptop.  I&rsquo;m going to demo this using VMware Fusion instead of VirtualBox mainly because I prefer how Fusion handles Networking.  I&rsquo;ve used many VMs, and Fusion always tends to be much more solid and stable for me.  If you don&rsquo;t have Fusion or don&rsquo;t WANT to use Fusion, feel free to use VirtualBox.</p>
-
-<h2>Download and Convert the OVA File</h2>
-
-<p><a href="https://jamfnation.jamfsoftware.com/viewProduct.html?id=180">The appliance can be downloaded directly from JAMF</a> and comes as a VirtualBox OVA file.  <a href="http://derflounder.wordpress.com/2012/02/06/converting-jamfs-netbootsus-appliance-to-vmware/">Rich Trouton has provided a great walkthrough</a> on converting the OVA file to a VMX file, so I&rsquo;ll link you to that post (since he did it so well).</p>
-
-<h2>Start up the VM</h2>
-
-<p>Once you have your VMX file, you can open it up with Fusion and import it into your Virtual Machine Library.  There is one change we&rsquo;ll want to make, so click on the VM and open its Settings panel (this is different from Fusion 3.0 and 4.0 &ndash; I&rsquo;ll be describing the 4.0 method).  In the Settings panel, you&rsquo;ll want to select the Network Adapter icon and make sure the radio button next to &ldquo;Share the Mac&rsquo;s network connection (NAT)&rdquo; is selected.  This will create a local IP address so we can contact it directly from our Laptop.  Once you&rsquo;ve done that, start the VM and get to the login screen (you&rsquo;ll need to click the Ok button through the message about logging into the NetSUS instance).  Feel free to login with the username &lsquo;shelluser&rsquo; and the password &lsquo;shelluser&rsquo;.  You should see a Message of the Day splash with one of the sections being &ldquo;IP address for eth0:&rdquo;.  Note the IP address, we&rsquo;ll need it in the next section (if you don&rsquo;t see this, just run <code>ifconfig</code> from the command line and look for the IP address for the eth0 adapter &ndash; it should be in the format of 192.168.x.x).</p>
-
-<h2>Prepare to Break Free!</h2>
-
-<p>It really sucks to work with VMs from WITHIN the VM window for various reasons (lack of Copy/Paste, loss of mouse, etc…), so we&rsquo;re going to setup a host entry on your local laptop so we can SSH into the VM as we need.  I&rsquo;m going to give my VM a hostname of &lsquo;netsus.puppetlabs.vm&rsquo; but you can name it whatever you want.  Let&rsquo;s first edit the /etc/hosts file on your laptop (NOT within the VM, this is ON your laptop) by running the following from the command line:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>sudo vim /etc/hosts</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Feel free to use pico/nano to edit /etc/hosts in case you don&rsquo;t have any experience with vim.  We want to add the following line in the /etc/hosts file:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>192.168.217.154 netsus.puppetlabs.vm</span></code></pre></td></tr></table></div></figure>
-
-
-<p><strong>NOTE</strong> SUBSTITUTE 192.168.217.154 WITH THE IP ADDRESS YOU GOT FROM THE PREVIOUS STEP!  That&rsquo;s the IP address that was assigned on MY laptop, and it will definitely be different from the IP address you got on YOUR computer.  Also, you don&rsquo;t HAVE to use &lsquo;netsus.puppetlabs.vm&rsquo; &ndash; you can assign it any name you want.  Save and close /etc/hosts and then let&rsquo;s test connectivity from the command line by doing a ping:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>ping 192.168.217.154</span></code></pre></td></tr></table></div></figure>
-
-
-<p>As long as we have connection, we&rsquo;re fine (remember, substitute your IP Address for mine).  If you DON&rsquo;T have connectivity, make sure your VM is running and review your /etc/hosts file to make sure the changes were saved (also, check the IP address on your VM again).</p>
-
-<h2>Snapshot Time</h2>
-
-<p>The beauty of Fusion is that you can take snapshots and revert to them should you mess things up.  Let&rsquo;s take a snapshot now in case we screw things up in the following steps.  I&rsquo;m using VMware Fusion 4.0, so I take a snapshot by clicking on the VM window, clicking on the Virtual Machine menu at the top, and then down to Snapshots.  From there, you can click the &lsquo;Take Snapshot&rsquo; button and let it do its thing.  When it&rsquo;s done, hit the close button and return to the VM</p>
-
-<h2>Enable SSH and Login</h2>
-
-<p>By default, the VM doesn&rsquo;t have the SSHD process running, so we can&rsquo;t yet SSH in from our laptop.  Enable this by doing the following from within the VM:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>sudo apt-get install openssh-server</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Hit &ldquo;Y&rdquo; when it asks if it should download and install.  When it completes, switch back to your LAPTOP (i.e. NOT inside the VM), open up Terminal, and do the following:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>ssh shelluser@netsus.puppetlabs.vm</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Type yes to add the SSH key to your known_hosts file and use the password &lsquo;shelluser&rsquo; to login.  Tada! Now you can work directly from Terminal and enable copy/pasting directly from your Terminal window.  You can always type <code>exit</code> to close the ssh connection when you&rsquo;re done.</p>
-
-<h2>Install Puppet</h2>
-
-<p>So, it wouldn&rsquo;t be one of my write-ups if I DIDN&rsquo;T get Puppet installed.  Actually, if you&rsquo;ve only managed Macs, then you might not have seen the benefit of Puppet before.  Now that we&rsquo;re on Linux, you&rsquo;ll definitely see the benefit of Puppet (especially if you&rsquo;re not familiar with the service/package manipulation commands).  Puppet can help abstract that for you, so we&rsquo;re going to enable it.</p>
-
-<p>The version of Puppet that&rsquo;s in the main package repository is quite old (0.25 as opposed to the current 2.7.10 version we support).  Let&rsquo;s add Puppet Labs&#8217; Apt Repository to the list of repositories queried so we can get a recent version of Puppet.  Do that by opening up the /etc/apt/sources.list file for editing with the following:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>sudo vim /etc/apt/sources.list</span></code></pre></td></tr></table></div></figure>
-
-
-<p>If it prompts you for your password, go ahead and enter it.  Also, if you&rsquo;re not familiar with vi or vim, I&rsquo;ll try and help you with the basics.  Arrow down to the line JUST above the line that begins with &ldquo;deb <a href="http://">http://</a>&rdquo; and press the i button on your keyboard to insert the following lines:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>deb http://apt.puppetlabs.com/ubuntu lucid main
-</span><span class='line'>deb-src http://apt.puppetlabs.com/ubuntu lucid main</span></code></pre></td></tr></table></div></figure>
-
-
-<p>When you&rsquo;re done, hit the escape key and press ZZ (hold shift and hit Z twice, you want two capital-Z&rsquo;s) to save and close the file.  This will add Puppet Labs&#8217; repository to the list of repos queried.</p>
-
-<p>Next, we&rsquo;ll need to add Puppet Labs&#8217; GPG key to the system so we can validate the packages that are downloaded.  From the terminal, execute the following:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'> gpg --recv-key 4BD6EC30</span></code></pre></td></tr></table></div></figure>
-
-
-<p>The first time you run it, it will bother you about needing to create the keyserver file and won&rsquo;t run correctly.  Let&rsquo;s execute it correctly to receive the key:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'> gpg --recv-key 4BD6EC30</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Great, we should have the key, now we want to load it.  Do that with this command:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>gpg -a --export 4BD6EC30 | sudo apt-key add -</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Finally, let&rsquo;s update apt so that it knows about the repository.  Do that with this command:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>sudo apt-get update</span></code></pre></td></tr></table></div></figure>
-
-
-<p>When it finishes running, you can finally install Puppet with the following command:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>sudo apt-get install puppet</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Type &ldquo;Y&rdquo; when it asks you if it should download and install all the dependencies.  That&rsquo;s it!  Puppet should be installed!  Run the following to see what version we&rsquo;ve installed:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>puppet --version</span></code></pre></td></tr></table></div></figure>
-
-
-<p>As of this writing, 2.7.10 is the current version.  As long as you don&rsquo;t have version 0.25 you should be good!</p>
-
-<h2>Snapshots away</h2>
-
-<p>It would be wise to take another snapshot at this point.  Don&rsquo;t worry, I&rsquo;ll wait.</p>
-
-<h2>Inspect the System</h2>
-
-<p>Puppet lets us see what&rsquo;s been installed on the VM.  Take a look at all the packages on the system by doing the following:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>sudo puppet resource package</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Type your password when prompted and Puppet will return you with a list of all packages on the system and the versions that are running.  Similarly, you can see what services are running with the following:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>sudo puppet resource service</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Notice that sshd is running and other services like netatalk (that enables AFP on Linux) should also be running.  Sweet.  We&rsquo;ll come back to Puppet later.</p>
-
-<h2>Login to the Web GUI</h2>
-
-<p>If your VM is running, you should be able to open a web browser on your Laptop and navigate to the following address:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>https://netsus.puppetlabs.vm</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Note the httpS as we&rsquo;ll need to use SSL to get into the Web GUI.  When it asks if you want to accept the self-signed cert, make sure to choose Yes.  You can login with the user &lsquo;webadmin&rsquo; and the password &lsquo;webadmin&rsquo;</p>
-
-<p>Once you&rsquo;re logged in, <a href="https://s3.amazonaws.com/jamfsoftware-content/downloads/NetBootSUS+Appliance_v1.0.pdf">feel free to read through JAMF&rsquo;s instructions for enabling their services.</a>  They do a much better job than I about walking you through that.</p>
-
-<h2>Access to the Raw Files</h2>
-
-<p>Back in the Terminal window, you can access all the PHP/Shell magic that comprises the Web GUI in the /var/www/webadmin directory.  You can poke around through all the files (and use sudo to open some of the key bits) at your leisure.</p>
-
-<p>Note that /etc/dhcpd.conf is the main configuration file for the DHCPD service and it&rsquo;s got some special bits to accommodate Apple Hardware.</p>
-
-<p>Also, /var/appliance has some magic (and the /var/appliance/configurefornetboot script has some sed statements for fixing a stock dhcpd.conf file and enabling those Apple Hardware bits).</p>
-
-<h2>More Later?</h2>
-
-<p>That&rsquo;s it for now &ndash; I just wanted to get something online to show people how to setup and poke around in the VM.  Later I can show you how to manipulate and manage the VM with Puppet, which is pretty fun.  Your VM should get you started and let you play around locally, but if you want to test out Netboot and the like then you&rsquo;ll need an externally-accessible IP address (as apposed to the 192.168.x.x IP, which is only accessible from your Laptop).  You can change the settings in VMware Fusion to enable that (like we did in step 2).</p>
-
-<p>Hope this helped you out!</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/3/">&larr; Older</a>
@@ -6461,6 +6516,10 @@ if you can EDIT A TEXT FILE then you can &lsquo;maintain&rsquo; a blog.</p>
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2017/01/17/roles-and-profiles-in-a-control-repo/">Roles and Profiles in a Control Repo?</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2015/11/16/workflows-evolved-even-besterer-practices/">Workflows Evolved: Even Besterer Practices</a>
       </li>
     
@@ -6474,10 +6533,6 @@ if you can EDIT A TEXT FILE then you can &lsquo;maintain&rsquo; a blog.</p>
     
       <li class="post">
         <a href="/blog/2014/10/19/on-dependencies-and-order/">On Dependencies and Order</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/08/31/r10k-plus-directory-environments/">R10k + Directory Environments</a>
       </li>
     
   </ul>
