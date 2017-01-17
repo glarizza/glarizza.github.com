@@ -4,7 +4,7 @@
   <title><![CDATA[Category: r10k | Shit Gary Says]]></title>
   <link href="http://garylarizza.com/blog/categories/r10k/atom.xml" rel="self"/>
   <link href="http://garylarizza.com/"/>
-  <updated>2017-01-17T13:26:51-08:00</updated>
+  <updated>2017-01-17T14:05:01-08:00</updated>
   <id>http://garylarizza.com/</id>
   <author>
     <name><![CDATA[Gary larizza]]></name>
@@ -65,7 +65,9 @@ Git workflow automation loves it some hooks, and so the idea of a post-receive h
 that would immediately update a Puppet environment was a logical landing point.
 The idea was that all modules would be listed and &lsquo;pinned&rsquo; to their correct
 version/tag/commit within <code>Puppetfile</code> that lived at the root of the Control
-Repo. R10k/Code Manager would read that file, pull down all the modules at their
+Repo. &lsquo;Roles&rsquo; and &lsquo;Profiles&rsquo; are Puppet modules, modules were already listed
+in <code>Puppetfile</code>, so some customers listed them there initially. During a code
+deploy, R10k/Code Manager would read that file, pull down all the modules at their
 correct versions, and then move along. That entire workflow looked like this:</p>
 
 <ol>
@@ -89,9 +91,9 @@ don&rsquo;t get automatically replicated, so even if there&rsquo;s a small chang
 Profile you&rsquo;ll still need to either trigger R10k/Code Manager by hand or make
 a small dummy commit to the Control Repo to trigger a code deploy.</p>
 
-<p>We implemented Roles &amp; Profiles and the Control Repo this way for awhile until
-it was realized that you could save steps by putting both the Roles and Profiles
-module into the Control Repo itself&hellip;</p>
+<p>As I said before, some customers implemented Roles &amp; Profiles and the Control Repo
+this way for awhile until it was realized that you could save steps by putting
+both the Roles and Profiles module into the Control Repo itself&hellip;</p>
 
 <h2>Roles and Profiles inside the Control Repo</h2>
 
@@ -137,6 +139,21 @@ outside of Roles and Profiles that you&rsquo;ve written specifically for your
 organization and you want them in the site directory of the Control Repo then
 you&rsquo;re probably fine. See the difference?</p>
 
+<h2>Who owns what?</h2>
+
+<p>One of the biggest factors to influence where Puppet modules should be managed
+is the split of which teams own which decisions. Usually, Puppet infrastructure
+is owned by an internal operations team, which means that the Ops team is used
+to making changes to the Control Repo. If Puppet usage is wide enough within
+your organization it&rsquo;s common to find application teams who own specific
+Profiles that are separate from the infrastructure. It&rsquo;s usually easier to
+grant an outside team access to a separate repo than it is to try and restrict
+access to a specific folder or even branch of an existing repository, and so
+in that case it might make sense to make the Profile module its own repository.
+If the people that own the Puppet infrastructure are the same people that
+make changes to Puppet modules, then it doesn&rsquo;t really matter where Roles and
+Profiles go.</p>
+
 <h2>So what are the OFFICIAL RECOMMENDATIONS THEN?!?!</h2>
 
 <p>We officially recommend you calm down with that punctuation. Beyond that, here it is:</p>
@@ -171,7 +188,9 @@ all means do it!</li>
 creating a new git repository is a very small cost for an organization. If
 you&rsquo;re in an organization where that&rsquo;s NOT the case, then the site directory
 solution might appeal to you. What you gain in simplicity you lose in access
-and security, though, so consider that ahead of time.</p>
+and security, though, so consider that ahead of time. Finally, the biggest factor
+HERE is that the same people own the infrastructure and module code, so you can
+afford to make shortcuts.</p>
 
 <ul>
 <li>Have an internal Puppet Policy/Style Guide for where Puppet modules &ldquo;go.&rdquo;</li>
@@ -201,10 +220,11 @@ their position). You might have even skipped down here for &ldquo;the answer.&rd
 what &ndash; shit doesn&rsquo;t work like that! Storing Roles &amp; Profiles (and/or other
 Puppet modules) within the &lsquo;site&rsquo; directory is an organizational choice based
 on the workflow that best jives with an organization&rsquo;s existing developmental
-cycle. The costs/benefits for each choice boil down to access, security, and
-saving time. The majority of the time putting Roles &amp; Profiles in the Control
-Repo saves time and keeps all organizational-specific information in one place.
-If you don&rsquo;t have a great reason to change that, then don&rsquo;t.</p>
+cycle and ownership requirements. The costs/benefits for each choice boil down
+to access, security, and saving time. The majority of the time putting Roles
+&amp; Profiles in the Control Repo saves time and keeps all organizational-specific
+information in one place.  If you don&rsquo;t have a great reason to change that,
+then don&rsquo;t.</p>
 ]]></content>
   </entry>
   
