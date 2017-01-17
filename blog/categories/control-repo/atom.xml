@@ -4,7 +4,7 @@
   <title><![CDATA[Category: control repo | Shit Gary Says]]></title>
   <link href="http://garylarizza.com/blog/categories/control-repo/atom.xml" rel="self"/>
   <link href="http://garylarizza.com/"/>
-  <updated>2017-01-17T14:05:01-08:00</updated>
+  <updated>2017-01-17T14:19:12-08:00</updated>
   <id>http://garylarizza.com/</id>
   <author>
     <name><![CDATA[Gary larizza]]></name>
@@ -49,9 +49,7 @@ own customizations and implement a separate configuration management data layer
 
 <p>Both the Control Repo and Roles &amp; Profiles (R&amp;P) have undergone several evolutions to
 get them to the reliable state we know today, and they&rsquo;ve had their shared
-history: R&amp;P originally were separate Puppet modules that lived outside the
-Control Repo (before finally settling there around 2013 or so). It&rsquo;s that history
-that warrants some exploration&hellip;</p>
+history: we&rsquo;ve implemented Roles &amp; Profiles both inside and outside theh Control Repo&hellip;</p>
 
 <h2>Roles and Profiles outside the Control Repo</h2>
 
