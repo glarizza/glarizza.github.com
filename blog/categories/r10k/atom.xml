@@ -4,7 +4,7 @@
   <title><![CDATA[Category: r10k | Shit Gary Says]]></title>
   <link href="http://garylarizza.com/blog/categories/r10k/atom.xml" rel="self"/>
   <link href="http://garylarizza.com/"/>
-  <updated>2017-02-07T12:10:45-08:00</updated>
+  <updated>2017-02-07T12:29:18-08:00</updated>
   <id>http://garylarizza.com/</id>
   <author>
     <name><![CDATA[Gary larizza]]></name>
@@ -30,6 +30,11 @@ a parameter, do a Hiera lookup, or do a combination of the above is one of the
 most frequently asked questions by Puppet users. This guide will both describe the
 available data lookup methods and advise on when it is best to &ldquo;escalate&rdquo;
 based on the requirements at hand.</p>
+
+<p><strong>IMPORTANT NOTE</strong>: Please read the entire document before reacting to specific
+passages. I&rsquo;ve purposely/intentionally written the document to escalate with
+complexity, so there may be problems that arise in early paragraphs that
+are identified and resolved in later paragraphs.</p>
 
 <h2>What is &ldquo;Data&rdquo; and what is &ldquo;Code&rdquo;?</h2>
 
