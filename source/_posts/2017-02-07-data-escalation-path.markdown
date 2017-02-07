@@ -374,7 +374,7 @@ work its way up. In the end, it's all about choosing the right data mechanism
 for the problem. If you're a more visual learner, the flowchart below will help
 clarify when to use each method:
 
-[{% img left /images/data/data_escalation_path %}](http://garylarizza.com/images/data/data_escalation_path.png)
+[{% img left http://garylarizza.com/images/data/data_escalation_path.png %}](http://garylarizza.com/images/data/data_escalation_path.png)
 
 [rnp]: https://docs.puppet.com/pe/latest/r_n_p_intro.html
 [apl]: https://docs.puppet.com/hiera/latest/puppet.html#automatic-parameter-lookup
