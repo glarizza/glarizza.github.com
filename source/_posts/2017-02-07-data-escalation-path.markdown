@@ -20,6 +20,10 @@ most frequently asked questions by Puppet users. This guide will both describe t
 available data lookup methods and advise on when it is best to "escalate"
 based on the requirements at hand.
 
+**IMPORTANT NOTE**: Please read the entire document before reacting to specific
+passages. I've purposely/intentionally written the document to escalate with
+complexity, so there may be problems that arise in early paragraphs that
+are identified and resolved in later paragraphs.
 
 ## What is "Data" and what is "Code"?
 
