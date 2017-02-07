@@ -6,14 +6,12 @@ comments: true
 categories: ["hiera", "data", "workflow", "r10k", "code manager"]
 ---
 
-**NOTE**: This post is lacking a lot of the humor and playful tone I normally
+**NOTE**: *This post is lacking a lot of the humor and playful tone I normally
 use when writing posts because it was originally designed for another purpose.
 I'm posting it in its entirety here because I consider the information useful
 and want to get it out to people who ask me about this topic. Insert some Harry
-Potter references if it gets a bit dry...
+Potter references if it gets a bit dry...*
 
-
-# Data Escalation Paths
 
 Writing reusable Puppet manifests involves a combination of static and dynamic
 data, but the decision of whether to "hardcode data", use a variable, set
