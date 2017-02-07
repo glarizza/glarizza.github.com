@@ -4,7 +4,7 @@
   <title><![CDATA[Category: workflow | Shit Gary Says]]></title>
   <link href="http://garylarizza.com/blog/categories/workflow/atom.xml" rel="self"/>
   <link href="http://garylarizza.com/"/>
-  <updated>2017-02-07T12:05:34-08:00</updated>
+  <updated>2017-02-07T12:07:41-08:00</updated>
   <id>http://garylarizza.com/</id>
   <author>
     <name><![CDATA[Gary larizza]]></name>
@@ -429,7 +429,7 @@ work its way up. In the end, it&rsquo;s all about choosing the right data mechan
 for the problem. If you&rsquo;re a more visual learner, the flowchart below will help
 clarify when to use each method:</p>
 
-<p><a href="http://garylarizza.com/images/data/data_escalation_path.png">{% img left /images/data/data_escalation_path %}</a></p>
+<p><a href="http://garylarizza.com/images/data/data_escalation_path.png">{% img left http://garylarizza.com/images/data/data_escalation_path.png %}</a></p>
 ]]></content>
   </entry>
   
