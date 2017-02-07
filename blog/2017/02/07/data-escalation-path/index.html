@@ -1,0 +1,786 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Data Escalation Path: Does It Go in the Profile or Hiera? - Shit Gary Says</title>
+  <meta name="author" content="Gary larizza">
+
+  
+  <meta name="description" content="NOTE: This post is lacking a lot of the humor and playful tone I normally
+use when writing posts because it was originally designed for another &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://garylarizza.com/blog/2017/02/07/data-escalation-path">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Shit Gary Says" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-37766331-2']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Shit Gary Says</a></h1>
+  
+    <h2>...things I don't want to forget</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:garylarizza.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+  <li><a href="/about">About</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Data Escalation Path: Does It Go in the Profile or Hiera?</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2017-02-07T11:39:13-08:00" pubdate data-updated="true">Feb 7<span>th</span>, 2017</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p><strong>NOTE</strong>: This post is lacking a lot of the humor and playful tone I normally
+use when writing posts because it was originally designed for another purpose.
+I&rsquo;m posting it in its entirety here because I consider the information useful
+and want to get it out to people who ask me about this topic. Insert some Harry
+Potter references if it gets a bit dry&hellip;</p>
+
+<h1>Data Escalation Paths</h1>
+
+<p>Writing reusable Puppet manifests involves a combination of static and dynamic
+data, but the decision of whether to &ldquo;hardcode data&rdquo;, use a variable, set
+a parameter, do a Hiera lookup, or do a combination of the above is one of the
+most frequently asked questions by Puppet users. This guide will both describe the
+available data lookup methods and advise on when it is best to &ldquo;escalate&rdquo;
+based on the requirements at hand.</p>
+
+<h2>What is &ldquo;Data&rdquo; and what is &ldquo;Code&rdquo;?</h2>
+
+<p>This issue about what constitutes &ldquo;data&rdquo; is the first wrinkle in devising
+a data escalation path. <a href="https://docs.puppet.com/pe/latest/r_n_p_intro.html">The Puppet docs page on Roles and Profiles</a>
+does a great job of describing the difference between a component module and
+a profile.</p>
+
+<p>To quickly summarize: a component module is a general-purpose module
+designed to model the configuration of a piece of technology (e.g. apache,
+tomcat, ntpd), and a profile is an organization-specific Puppet module that
+describes an organization&rsquo;s IMPLEMENTATION of a piece of technology. For
+example, an apache profile that an organization creates might use the official
+Puppet apache module to install and configure apache, but the profile might
+also contain resources for an organization&rsquo;s SSL certificates or credentials that
+would be layered atop of the configuration that the Puppet apache module
+provides. The resource(s) modeling the SSL certificate(s) are ONLY necessary for
+that organization, which is why they don&rsquo;t show up in the official Puppet
+apache module.</p>
+
+<p>By this account the offical Puppet apache module itself represents the &ldquo;code&rdquo;,
+or the generic and re-usable aspect of the configuration (as most good
+component modules would), but the profile contains the
+organizational/site-specific data that is fed TO the component module (or
+&ldquo;code&rdquo;) when that module is declared/used.  This separation &ndash; and the fact that
+data can be represented within the same constructs as as code can &ndash; is
+frequently a source of confusion/frustration for new Puppet users (and
+especially for users with a background in object-oriented programming).</p>
+
+<p>Data within a profile can come in different forms &ndash; a value to a parameter when
+a class is declared, a variable assigned within the profile, or even a Hiera
+lookup (explicitly done or through Puppet&rsquo;s automatic parameter lookkup). Since
+it&rsquo;s all data, which method do you use? That&rsquo;s the question this document means
+to answer.</p>
+
+<p>A note for clarity: this document specifically covers data escalation paths
+within profiles and NOT component modules. Unless explicitly noted, assume that
+recommendations apply ONLY to profiles and not component modules (since
+profiles represent site-specific data).</p>
+
+<h2>Why an escalation path?</h2>
+
+<p>Seldom are things cut-and-dry within Puppet manifests. Instead of focusing on
+whether something is in the &ldquo;right&rdquo; place, it&rsquo;s better to think about the ways
+that complexity can be added to solve problems. You can absolutely put
+everything you would consider data inside Hiera, and that would immediately
+provide you a way to handle most corner cases, but then the legibility of
+your Puppet manifest suffers when you have to jump back to Hiera every time you
+need to retrieve a data value (and currently that&rsquo;s a very labor-intensive
+thing to do if you don&rsquo;t have direct access to the Puppet masters). Consider
+every way to handle data another tool in your Puppet belt, and certain tools
+are better at solving problems that others. This document, then, is a rundown
+on the pros and cons of every tool.</p>
+
+<h2>&ldquo;Hardcoding&rdquo; variables</h2>
+
+<p>The word hardcoding is wrapped in quotes because traditionally the term evokes
+negative connatations. When we use the word &ldquo;hardcoding&rdquo; we mean
+directly-editing an item within a Puppet manifest without assigning a variable.
+In the below example if you opened up the Puppet manifest and changed the owner from
+&lsquo;root&rsquo; to &lsquo;puppet&rsquo;, then that would be considered hardcoding the value.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="nc">file</span> <span class="p">{</span> <span class="s1">&#39;/etc/puppetlabs/puppet/puppet.conf&#39;</span><span class="p">:</span>
+</span><span class='line'>  <span class="nt">ensure</span> <span class="p">=&gt;</span> <span class="ss">file</span><span class="p">,</span>
+</span><span class='line'>  <span class="nt">owner</span>  <span class="p">=&gt;</span> <span class="s1">&#39;root&#39;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nt">group</span>  <span class="p">=&gt;</span> <span class="s1">&#39;root&#39;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nt">mode</span>   <span class="p">=&gt;</span> <span class="s1">&#39;0644&#39;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nt">source</span> <span class="p">=&gt;</span> <span class="s1">&#39;puppet:///modules/mymodule/puppet.conf&#39;</span><span class="p">,</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Hardcoding has a negative connotation because typically when someone would
+hardcode a value in a shell script it represented a workaround where a data
+item is injected into the code (and mixing data and code means that your code
+is no longer as generic/extensible as it once was).  That concern is still
+valid with Puppet: if you open up the official Puppet apache module and
+change/add a site-specific value within that component module, then you ARE
+mixing data with code. If, instead, you edit the apache profile for your
+organization and change a value there, then you&rsquo;re changing site-specific data
+to something that is already considered site-specific. The difference is that
+the official Puppet apache module is desiged to be extensible and used where
+necessary, but the profile is only meant to be used by your
+organization/site/group.</p>
+
+<p>Hardcoding a value is the easiest &ldquo;tool&rdquo; to understand: something was
+previously set to one value, and now it&rsquo;s set to another value. It&rsquo;s also the
+easiest change to implement: simply change the value and move along. If done
+correctly, someone could change the value without needing to understand the
+Puppet DSL (Domain Specific Language, i.e. the rules governing Puppet code in
+a Puppet manifest). Finally, because it&rsquo;s simply text, a hardcoded value cannot
+be overridden and the value is the same for all nodes.</p>
+
+<h3>Pros</h3>
+
+<ul>
+<li>The easiest &lsquo;tool&rsquo; to understand: something was changed from one value to
+another</li>
+<li>The easiest change to implement</li>
+</ul>
+
+
+<h3>Cons</h3>
+
+<ul>
+<li>If you hardcode the <em>same</em> value in multiple places, then changing that value
+requires multiple individual changes.</li>
+</ul>
+
+
+<h3>Recommendations</h3>
+
+<ul>
+<li>Hardcode values ONLY when their values apply to EVERY NODE being
+managed by Puppet</li>
+<li>Hardcode values within a manifest that only occur once &ndash; if it occurs more
+than once within a manifest use a variable</li>
+</ul>
+
+
+<h2>Assigning a variable</h2>
+
+<p>The next logical progression after hardcoding a value is to create and assign
+a variable within a Puppet manifest. Assigning a variable is useful when a value
+is going to be used in more than one place within a manifest. Because
+variables within the Puppet DSL cannot be reassigned, and because variables
+within a manifest cannot be assigned/changed by Hiera, variables are considered
+private to the implementation and thus can only be changed by users with access
+to change Puppet manifests (versus having Puppet Enterprise Console access or
+access to Hiera data).  More simply: variables assist writers of Puppet code
+versus users of Puppet code.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="nv">$confdir</span> <span class="o">=</span> <span class="s1">&#39;/etc/puppetlabs/puppet&#39;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nc">file</span> <span class="p">{</span> <span class="s2">&quot;</span><span class="si">${confdir}</span><span class="s2">/puppet.conf&quot;</span><span class="p">:</span>
+</span><span class='line'>  <span class="nt">ensure</span> <span class="p">=&gt;</span> <span class="ss">file</span><span class="p">,</span>
+</span><span class='line'>  <span class="nt">owner</span>  <span class="p">=&gt;</span> <span class="s1">&#39;root&#39;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nt">group</span>  <span class="p">=&gt;</span> <span class="s1">&#39;root&#39;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nt">mode</span>   <span class="p">=&gt;</span> <span class="s1">&#39;0644&#39;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nt">source</span> <span class="p">=&gt;</span> <span class="s1">&#39;puppet:///modules/mymodule/puppet.conf&#39;</span><span class="p">,</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nc">file</span> <span class="p">{</span> <span class="s2">&quot;</span><span class="si">${confdir}</span><span class="s2">/puppetdb.conf&quot;</span><span class="p">:</span>
+</span><span class='line'>  <span class="nt">ensure</span> <span class="p">=&gt;</span> <span class="ss">file</span><span class="p">,</span>
+</span><span class='line'>  <span class="nt">owner</span>  <span class="p">=&gt;</span> <span class="s1">&#39;root&#39;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nt">group</span>  <span class="p">=&gt;</span> <span class="s1">&#39;root&#39;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nt">mode</span>   <span class="p">=&gt;</span> <span class="s1">&#39;0644&#39;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nt">source</span> <span class="p">=&gt;</span> <span class="s1">&#39;puppet:///modules/mymodule/puppetdb.conf&#39;</span><span class="p">,</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Pros</h3>
+
+<ul>
+<li>Assigning a variable provides a single point within a manifest where data can
+be assigned/changed. This means if the value of the variable needs to be changed,
+it can be done in ONE place within the manifest (i.e. where the variable has
+been assigned), versus hardcoding which requires you to find and replace for
+all instances within a manifest</li>
+<li>Assigning a variable within the DSL is visible to anyone reviewing the Puppet
+manifest, which means that you don&rsquo;t need to flip back and forth between
+Hiera and Puppet to look up data values</li>
+</ul>
+
+
+<h3>Cons</h3>
+
+<ul>
+<li>The value applies to EVERYONE &ndash; it must be changed if a different value is
+desired, and that change applies to everyone</li>
+<li>No ability to override a value</li>
+</ul>
+
+
+<h3>Recommendations</h3>
+
+<ul>
+<li>Assign a variable when a value shows up more than once within a manifest and
+when that value applies to EVERY node</li>
+</ul>
+
+
+<h2>CONDITIONALLY assigning a variable</h2>
+
+<p>The previous section on assigning a variable recommends that variables are only
+used when a value applies to EVERY node, but there is a way to work around
+that: conditional statements. Conditional statements in the Puppet DSL (such as
+&ldquo;if&rdquo;, &ldquo;unless&rdquo;, &ldquo;case&rdquo;, and the selector operator) allow you to assign
+a variable once, but assign it differently based on some condition. Using the
+previous example of Puppet&rsquo;s configuration directory, let&rsquo;s see how that would
+be assigned differently based on the system&rsquo;s kernel fact:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="c-Singleline"># Using the &quot;selector&quot; conditional statement to assign the $confdir variable</span>
+</span><span class='line'><span class="c-Singleline"># based on the kernel fact.  https://docs.puppet.com/puppet/latest/lang_conditional.html#selectors</span>
+</span><span class='line'>
+</span><span class='line'><span class="nv">$confdir</span> <span class="o">=</span> <span class="nv">$facts</span><span class="p">[</span><span class="s1">&#39;kernel&#39;</span><span class="p">]</span> <span class="err">?</span>
+</span><span class='line'>  <span class="err">&#39;linux&#39;</span>   <span class="err">=&gt;</span> <span class="err">&#39;/etc/puppetlabs/puppet&#39;,</span>
+</span><span class='line'>  <span class="err">&#39;windows&#39;</span> <span class="err">=&gt;</span> <span class="err">&#39;C:\\ProgramData\\PuppetLabs\\puppet\\etc&#39;,</span>
+</span><span class='line'>  <span class="err">default</span>   <span class="err">=&gt;</span> <span class="nf">fail</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">${facts[&#39;kernel&#39;]}</span><span class="s2"> is not supported&quot;</span><span class="p">)</span><span class="err">,</span>
+</span><span class='line'><span class="err">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nc">file</span> <span class="p">{</span> <span class="s2">&quot;</span><span class="si">${confdir}</span><span class="s2">/puppet.conf&quot;</span><span class="p">:</span>
+</span><span class='line'>  <span class="nt">ensure</span> <span class="p">=&gt;</span> <span class="ss">file</span><span class="p">,</span>
+</span><span class='line'>  <span class="nt">owner</span>  <span class="p">=&gt;</span> <span class="s1">&#39;root&#39;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nt">group</span>  <span class="p">=&gt;</span> <span class="s1">&#39;root&#39;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nt">mode</span>   <span class="p">=&gt;</span> <span class="s1">&#39;0644&#39;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nt">source</span> <span class="p">=&gt;</span> <span class="s1">&#39;puppet:///modules/mymodule/puppet.conf&#39;</span><span class="p">,</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nc">file</span> <span class="p">{</span> <span class="s2">&quot;</span><span class="si">${confdir}</span><span class="s2">/puppetdb.conf&quot;</span><span class="p">:</span>
+</span><span class='line'>  <span class="nt">ensure</span> <span class="p">=&gt;</span> <span class="ss">file</span><span class="p">,</span>
+</span><span class='line'>  <span class="nt">owner</span>  <span class="p">=&gt;</span> <span class="s1">&#39;root&#39;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nt">group</span>  <span class="p">=&gt;</span> <span class="s1">&#39;root&#39;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nt">mode</span>   <span class="p">=&gt;</span> <span class="s1">&#39;0644&#39;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nt">source</span> <span class="p">=&gt;</span> <span class="s1">&#39;puppet:///modules/mymodule/puppetdb.conf&#39;</span><span class="p">,</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The reason conditionally assigning a variable has its own section is because
+when people think about &ldquo;data&rdquo; and &ldquo;choice&rdquo; with Puppet, they USUALLY think
+of Hiera. Hiera is an excellent tool for conditionally assigning a value based
+its internal hierarchy, but what if the conditional logic you need to use
+doesn&rsquo;t follow Hiera&rsquo;s configured hierarchy? Your choices are to edit Hiera&rsquo;s
+hierarchy to add the logic you need (which is disruptive to both your servers
+and, potentially, individual Hiera lookups), or use conditional logic within
+the DSL. Since we&rsquo;re talking about an escalation path, conditionally assigning
+a variable is the next logical progression when complexity arises.</p>
+
+<h3>Pros</h3>
+
+<ul>
+<li>Values can be assigned based on whatever conditional logic is necessary</li>
+<li>Values are assigned within the Puppet DSL and thus are more visible to Puppet
+code reviewers (versus needing to jump into Hiera)</li>
+<li>Reusability remains &ndash; the variable is assigned once and used throughout the
+manifest</li>
+</ul>
+
+
+<h3>Cons</h3>
+
+<ul>
+<li>Variables still cannot be reassigned/overridden</li>
+<li>Conditional logic can grow to become &ldquo;stringy&rdquo; and overly-complex if left
+unchecked</li>
+<li>Conditional logic is syntax-heavy and requires knowledge of the Puppet DSL
+(i.e. not something easily done by people who don&rsquo;t know Puppet)</li>
+</ul>
+
+
+<h3>Recommendations</h3>
+
+<ul>
+<li>Use conditional logic to assign a variable when conditional logic is
+necessary to assign the variable, the conditional logic isn&rsquo;t overly complex,
+and the logic is different from the Hiera hierarchy</li>
+<li>Use conditional logic when visibility of the data values within the Puppet
+DSL is a priority</li>
+</ul>
+
+
+<h2>Hiera lookups and class parameters</h2>
+
+<p>Puppet&rsquo;s data lookup tool <em>du jour</em> is Hiera, and Hiera is an excellent way to
+model data in a hierarchical manner based on layers of business logic.
+Demonstrating how Hiera works is the easy part, implementing it (and knowing
+when to do Hiera calls) is another story. Before we get there though, it&rsquo;s
+important to understand that Hiera lookups can be done ad-hoc <a href="https://docs.puppet.com/puppet/latest/lookup_quick.html">through the use
+of the <code>hiera()</code> or <code>lookup()</code> functions</a>, or through the <a href="https://docs.puppet.com/hiera/latest/puppet.html#automatic-parameter-lookup">automatic
+class parameter lookup functionality</a>. The link will give you a detailed
+explanation, but, for brevity, if a class is declared and a value is not
+explicitly assigned for any of the class&rsquo;s parameters, Hiera will automatically
+do a lookup for the full parameter name (i.e. if the class is called &lsquo;<code>apache</code>&rsquo;
+and the parameter is called &lsquo;<code>port</code>&rsquo;, then Hiera does an automatic parameter
+lookup for <code>apache::port</code> should the <code>port</code> parameter not be explicitly assigned).</p>
+
+<p>We&rsquo;ll get back to automatic parameter lookups in a second, but for now let&rsquo;s
+focus on explicit lookups. Here&rsquo;s an example using lookup functions:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="nv">$apache_port</span>    <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="s1">&#39;apache_port&#39;</span><span class="p">)</span>
+</span><span class='line'><span class="nv">$apache_docroot</span> <span class="o">=</span> <span class="nf">lookup</span><span class="p">(</span><span class="s1">&#39;apache_docroot&#39;</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Explicit lookups using one of the above functions are easier to see/understand
+when you&rsquo;re new to Puppet because <a href="https://docs.puppet.com/hiera/latest/puppet.html#automatic-parameter-lookup">the automatic parameter lookup</a>
+functionality is relatively hidden to you (should you not be aware of its
+existence). The downside is that you need to search through Puppet manifests to
+find all instances of these explicit lookups.</p>
+
+<h3>Explicit lookup pros:</h3>
+
+<ul>
+<li>No need for conditional logic since Hiera is configured independently, simply
+do a lookup for a value and assign it to a variable</li>
+<li>Usage of a lookup function is a visible indicator that the data lives outside
+the DSL (in Hiera)</li>
+</ul>
+
+
+<h3>Explicit lookup cons:</h3>
+
+<ul>
+<li>Loss of visibility &ndash; the data is inside Hiera&rsquo;s hierarchy and determining the
+value requires invoking Hiera in some manner (as opposed to simply
+observing a value in the DSL)</li>
+<li>If the lookup you want to perform doesn&rsquo;t conform to Hiera&rsquo;s existing
+hierarchy, then Hiera&rsquo;s hierarchy will need to be changed (which is disruptive)</li>
+</ul>
+
+
+<h3>Explicit lookup recommendations:</h3>
+
+<ul>
+<li>We generally discourage explicit lookups within the implementation of
+a profile in favor of exposing a parameter. If there&rsquo;s a case where you would
+NOT want to expose a parameter and make an API guarantee but you DO want/need
+Hiera, then an explicit lookup is recommended (and be sure to document the
+intent for posterity)</li>
+</ul>
+
+
+<p>There&rsquo;s also one more very important distinction to make&hellip;</p>
+
+<h3>Class parameters and API vs internal logic</h3>
+
+<p>When building a profile, the implementation (i.e. anything between the open and
+closing curly braces {} ) is considered to be private. This means that there
+are really no guarantees around what&rsquo;s happening as long as the technology is
+configured properly in the end. Class parameters are considered to be part of
+the profile&rsquo;s API, and thus there&rsquo;s a guarantee that existing parameters won&rsquo;t
+be removed or have their functionality changed within a major release (if you
+follow semantic versioning). More specifically, exposing a parameter indicates
+to your Puppet code users that this is something that can be set/changed. Think
+of computer hardware and the differentiation between phillips-head screws and
+Torx screws: the phillips-head screws usually mean that customer intervention
+is allowed, much the same way as parameters indicate data values that can be
+changed, and Torx screws usually mean that customer intervention is disallowed,
+much the same way as variables within a profile cannot be reassigned or
+overridden.</p>
+
+<p>One final word on class parameters &ndash; the Puppet Enterprise Console is able to
+discover class parameters and present them visually, and it does this because
+Puppetserver has an API that exposes this data. This means that parameters and
+classes can be queried and enumerated. Explicit Hiera lookups are not
+discoverable in the same way (you will need to search through your codebase
+manually).</p>
+
+<p>Because these two lookups have two fundamentally different purposes, we&rsquo;re
+treating their usages as separate.</p>
+
+<h3>Class parameter lookup pros:</h3>
+
+<ul>
+<li>Signals to users of Puppet code that this data item is configurable</li>
+<li>Allows the value to be assigned either by the Puppet Enterprise Console (or
+other configured ENC) or Hiera</li>
+<li>Classes and parameters are discoverable through Puppetserver API</li>
+</ul>
+
+
+<h3>Class parameter lookup cons:</h3>
+
+<ul>
+<li>Automatic parameter lookup is unexepected if you don&rsquo;t know it exists</li>
+<li>Loss of visibility &ndash; the data is inside Hiera&rsquo;s hierarchy and determining the
+value requires invoking Hiera in some manner (as opposed to simply
+observing a value in the DSL)</li>
+<li>Each parameter is unique, so even if multiple profiles expose a parameter of
+the same name that requires the same value, there needs to be a value in
+Hiera for each unique parameter</li>
+</ul>
+
+
+<h3>Class parameter recommendations</h3>
+
+<ul>
+<li>Expose a parameter if/when you require the logic in Hiera&rsquo;s hierarchy to determine
+the value of a data item</li>
+<li>Expose a parameter if/when you need to override the value using the Puppet
+Enterprise Console (or other configured ENC)</li>
+<li>Expose a parameter to indicate that this part of the profile is configurable
+to users of Puppet code</li>
+</ul>
+
+
+<h2>Summary</h2>
+
+<p>This document was designed to start with the least amount of complexity and
+work its way up. In the end, it&rsquo;s all about choosing the right data mechanism
+for the problem. If you&rsquo;re a more visual learner, the flowchart below will help
+clarify when to use each method:</p>
+
+<p><a href="http://garylarizza.com/images/data/data_escalation_path.png"><img class="left" src="/images/data/data_escalation_path"></a></p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Gary larizza</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2017-02-07T11:39:13-08:00" pubdate data-updated="true">Feb 7<span>th</span>, 2017</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/code-manager/'>code manager</a>, <a class='category' href='/blog/categories/data/'>data</a>, <a class='category' href='/blog/categories/hiera/'>hiera</a>, <a class='category' href='/blog/categories/r10k/'>r10k</a>, <a class='category' href='/blog/categories/workflow/'>workflow</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://garylarizza.com/blog/2017/02/07/data-escalation-path/" data-via="glarizza" data-counturl="http://garylarizza.com/blog/2017/02/07/data-escalation-path/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2017/01/17/roles-and-profiles-in-a-control-repo/" title="Previous Post: Roles and Profiles in a Control Repo?">&laquo; Roles and Profiles in a Control Repo?</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2017/02/07/data-escalation-path/">Data Escalation Path: Does It Go in the Profile or Hiera?</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017/01/17/roles-and-profiles-in-a-control-repo/">Roles and Profiles in a Control Repo?</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/11/16/workflows-evolved-even-besterer-practices/">Workflows Evolved: Even Besterer Practices</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/10/24/puppet-workflows-4-using-hiera-in-anger/">Puppet Workflows 4: Using Hiera in Anger</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/10/23/puppetconf-2014-talk/">Puppetconf 2014 Talk - the Refactor Dance</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/glarizza">@glarizza</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'glarizza',
+            count: 0,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+<section>
+  <h1>Twitter</h1>
+  <a class="twitter-timeline" href="https://twitter.com/glarizza" data-widget-id="406925439601348608">Tweets by @glarizza</a>
+  <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+"://platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
+</section>
+
+
+
+
+
+<section>
+  <h1>Coderwall Badges</h1>
+  <ul id="cw_badges">
+    <li class="loading">Status updating...</li>
+  </ul>
+  <p id="badges"></p>
+  <script type="text/javascript">
+    function show_achievements(args) {
+      var badges = args["data"]["badges"];
+      var achievements = "";
+      for (var i = 0; i < badges.length; i++) {
+        var alt_text = badges[i]["name"];
+        var title_text = badges[i]["name"] + ' - ' + badges[i]["description"];
+        achievements += '<a href="http://coderwall.com/glarizza/"><img src="'
+          + badges[i]["badge"]
+          + '" width="48" height="48" alt="' + alt_text
+          + '" title="' + title_text
+          + '" style="margin-top: 7px;margin-right: 4px;"'
+          + '"/></a>';
+      };
+      document.getElementById("cw_badges").style.display = "none";
+      document.getElementById("badges").innerHTML = achievements;
+    }
+  </script>
+  <script src="http://coderwall.com/glarizza.json?callback=show_achievements"></script>
+  
+</section>
+
+<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- shit gary says ad -->
+<ins class="adsbygoogle"
+     style="display:inline-block;width:336px;height:280px"
+     data-ad-client="ca-pub-7679900559570586"
+     data-ad-slot="2428332156"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2017 - Gary larizza -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'shitgarysays';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://garylarizza.com/blog/2017/02/07/data-escalation-path/';
+        var disqus_url = 'http://garylarizza.com/blog/2017/02/07/data-escalation-path/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

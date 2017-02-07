@@ -9,9 +9,9 @@
   <meta name="author" content="Gary larizza">
 
   
-  <meta name="description" content="Working as a professional services engineer for Puppet Labs,
-my life consists almost entirely of either correcting some of the worst code
-atrocities &hellip;">
+  <meta name="description" content="In my first post, I talked about writing functional component
+modules. Well, I didn&rsquo;t really do much detailing other than pointing out
+key bits &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -80,6 +80,536 @@ atrocities &hellip;">
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/02/17/puppet-workflow-part-2/">Building a Functional Puppet Workflow Part 2: Roles and Profiles</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-02-17T14:01:37-08:00" pubdate data-updated="true">Feb 17<span>th</span>, 2014</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>In my <a href="http://www.garylarizza.com/blog/2014/02/17/puppet-workflow-part-1/">first post</a>, I talked about writing functional component
+modules. Well, I didn&rsquo;t really do much detailing other than pointing out
+key bits of information that tend to cause problems. In this post, I&rsquo;ll
+describe the next layer to the functional Puppet module workflow.</p>
+
+<p>People usually stop once they have a library of component modules (whether
+hand-written, taken from Github, or pulled from <a href="http://forge.puppetlabs.com">The Forge</a>). The idea
+is that you can classify all of your nodes in <code>site.pp</code>, the Puppet
+Enterprise Console, The Foreman, or with some other ENC, so why not just
+declare all your classes for every node when you need them?</p>
+
+<p>Because that&rsquo;s a lot of extra work and opportunities for fuckups.</p>
+
+<p>People recognized this, so in the EARLY days of Puppet they would create node
+blocks in <code>site.pp</code> and use inheritance to inherit from those blocks. This was
+the right IDEA, but probably not the best PLACE for it. Eventually, &lsquo;Profiles&rsquo;
+were born.</p>
+
+<p>The idea of &lsquo;Roles and Profiles&rsquo; originally came from a piece that
+<a href="http://www.craigdunn.org/2012/05/239/">Craig Dunn wrote</a> while he worked for the BBC, and then
+<a href="http://sysadvent.blogspot.com/2012/12/day-13-configuration-management-as-legos.html">Adrien Thebo also wrote a piece</a> that documents the same sort of pattern.
+So why am I writing about it a THIRD time? Well, because I feel it&rsquo;s only a PIECE
+of an overall puzzle. The introduction of Hiera and other awesome tools (like R10k,
+which we will get to on the next post) still make Roles and Profiles VIABLE, but
+they also extend upon them.</p>
+
+<p>One final note before we move on &ndash; the terms &lsquo;Roles&rsquo; and &lsquo;Profiles&rsquo; are ENTIRELY
+ARBITRARY. They&rsquo;re not magic reserve words in Puppet, and you can call them
+whatever the hell you want. It&rsquo;s also been pointed out that Craig MIGHT have
+misnamed them (a ROLE should be a model for an individual piece of tech, and a
+PROFILE should probably be a group of roles), but, like all good Puppet Labs
+employees &ndash; we suck at naming things.</p>
+
+<h2>Profiles: technology-specific wrapper classes</h2>
+
+<p>A profile is simply a wrapper class that groups Hiera lookups and class
+declarations into one functional unit. For example, if you wanted Wordpress
+installed on a machine, you&rsquo;d probably need to declare the apache class to
+get Apache setup, declare an <code>apache::vhost</code> for the Wordpress directory,
+setup a MySQL database with the appropriate classes, and so on. There are
+a lot of components that go together when you setup a piece of technology,
+it&rsquo;s not just a single class.</p>
+
+<p>Because of this, a profile exists to give you a single class you can include
+that will setup all the necessary bits for that piece of technology (be it
+Wordpress, or Tomcat, or whatever).</p>
+
+<p>Let&rsquo;s look at a simple profile for Wordpress:</p>
+
+<figure class='code'><figcaption><span>profiles/manifests/wordpress.pp </span></figcaption>
+<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="kd">class</span> <span class="nc">profiles::wordpress</span> <span class="p">{</span><span class="c-Singleline"></span>
+</span><span class='line'>
+</span><span class='line'><span class="c-Singleline">  ## Hiera lookups</span>
+</span><span class='line'>  <span class="nv">$site_name</span>               <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="s1">&#39;profiles::wordpress::site_name&#39;</span><span class="p">)</span>
+</span><span class='line'>  <span class="nv">$wordpress_user_password</span> <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="s1">&#39;profiles::wordpress::wordpress_user_password&#39;</span><span class="p">)</span>
+</span><span class='line'>  <span class="nv">$mysql_root_password</span>     <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="s1">&#39;profiles::wordpress::mysql_root_password&#39;</span><span class="p">)</span>
+</span><span class='line'>  <span class="nv">$wordpress_db_host</span>       <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="s1">&#39;profiles::wordpress::wordpress_db_host&#39;</span><span class="p">)</span>
+</span><span class='line'>  <span class="nv">$wordpress_db_name</span>       <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="s1">&#39;profiles::wordpress::wordpress_db_name&#39;</span><span class="p">)</span>
+</span><span class='line'>  <span class="nv">$wordpress_db_password</span>   <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="s1">&#39;profiles::wordpress::wordpress_db_password&#39;</span><span class="p">)</span>
+</span><span class='line'>  <span class="nv">$wordpress_user</span>          <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="s1">&#39;profiles::wordpress::wordpress_user&#39;</span><span class="p">)</span>
+</span><span class='line'>  <span class="nv">$wordpress_group</span>         <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="s1">&#39;profiles::wordpress::wordpress_group&#39;</span><span class="p">)</span>
+</span><span class='line'>  <span class="nv">$wordpress_docroot</span>       <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="s1">&#39;profiles::wordpress::wordpress_docroot&#39;</span><span class="p">)</span>
+</span><span class='line'>  <span class="nv">$wordpress_port</span>          <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="s1">&#39;profiles::wordpress::wordpress_port&#39;</span><span class="p">)</span><span class="c-Singleline"></span>
+</span><span class='line'>
+</span><span class='line'><span class="c-Singleline">  ## Create user</span>
+</span><span class='line'>  <span class="nc">group</span> <span class="p">{</span> <span class="s1">&#39;wordpress&#39;</span><span class="p">:</span>
+</span><span class='line'>    <span class="nt">ensure</span> <span class="p">=&gt;</span> <span class="ss">present</span><span class="p">,</span>
+</span><span class='line'>    <span class="nt">name</span>   <span class="p">=&gt;</span> <span class="nv">$wordpress_group</span><span class="p">,</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>  <span class="nc">user</span> <span class="p">{</span> <span class="s1">&#39;wordpress&#39;</span><span class="p">:</span>
+</span><span class='line'>    <span class="nt">ensure</span>   <span class="p">=&gt;</span> <span class="ss">present</span><span class="p">,</span>
+</span><span class='line'>    <span class="nt">gid</span>      <span class="p">=&gt;</span> <span class="nv">$wordpress_group</span><span class="p">,</span>
+</span><span class='line'>    <span class="nt">password</span> <span class="p">=&gt;</span> <span class="nv">$wordpress_user_password</span><span class="p">,</span>
+</span><span class='line'>    <span class="nt">name</span>     <span class="p">=&gt;</span> <span class="nv">$wordpress_group</span><span class="p">,</span>
+</span><span class='line'>    <span class="nt">home</span>     <span class="p">=&gt;</span> <span class="nv">$wordpress_docroot</span><span class="p">,</span>
+</span><span class='line'>  <span class="p">}</span><span class="c-Singleline"></span>
+</span><span class='line'>
+</span><span class='line'><span class="c-Singleline">  ## Configure mysql</span>
+</span><span class='line'>  <span class="nc">class</span> <span class="p">{</span> <span class="s1">&#39;mysql::server&#39;</span><span class="p">:</span>
+</span><span class='line'>    <span class="nt">root_password</span> <span class="p">=&gt;</span> <span class="nv">$wordpress_root_password</span><span class="p">,</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nc">class</span> <span class="p">{</span> <span class="s1">&#39;mysql::bindings&#39;</span><span class="p">:</span>
+</span><span class='line'>    <span class="nt">php_enable</span> <span class="p">=&gt;</span> <span class="ss">true</span><span class="p">,</span>
+</span><span class='line'>  <span class="p">}</span><span class="c-Singleline"></span>
+</span><span class='line'>
+</span><span class='line'><span class="c-Singleline">  ## Configure apache</span>
+</span><span class='line'>  <span class="kn">include</span> <span class="nc">apache</span>
+</span><span class='line'>  <span class="kn">include</span> <span class="nc">apache::mod::php</span>
+</span><span class='line'>  <span class="nc">apache::vhost</span> <span class="p">{</span> <span class="nv">$::fqdn</span><span class="p">:</span>
+</span><span class='line'>    <span class="nt">port</span>    <span class="p">=&gt;</span> <span class="nv">$wordpress_port</span><span class="p">,</span>
+</span><span class='line'>    <span class="nt">docroot</span> <span class="p">=&gt;</span> <span class="nv">$wordpress_docroot</span><span class="p">,</span>
+</span><span class='line'>  <span class="p">}</span><span class="c-Singleline"></span>
+</span><span class='line'>
+</span><span class='line'><span class="c-Singleline">  ## Configure wordpress</span>
+</span><span class='line'>  <span class="nc">class</span> <span class="p">{</span> <span class="s1">&#39;::wordpress&#39;</span><span class="p">:</span>
+</span><span class='line'>    <span class="nt">install_dir</span> <span class="p">=&gt;</span> <span class="nv">$wordpress_docroot</span><span class="p">,</span>
+</span><span class='line'>    <span class="nt">db_name</span>     <span class="p">=&gt;</span> <span class="nv">$wordpress_db_name</span><span class="p">,</span>
+</span><span class='line'>    <span class="nt">db_host</span>     <span class="p">=&gt;</span> <span class="nv">$wordpress_db_host</span><span class="p">,</span>
+</span><span class='line'>    <span class="nt">db_password</span> <span class="p">=&gt;</span> <span class="nv">$wordpress_db_password</span><span class="p">,</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>}
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Name your profiles according to the technology they setup</h3>
+
+<p>Profiles are technology-specific, so you&rsquo;ll have one to setup wordpress, and
+tomcat, and jenkins, and&hellip;well, you get the picture. You can also namespace
+your profiles so that you have <code>profiles::ssh::server</code> and
+<code>profiles::ssh::client</code> if you want. You can even have
+<code>profiles::jenkins::tomcat</code> and <code>profiles::jenkins::jboss</code> or however you need
+to namespace according to the TECHNOLOGIES you use. You don&rsquo;t need to include
+your environment in the profile name (a la <code>profiles::dev::tomcat</code>) as the bits
+of data that make the dev environment different from production should come
+from <strong>HIERA</strong>, and thus aren&rsquo;t going to be different on a per-profile basis.
+You CAN setup profiles according to your business unit if multiple units use
+Puppet and have different setups (a la <code>security::profiles::tomcat</code> versus
+<code>ops::profiles::tomcat</code>), but the GOAL of Puppet is to have one main set of
+modules that every group uses (and the Hiera data being different for every
+group). That&rsquo;s the GOAL, but I&rsquo;m pragmatic enough to understand that not
+everywhere is a shiny, happy &lsquo;DevOps Garden.&rsquo;</p>
+
+<h3>Do all Hiera lookups in the profile</h3>
+
+<p>You&rsquo;ll see that I declared variables and set their values with Hiera lookups.
+The profile is the place for these lookups because the profile collects all
+external data and declares all the classes you&rsquo;ll need. In reality, you&rsquo;ll
+<strong>USUALLY</strong> only see profiles looking up parameters and declaring classes
+(i.e. declaring users and groups like I did above will USUALLY be left to
+component classes).</p>
+
+<p>I do the Hiera lookups first to make it easy to debug from where those values
+came. I don&rsquo;t rely on <a href="http://docs.puppetlabs.com/hiera/1/puppet.html#automatic-parameter-lookup">&lsquo;Automatic Parameter Lookup&rsquo;</a> in Puppet
+3.x.x because it can be &lsquo;magic&rsquo; for people who aren&rsquo;t aware of it (for people
+new to Puppet, it&rsquo;s much easier to see a function call and trace back what it
+does rather than experience Puppet doing something unseen and wondering what
+the hell happened).</p>
+
+<p>Finally, you&rsquo;ll notice that my Hiera lookups have <strong>NO DEFAULT VALUES</strong> &ndash; this
+is <strong>BY DESIGN!</strong>  For most people, their Hiera data is <strong>PROBABLY</strong> located in
+a separate repository as their Puppet module data. Imagine making a change to
+your profile to have it lookup a bit of data from Hiera, and then imagine you
+FORGOT to put that data into Hiera. What happens if you provide a default value
+to Hiera? The catalog compiles, that default value gets passed down to the
+component module, and gets enforced on disk. If you have good tests, you MIGHT
+see that the component you configured has a bit of data that&rsquo;s not correct, but
+what if you don&rsquo;t have a great post-Puppet testing workflow? Puppet will
+correctly set this default value, according to Puppet everything is green and
+worked just fine, but now your component is setup incorrectly. That&rsquo;s one of
+the WORST failures &ndash; the ones that you don&rsquo;t catch.  Now, imagine you DON&rsquo;T
+provide a default value. In THIS case, Puppet will raise a compilation error
+because a Hiera lookup didn&rsquo;t return a value. You&rsquo;ll catch your error before
+anything gets pushed to Production and you can catch the screwup. This is
+a MUCH better solution.</p>
+
+<h3>Use parameterized class declarations and explicitly pass values you care about</h3>
+
+<p>The parameterized class declaration syntax can be dangerous. The difference
+between the <code>include</code> function and the parameterized class syntax is that
+the <code>include</code> function is idempotent. You can do the following in a Puppet
+manifest, and Puppet doesn&rsquo;t raise an error:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>include apache
+</span><span class='line'>include apache
+</span><span class='line'>include apache</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This is because the <code>include</code> function checks to see if the class is in the
+catalog. If it ISN&rsquo;T, then it adds it. If it IS, then it exits cleanly. The
+<code>include</code> function is your pal.</p>
+
+<p>Consider THIS manifest:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>class { 'apache': }
+</span><span class='line'>include apache
+</span><span class='line'>include apache</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Does this work?  Yep.  The parameterized class syntax adds the class to the
+catalog, the include function detects this and exits cleanly twice.  What
+about THIS manifest:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>include apache
+</span><span class='line'>class { 'apache': }
+</span><span class='line'>include apache</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Does THIS work?  Nope!  Puppet raises a compilation error because a class was
+declared more than once in a catalog.  Why?  Well, consider that Puppet is
+&lsquo;declarative&rsquo;&hellip;all the way up until it isn&rsquo;t.  Puppet&rsquo;s PARSER reads from the
+top of the file to the bottom of the file, and we have a single-pass parser
+when it comes to things like setting variables and declaring classes. When
+the parser hits the first include function, it adds the class to the catalog.
+The parameterized class syntax, however, is a honey badger: it doesn&rsquo;t give
+a shit. It adds a class to the catalog regardless of whether it already exists
+or not. So why would we EVER use the parameterized class declaration syntax?
+We need to use it because the include function doesn&rsquo;t allow you to pass
+parameters when you declare a class.</p>
+
+<p>So wait &ndash; why did I spend all this time explaining why the parameterized class
+syntax is more dangerous than the include function <strong>ONLY</strong> to recommend its
+use in profiles?  For two reasons:</p>
+
+<ul>
+<li>We need to use it to pass parameters to classes</li>
+<li>We&rsquo;re wrapping its use in a class that we can <strong>IN TURN</strong> declare with the <code>include</code> function</li>
+</ul>
+
+
+<p>Yes, we can get the best of BOTH worlds, the ability to pass parameters and
+the use of our pal the <code>include</code> function, with this wrapper class. We&rsquo;ll see
+the latter usage when we come to roles, but for now let&rsquo;s focus on passing
+parameter values.</p>
+
+<p>In the first section, we set variables with Hiera lookups, now we can pass
+those variables to classes we&rsquo;re declaring with the parameterized class syntax.
+This allows the declaration of the class to be static, but the parameters we
+pass to that class to change according to the Hiera hierarchy. We&rsquo;ve explicitly
+called the <code>hiera</code> function, so it makes it easier to debug, and we&rsquo;re explicitly
+passing parameter values so we know definitively which parameters are being
+passed (and thus are overriding default values) to the component module. Finally,
+since our component modules do NOT use Hiera at all, we can be sure that if we&rsquo;re
+not passing a parameter that it&rsquo;s getting its value from the default set in the
+module&rsquo;s <code>::params</code> class.</p>
+
+<p>Everything we do here is meant to make things easier to debug when it&rsquo;s 3am and
+things aren&rsquo;t working. Any asshole can do crazy shit in Puppet, but a seasoned
+sysadmin writes their code for ease of debugging during 3am pages.</p>
+
+<h3>An annoying Puppet bug &ndash; top-level class declarations and profiles</h3>
+
+<p><a href="http://projects.puppetlabs.com/issues/2053">Oh, ticket 2053</a>, how terrible are you? This is one of those bug numbers
+that I can remember by heart (like <a href="http://projects.puppetlabs.com/issues/8040">8040</a> and <a href="http://projects.puppetlabs.com/issues/86">86</a>). Puppet has
+the ability to do &lsquo;relative namespacing&rsquo;, which allows you to declare a variable
+called <code>$port</code> in a class called <code>$apache</code> and refer to it as <code>$port</code> instead
+of fully-namespacing the variable, and thus having to call it <code>$apache::port</code>
+inside the <code>apache</code> class. It&rsquo;s a shortcut &ndash; you can STILL refer to the variable
+as <code>$apache::port</code> in the class &ndash; but it comes in handy. The PROBLEM occurs when
+you create a profile, as we did above, called <code>profiles::wordpress</code> and you try
+to declare a class called <code>wordpress</code>.  If you do the following inside the
+<code>profiles::wordpress</code> class, what class is being declared:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>include wordpress</span></code></pre></td></tr></table></div></figure>
+
+
+<p>If you think you&rsquo;re declaring a wordpress class from within a wordpress module
+in your Puppet modulepath, you would be wrong.  Puppet ACTUALLY thinks you&rsquo;re
+trying to declare <code>profiles::wordpress</code> because you&rsquo;re INSIDE the <code>profiles::wordpress</code>
+class and it&rsquo;s doing relative namespacing (i.e. in the same way you refer to <code>$port</code>
+and ACTUALLY mean <code>$apache::port</code> it thinks you&rsquo;re referring to <code>wordpress</code> and
+ACTUALLY mean <code>profiles::wordpress</code>.</p>
+
+<p>Needless to say, this causes LOTS of confusion.</p>
+
+<p>The solution here is to declare a class called <code>::wordpress</code> which tells Puppet
+to go to the top-level namespace and look for a module called <code>wordpress</code> which
+has a top-level class called <code>wordpress</code>. It&rsquo;s the same reason that we refer to
+Facter Fact values as <code>$::osfamily</code> instead of <code>$osfamily</code> in class definitions
+(because you can declare a local variable called <code>$osfamily</code> in your class).
+This is why in the profile above you see this:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>class { '::wordpress':
+</span><span class='line'>  install_dir =&gt; $wordpress_docroot,
+</span><span class='line'>  db_name     =&gt; $wordpress_db_name,
+</span><span class='line'>  db_host     =&gt; $wordpress_db_host,
+</span><span class='line'>  db_password =&gt; $wordpress_db_password,
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>When you use profiles and roles, you&rsquo;ll need to do this namespacing trick when
+declaring classes because you&rsquo;re frequently going to have a <code>profile::&lt;sometech&gt;</code>
+that will declare the <code>&lt;sometech&gt;</code> top-level class.</p>
+
+<h2>Roles: business-specific wrapper classes</h2>
+
+<p>How do you refer to your machines? When I ask you about that cluster over
+there, do you say &ldquo;Oh, you mean the machines with java 1.6, apache, mysql,
+etc&hellip;&rdquo;?  I didn&rsquo;t think so. You usually have names for them, like the
+&ldquo;internal compute cluster&rdquo; or &ldquo;app builder nodes&rdquo; or &ldquo;DMZ repo machines&rdquo; or
+whatever. These names are your Roles. Roles are just the mapping of your
+machine&rsquo;s names to the technology that should be ON them. In the past we had
+descriptive hostnames that afforded us a code for what the machine &lsquo;did&rsquo; &ndash;
+roles are just that mapping for Puppet.</p>
+
+<p>Roles are namespaced just like profiles, but now it&rsquo;s up to your organization
+to fill in the blanks. Some people immediately want to put environments into
+the roles (a la <code>roles::uat::compute_cluster</code>), but that&rsquo;s usually not necessary
+(as MOST LIKELY the compute cluster nodes have the SAME technology on them
+when they&rsquo;re in dev versus when they&rsquo;re in prod, it&rsquo;s just the DATA &ndash; like
+database names, VIP locations, usernames/passwords, etc &ndash; that&rsquo;s different.
+Again, these data differences will come from Hiera, so there should be no reason
+to put the environment name in your role). You still CAN put the environment
+name in the role if it makes you feel better, but it&rsquo;ll probably be useless.</p>
+
+<h3>Roles ONLY include profiles</h3>
+
+<p>So what exactly is in the role wrapper class? That depends on what technology
+is on the node that defines that role. What I can tell you for CERTAIN is that
+roles should ONLY use the <code>include</code> function and should ONLY include profiles.
+What does this give us? This gives us our pal the <code>include</code> function back! You
+can include the same profile 100 times if you want, and Puppet only puts it in
+the catalog once.</p>
+
+<h3>Every node is classified with one role. Period.</h3>
+
+<p>The beautiful thing about roles and profiles is that the GOAL is that you
+should be able to classify a node with a SINGLE role and THAT&rsquo;S IT. This makes
+classification simple and static &ndash; the node gets its role, the role includes
+profiles, profiles call out to Hiera for data, that data is passed to component
+modules, and away we go. Also, since classification is static, you can use
+version control to see what changes were introduced to the role (i.e. what
+profiles were added or removed).  In my opinion, if you need to apply more
+than one role to a node, you&rsquo;ve introduced a new role (see below).</p>
+
+<h3>Roles CAN use inheritance&hellip;if you like</h3>
+
+<p>I&rsquo;ve seen people implement roles a couple of different ways, and one of them
+is to use inheritance to build a catalog.  For example, you can define a base
+<code>roles</code> class that includes something like a base security profile (i.e.
+something that EVERY node in your infrastructure should have). Moving down the
+line, you COULD namespace according to function like <code>roles::app</code> for your
+application server machines. The <code>roles::app</code> class could inherit from the <code>roles</code>
+class (which gets the base security profile), and could then include the profiles
+necessary to setup an application server. Next, you could subclass down to
+<code>roles::app::site_foo</code> for an application server that supports some site in
+your organization.  That class inherits from the <code>roles::app</code> class, and then
+adds profiles that are specific to that site (maybe they use Jboss instead of
+Tomcat, and thus that&rsquo;s where the differentiation occurs). This is great
+because you don&rsquo;t have a lot of repeated use of the <code>include</code> function, but
+it also makes it hard to definitively look at a specific role to see exactly
+what&rsquo;s being declared (i.e. all the profiles). You have to weigh what you
+value more: less typing or greater visibility. I will err on the side of
+greater visibility (just due to that whole 3am outage thing), but it&rsquo;s up
+to you to decide what to optimize for.</p>
+
+<h3>A role similar, yet different, from another role is: a new role</h3>
+
+<p>EVERYBODY says to me &ldquo;Gary, I have this machine that&rsquo;s an AWFUL LOT like
+this role over here, but&hellip;it&rsquo;s different.&rdquo; My answer to them is: &ldquo;Great,
+that&rsquo;s another role.&rdquo;  If the thing that&rsquo;s different is data (i.e. which
+database to connect to, or what IP address to route traffic through),
+then that difference should be put in HIERA and the classification should
+remain the same. If that difference is technology-specific (i.e. this server
+uses JBoss instead of Tomcat) then first look and see if you can isolate
+how you know this machine is different (maybe it&rsquo;s on a different subnet,
+maybe it&rsquo;s at a different location, something like that). If you can figure
+that out and write a Fact for it (or use similar conditional logic to determine
+this logically), then you can just drop that conditional logic in your role
+and let it do the heavy lifting. If, in the end, this bit of data is totally
+arbitrary, then you&rsquo;ll need to create another role (perhaps a subclass using
+the above namespacing) and assign it to your node.</p>
+
+<p>The hardest thing about this setup is naming your roles. Why? Every site is
+different.  It&rsquo;s hard for me to account for differences in your setup because
+your workplace is dysfunctional (seriously).</p>
+
+<h2>Review: what does this get you?</h2>
+
+<p>Let&rsquo;s walk through every level of this setup from the top to the bottom and see
+what it gets you. Every node is classified to a single role, and, for the most
+part, that classification isn&rsquo;t going to change. Now you can take all the extra
+work off your classifier tool and put it back into the manifests (that are
+subject to version control, so you can <code>git blame</code> to your heart&rsquo;s content and
+see who last changed the role/profile). Each role is going to include one or
+more profile, which gives us the added idempotent protection of the include
+function (of course, if profiles have collisions with classes you&rsquo;ll have to
+resolve those. Say one or more profiles tries to include an apache class &ndash;
+simply break that component out into a separate profile, extract the parameters
+from Hiera, and include that profile at a higher level). Each profile is going
+to do Hiera lookups which should give you the ability to provide different data
+for different host types (i.e. different data on a per-environment level, or
+however you lay out your Hiera hierarchy), and that data will be passed
+directly to class that is declared. Finally, each component module will
+accept parameters as variables internal to that module, default
+parameters/variables to sane values in the <code>::params</code> class, and use those
+variables when declaring each resource throughtout its classes.</p>
+
+<ul>
+<li>Roles abstract profiles</li>
+<li>Profiles abstract component modules</li>
+<li>Hiera abstracts configuration data</li>
+<li>Component modules abstract resources</li>
+<li>Resources abstract the underlying OS implementation</li>
+</ul>
+
+
+<h2>Choose your level of comfortability</h2>
+
+<p>The roles and profiles pattern also buys you something else &ndash; the ability for
+less-skilled and more-skilled Puppet users to work with the same codebase.
+Let&rsquo;s say you use some GUI classifier (like the Puppet Enterprise Console),
+someone who&rsquo;s less skilled at Puppet looks and sees that a node is classified
+with a certain role, so they open the role file and see something like this:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>include profiles::wordpress
+</span><span class='line'>include profiles::tomcat
+</span><span class='line'>include profiles::git::repo_server</span></code></pre></td></tr></table></div></figure>
+
+
+<p>That&rsquo;s pretty legible, right? Someone who doesn&rsquo;t regularly use Puppet can
+probably make a good guess as to what&rsquo;s on the machine. Need more information?
+Open one of the profiles and look specifically at the classes that are being
+declared. Need to know the data being passed? Jump into Hiera. Need to know
+more information? Dig into each component module and see what&rsquo;s going on there.</p>
+
+<p>When you have everything abstracted correctly, you can have developers
+providing data (like build versions) to Hiera, junior admins grouping nodes for
+classification, more senior folk updating profiles, and your best Puppet people
+creating/updating component modules and building plugins like custom
+facts/functions/whatever.</p>
+
+<h2>Great! Now go and refactor&hellip;</h2>
+
+<p>If you&rsquo;ve used Puppet for more than a month, you&rsquo;re probably familiar with the
+&ldquo;Oh shit, I should have done it THAT way&hellip;let me refactor this&rdquo; game. I know,
+it sucks, and we at Puppet Labs haven&rsquo;t been shy of incorporating something that
+we feel will help people out (but will also require some refactoring). This
+pattern, though, has been in use by the Professional Services team at Puppet Labs
+for over a year without modification. I&rsquo;ve used this on sites GREAT and small,
+and every site with which I&rsquo;ve consulted and implemented this pattern has been
+able to both understand its power and derive real value within a week. If you&rsquo;re
+contemplating a refactor, you can&rsquo;t go wrong with Roles and Profiles (or
+whatever names you decide to use).</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -6149,356 +6679,6 @@ the ##osx-server chatroom on Freenode, or by checking them out on Twitter.</p>
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/01/17/managing-a-blog-is-insane/">Managing a Blog Is Insane; Octopress FTW!</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-01-17T00:00:00-08:00" pubdate data-updated="true">Jan 17<span>th</span>, 2013</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>Masochists are everywhere. Managing a system by hand appeals to a certain subset
-of the population, but I joined <a href="http://www.puppetlabs.com">Puppet Labs</a> because
-I was a fan of automating the shit out of menial tasks. I have no burning desire
-to handcraft an artisanal blog made out of organic bits. I tried web development
-at one point in my life and learned an important lesson:</p>
-
-<p>I am not a web developer</p>
-
-<p>What I DO want is to have a platform to share information and code I&rsquo;ve
-accumulated along the way that:</p>
-
-<ol>
-<li>Doesn&rsquo;t look like hell</li>
-<li>Doesn&rsquo;t take forever to update</li>
-<li>Doesn&rsquo;t require me being online to write a post</li>
-<li>Allows me to post code that&rsquo;s syntactically highlighted and easy to copy/paste</li>
-<li>Accepts <a href="http://daringfireball.net/projects/markdown/">Markdown</a></li>
-<li>Fits into my DVCS workflow</li>
-<li>Is free &ndash; because screw paying for A BLOG</li>
-</ol>
-
-
-<h2>Seriously, is this too much to ask?</h2>
-
-<p>Originally I waded the waters of <a href="http://glarizza.posterous.com">Posterous</a> but
-found that not only did it have awkward <a href="http://daringfireball.net/projects/markdown/">Markdown</a> syntax, but staging of
-blog posts was cumbersome.  Also, while there WAS <a href="http://gist.github.com">gist</a> integration,
-the code you posted looked like crap. That sucks because most of what I post has
-code attached.</p>
-
-<p>Others have sold their soul for Wordpress/Drupal/Bumblefuck CMS (whether hosted
-or unhosted platforms), but it still felt like too much process and not enough
-action for my taste.</p>
-
-<h2>Github to the rescue&hellip;again</h2>
-
-<p>The answer, it turns out, was right in front of my face the whole time.
-<a href="http://pages.github.com/">Github Pages</a> has always been available to host web content or <a href="https://github.com/mojombo/jekyll">Jekyll
-sites</a> &ndash; I&rsquo;m just late to the damn party.</p>
-
-<p><a href="http://glarizza.github.com/images/blog_blog/left.png"><img class="left" src="/images/blog_blog/left.png" width="300" height="300"></a></p>
-
-<p>Hosting static web content was out; like I said before, I don&rsquo;t really want to
-&lsquo;manage&rsquo; this thing. Jekyll, however, intrigued me. Jekyll is essentially
-a static site generator that allows you to throw Markdown at it and get static
-content in the end. There are even <a href="http://jekyllbootstrap.com/">Jekyll
-bootstrap</a> projects aimed at making it (even more)
-stupid simple. I tried plain vanilla Jekyll and realized that I didn&rsquo;t really
-want/need that level of control (again, I&rsquo;m not into web development).
-I pulled down Jekyll Bootstrap, but this time it felt a little TOO
-&lsquo;template-y&rsquo;. Next, I pulled down an awesome Jekyll template called <a href="https://github.com/holman/left">Left by
-Zach Holman</a> (seen, conveniently, in the
-picture on the left).  I REALLY liked the look of Left, but was stuck with
-Jekyll&rsquo;s code formatting that was&hellip;less than ideal. Jekyll is pluggable (and
-people have made plugins to fix this sort of thing), but I still
-didn&rsquo;t have enough experience at that time
-to be able to deal with the plugins in an intelligent manner.</p>
-
-<h2>Octopress = Jekyll + Plugins + &lt;3</h2>
-
-<p>During my plugin party, I discovered <a href="http://octopress.org">Octopress</a>, which
-basically had EVERYTHING I wanted wrapped with a templated bow. I loved the way
-it rendered code, it supported things like <a href="http://github.github.com/github-flavored-markdown/)">fenced code blocks</a> , and it
-seemed REALLY simple to update and deploy code.  The thing I DIDN&rsquo;T like was
-that NEARLY EVERY DAMN OCTOPRESS SITE LOOKS EXACTLY THE SAME! I know I said
-that I&rsquo;m not a web developer and didn&rsquo;t want to tweak styles a great bit, but
-damn &ndash; couldn&rsquo;t I get a BIT of differentiation? That can be done, but you&rsquo;re
-still editing styles (so some CSS is necessary &ndash; but not much). After
-evaluating all three options, I opted for Octopress.</p>
-
-<h2>Documentation? Who knew!?</h2>
-
-<p>Octopress.org has <a href="http://octopress.org/docs/setup/">GREAT documentation</a> for
-getting setup with an Octopress blog. They even have documentation for setting
-up Ruby 1.9.3 on rbenv or RVM (I recommend rbenv for reasons beyond this blog),
-so make sure to check it out if you&rsquo;re unfamiliar with either. To not reinvent
-that documented wheel, make sure to check out that site to get Octopress setup
-(I recommend cloning all repositories to somewhere in your home directory
-like ~/src or ~/repos, but other than that their docs are solid). Normally
-I post the dirty technical details, but the point of this post is to outline
-WHY I made the decision I did and WHY it works for ME.</p>
-
-<h2>Pretty code is pretty</h2>
-
-<p>I&rsquo;m not gonna lie &ndash; syntactical highlighting with the <a href="http://ethanschoonover.com/solarized">Solarized</a>
-theme was pretty sexy. Let&rsquo;s look at some Ruby:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">create</span>
-</span><span class='line'>    <span class="k">if</span> <span class="n">resource</span><span class="o">[</span><span class="ss">:value_type</span><span class="o">]</span> <span class="o">==</span> <span class="ss">:boolean</span>
-</span><span class='line'>      <span class="k">unless</span> <span class="n">resource</span><span class="o">[</span><span class="ss">:value</span><span class="o">].</span><span class="n">first</span><span class="o">.</span><span class="n">to_s</span> <span class="o">=~</span> <span class="sr">/(true|false)/i</span>
-</span><span class='line'>        <span class="k">raise</span> <span class="ss">Puppet</span><span class="p">:</span><span class="ss">:Error</span><span class="p">,</span> <span class="s2">&quot;Valid boolean values are &#39;true&#39; or &#39;false&#39;, you specified &#39;</span><span class="si">#{</span><span class="n">resource</span><span class="o">[</span><span class="ss">:value</span><span class="o">].</span><span class="n">first</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
-</span><span class='line'>      <span class="k">end</span>
-</span><span class='line'>    <span class="k">end</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">if</span> <span class="no">File</span><span class="o">.</span><span class="n">file?</span> <span class="n">resource</span><span class="o">[</span><span class="ss">:path</span><span class="o">]</span>
-</span><span class='line'>      <span class="n">plist</span> <span class="o">=</span> <span class="n">read_plist_file</span><span class="p">(</span><span class="n">resource</span><span class="o">[</span><span class="ss">:path</span><span class="o">]</span><span class="p">)</span>
-</span><span class='line'>    <span class="k">else</span>
-</span><span class='line'>      <span class="n">plist</span> <span class="o">=</span> <span class="ss">OSX</span><span class="p">:</span><span class="ss">:NSMutableDictionary</span><span class="o">.</span><span class="n">alloc</span><span class="o">.</span><span class="n">init</span>
-</span><span class='line'>    <span class="k">end</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">case</span> <span class="n">resource</span><span class="o">[</span><span class="ss">:value_type</span><span class="o">]</span>
-</span><span class='line'>    <span class="k">when</span> <span class="ss">:integer</span>
-</span><span class='line'>      <span class="n">plist_value</span> <span class="o">=</span> <span class="nb">Integer</span><span class="p">(</span><span class="n">resource</span><span class="o">[</span><span class="ss">:value</span><span class="o">].</span><span class="n">first</span><span class="p">)</span>
-</span><span class='line'>    <span class="k">when</span> <span class="ss">:boolean</span>
-</span><span class='line'>      <span class="k">if</span> <span class="n">resource</span><span class="o">[</span><span class="ss">:value</span><span class="o">].</span><span class="n">to_s</span> <span class="o">=~</span> <span class="sr">/false/i</span>
-</span><span class='line'>        <span class="n">plist_value</span> <span class="o">=</span> <span class="kp">false</span>
-</span><span class='line'>      <span class="k">else</span>
-</span><span class='line'>        <span class="n">plist_value</span> <span class="o">=</span> <span class="kp">true</span>
-</span><span class='line'>      <span class="k">end</span>
-</span><span class='line'>    <span class="k">when</span> <span class="ss">:hash</span>
-</span><span class='line'>      <span class="n">plist_value</span> <span class="o">=</span> <span class="n">resource</span><span class="o">[</span><span class="ss">:value</span><span class="o">].</span><span class="n">first</span>
-</span><span class='line'>    <span class="k">else</span>
-</span><span class='line'>      <span class="n">plist_value</span> <span class="o">=</span> <span class="n">resource</span><span class="o">[</span><span class="ss">:value</span><span class="o">]</span>
-</span><span class='line'>    <span class="k">end</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">plist</span><span class="o">[</span><span class="n">resource</span><span class="o">[</span><span class="ss">:key</span><span class="o">]]</span> <span class="o">=</span> <span class="n">plist_value</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">write_plist_file</span><span class="p">(</span><span class="n">plist</span><span class="p">,</span> <span class="n">resource</span><span class="o">[</span><span class="ss">:path</span><span class="o">]</span><span class="p">)</span>
-</span><span class='line'>  <span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>How about some Puppet code?</p>
-
-<figure class='code'><figcaption><span>Plist Management </span></figcaption>
-<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="nc">property_list_key</span> <span class="p">{</span> <span class="s1">&#39;simple&#39;</span><span class="p">:</span>
-</span><span class='line'>  <span class="nt">ensure</span> <span class="p">=&gt;</span> <span class="ss">present</span><span class="p">,</span>
-</span><span class='line'>  <span class="nt">path</span> <span class="p">=&gt;</span> <span class="s1">&#39;/tmp/com.puppetlabs.puppet&#39;</span><span class="p">,</span>
-</span><span class='line'>  <span class="nt">key</span>    <span class="p">=&gt;</span> <span class="s1">&#39;simple&#39;</span><span class="p">,</span>
-</span><span class='line'>  <span class="nt">value</span>  <span class="p">=&gt;</span> <span class="s1">&#39;value&#39;</span><span class="p">,</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="nc">property_list_key</span> <span class="p">{</span> <span class="s1">&#39;boolean&#39;</span><span class="p">:</span>
-</span><span class='line'>  <span class="nt">ensure</span>     <span class="p">=&gt;</span> <span class="ss">present</span><span class="p">,</span>
-</span><span class='line'>  <span class="nt">path</span>       <span class="p">=&gt;</span> <span class="s1">&#39;/tmp/com.puppetlabs.puppet&#39;</span><span class="p">,</span>
-</span><span class='line'>  <span class="nt">key</span>        <span class="p">=&gt;</span> <span class="s1">&#39;boolean&#39;</span><span class="p">,</span>
-</span><span class='line'>  <span class="nt">value</span>      <span class="p">=&gt;</span> <span class="ss">false</span><span class="p">,</span>
-</span><span class='line'>  <span class="nt">value_type</span> <span class="p">=&gt;</span> <span class="s1">&#39;boolean&#39;</span><span class="p">,</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="nc">property_list_key</span> <span class="p">{</span> <span class="s1">&#39;hashtest&#39;</span><span class="p">:</span>
-</span><span class='line'>  <span class="nt">ensure</span>     <span class="p">=&gt;</span> <span class="ss">present</span><span class="p">,</span>
-</span><span class='line'>  <span class="nt">path</span>       <span class="p">=&gt;</span> <span class="s1">&#39;/tmp/com.puppetlabs.puppet&#39;</span><span class="p">,</span>
-</span><span class='line'>  <span class="nt">key</span>        <span class="p">=&gt;</span> <span class="s1">&#39;hashtest&#39;</span><span class="p">,</span>
-</span><span class='line'>  <span class="nt">value</span>      <span class="p">=&gt;</span> <span class="p">{</span> <span class="s1">&#39;key&#39;</span> <span class="p">=&gt;</span> <span class="s1">&#39;value&#39;</span> <span class="p">},</span>
-</span><span class='line'>  <span class="nt">value_type</span> <span class="p">=&gt;</span> <span class="s1">&#39;hash&#39;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Doesn&rsquo;t that look awesome?</p>
-
-<p>For a blog with a ton of code, something like this is pretty damn important.</p>
-
-<h2>Markdown formatting</h2>
-
-<p><a href="http://daringfireball.net/projects/markdown/">Markdown</a> is becoming more prolific as a lightweight way to format
-text. If you&rsquo;ve used Github to comment on code, then you&rsquo;ve probably used
-markdown syntax at some point in your life. You&rsquo;ll notice the recurring goal of
-being quick and precise, and markdown really &lsquo;does it for me&rsquo;.</p>
-
-<h2>Workflow++</h2>
-
-<p>It&rsquo;s really liberating to write a blog post in (insert favorite text editor).
-Travelling as often as I do, I&rsquo;m usually jotting down notes in vi because I&rsquo;m
-in a plane or somewhere without internet access. Octopress not only lets you
-write offline, but it will let you generate and preview your site locally
-while being offline. That&rsquo;s totally handy.  My workflow typically looks like
-this:</p>
-
-<ul>
-<li><strong>Generate a post</strong></li>
-</ul>
-
-
-<p>To start a new post, you can create a new file by hand, or use the
-provided Rakefile to scaffold it out for you (NOTE: to see all commands
-available to the Rakefile, you can run <code>rake -T</code>). Here&rsquo;s how to scaffold
-with rake:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="err">$</span> <span class="n">rake</span> <span class="s1">&#39;new_post[&quot;Title of my post&quot;]&#39;</span>
-</span><span class='line'><span class="err">$</span> <span class="n">vi</span> <span class="n">source</span><span class="o">/</span><span class="n">_posts</span><span class="o">/</span><span class="mi">2013</span><span class="o">-</span><span class="mo">01</span><span class="o">-</span><span class="mi">17</span><span class="o">-</span><span class="n">title</span><span class="o">-</span><span class="n">of</span><span class="o">-</span><span class="n">my</span><span class="o">-</span><span class="n">post</span><span class="o">.</span><span class="n">markdown</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li><strong>Edit the post file</strong></li>
-<li><strong>Generate the site content</strong></li>
-</ul>
-
-
-<p>Remember that Octopress/Jekyll generates static content to be uploaded to
-your host. With every change, you&rsquo;ll need to re-generate the content. Yeah,
-that kinda sucks, but that action has been abstracted away in the Rakefile
-with the following command:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="err">$</span> <span class="n">rake</span> <span class="n">generate</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li><strong>Display and view the site</strong></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="err">$</span> <span class="n">rake</span> <span class="n">preview</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>The following command will serve up your page over Webrick in the terminal,
-just navigate to <a href="http://localhost:4000">http://localhost:4000</a> in your browser to see a local copy of
-how your site will look once deployed. Once you&rsquo;re done, just do a Control+c
-from your terminal to cancel the process.</p>
-
-<ul>
-<li><strong>Edit/generate/preview until done</strong></li>
-<li><strong>Commit your code and deploy</strong></li>
-</ul>
-
-
-<p>Because everything is a series of flat-files, you can use git to keep it all
-under version control. Did you make a mistake? Revert to a previous commit.
-Deploying to your blog is similarly easy, as you&rsquo;ll see in the next steps</p>
-
-<h2>Be a unique snowflake</h2>
-
-<p>I <a href="http://blog.bigdinosaur.org/changing-octopresss-header/">used this article</a> to help
-change the color scheme of my blog, and <a href="https://github.com/imathis/octopress/wiki/Octopress-Sites">checked out a list of other Octopress sites</a>
-to steal a couple of other tweaks. That&rsquo;s all I needed for customization, but
-if you need more knobs they&rsquo;re there for you to twist.</p>
-
-<h2>Hosted by your pals at Github</h2>
-
-<p><a href="http://pages.github.com/">Github Pages</a> is a free service for any Github user (again free to join) and
-is an EXCELLENT FIT for an Octopress blog. As you would expect, Octopress
-has <a href="http://octopress.org/docs/deploying/github/">great documentation for enabling deployment to Github Pages</a>.
-If you have your own custom domain, you can STILL use Github Pages
-(hint, the instructions are on that page too).</p>
-
-<h2>Fuck it. Ship it.</h2>
-
-<p>The act of updating a blog has GOT to be frictionless. Is this simple enough
-for you:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">rake</span> <span class="n">deploy</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Yep. That&rsquo;s all it takes to deploy code to your blog once you&rsquo;ve setup Github
-Pages. Forget about logging in, wading through a GUI, cutting/pasting content,
-FTPing things up to a host, and any of that crap. I&rsquo;ve done that. &lsquo;That&rsquo; sucks.</p>
-
-<h2>Write your own damn blog</h2>
-
-<p>You now have no excuse to NOT share all the cool things you&rsquo;re doing. Seriously,
-if you can EDIT A TEXT FILE then you can &lsquo;maintain&rsquo; a blog.</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/3/">&larr; Older</a>
@@ -6516,6 +6696,10 @@ if you can EDIT A TEXT FILE then you can &lsquo;maintain&rsquo; a blog.</p>
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2017/02/07/data-escalation-path/">Data Escalation Path: Does It Go in the Profile or Hiera?</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2017/01/17/roles-and-profiles-in-a-control-repo/">Roles and Profiles in a Control Repo?</a>
       </li>
     
@@ -6529,10 +6713,6 @@ if you can EDIT A TEXT FILE then you can &lsquo;maintain&rsquo; a blog.</p>
     
       <li class="post">
         <a href="/blog/2014/10/23/puppetconf-2014-talk/">Puppetconf 2014 Talk - the Refactor Dance</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/10/19/on-dependencies-and-order/">On Dependencies and Order</a>
       </li>
     
   </ul>
