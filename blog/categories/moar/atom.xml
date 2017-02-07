@@ -4,7 +4,7 @@
   <title><![CDATA[Category: MOAR | Shit Gary Says]]></title>
   <link href="http://garylarizza.com/blog/categories/moar/atom.xml" rel="self"/>
   <link href="http://garylarizza.com/"/>
-  <updated>2017-02-07T12:07:41-08:00</updated>
+  <updated>2017-02-07T12:10:45-08:00</updated>
   <id>http://garylarizza.com/</id>
   <author>
     <name><![CDATA[Gary larizza]]></name>
@@ -28,39 +28,70 @@ I&rsquo;ve written here anyways&hellip;).</p>
 
 <p>Before we go any further, let me define a couple of terms:</p>
 
-<p>{% codeblock %}
-dependencies     &ndash; In a nutshell, what happens when you use the metaparameters of</p>
-
-<pre><code>               'before', 'require', 'subscribe' or 'notify' on resources in a
-               Puppet manifest: it's a chain of resources that are to be
-               evaluted in a specific order every time Puppet runs. Any failure
-               of a resource in this chain stops Puppet from evaluating the
-               remaining resources in the chain.
-</code></pre>
-
-<p>evaluate         &ndash; When Puppet determines the &lsquo;is&rsquo; value (or current state) of a</p>
-
-<pre><code>               resource (i.e. for package resources, "is the package installed?")
-</code></pre>
-
-<p>remediate        &ndash; When Puppet determines that the &lsquo;is&rsquo; value (or current state of</p>
-
-<pre><code>               the resource) is different from the 'should' value (or the value
-               entered into the Puppet manifest...the way the resource SHOULD
-               end up looking on the system) and Puppet needs to make a change.
-</code></pre>
-
-<p>declarative(ish) &ndash; When I use the word &lsquo;declarative(ish)&rsquo;, I mean that the order</p>
-
-<pre><code>               by which Puppet evaluates resources that do not contain dependencies
-               does not have a set procedure/order. The way Puppet EVALUATES
-               resources does not have a set procedure/order, but the order
-               that Puppet reads/parses manifest files IS from top-to-bottom
-               (which is why variables in Puppet manifests need to be declared
-               before they can be used).
-</code></pre>
-
-<p>{% endcodeblock %}</p>
+<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>dependencies     &ndash; In a nutshell, what happens when you use the metaparameters of&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;pre>&lt;code>               'before', 'require', 'subscribe' or 'notify' on resources in a
+</span><span class='line'>               Puppet manifest: it's a chain of resources that are to be
+</span><span class='line'>               evaluted in a specific order every time Puppet runs. Any failure
+</span><span class='line'>               of a resource in this chain stops Puppet from evaluating the
+</span><span class='line'>               remaining resources in the chain.
+</span><span class='line'>&lt;/code>&lt;/pre>
+</span><span class='line'>
+</span><span class='line'>&lt;p>evaluate         &ndash; When Puppet determines the &lsquo;is&rsquo; value (or current state) of a&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;pre>&lt;code>               resource (i.e. for package resources, "is the package installed?")
+</span><span class='line'>&lt;/code>&lt;/pre>
+</span><span class='line'>
+</span><span class='line'>&lt;p>remediate        &ndash; When Puppet determines that the &lsquo;is&rsquo; value (or current state of&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;pre>&lt;code>               the resource) is different from the 'should' value (or the value
+</span><span class='line'>               entered into the Puppet manifest...the way the resource SHOULD
+</span><span class='line'>               end up looking on the system) and Puppet needs to make a change.
+</span><span class='line'>&lt;/code>&lt;/pre>
+</span><span class='line'>
+</span><span class='line'>&lt;p>declarative(ish) &ndash; When I use the word &lsquo;declarative(ish)&rsquo;, I mean that the order&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;pre>&lt;code>               by which Puppet evaluates resources that do not contain dependencies
+</span><span class='line'>               does not have a set procedure/order. The way Puppet EVALUATES
+</span><span class='line'>               resources does not have a set procedure/order, but the order
+</span><span class='line'>               that Puppet reads/parses manifest files IS from top-to-bottom
+</span><span class='line'>               (which is why variables in Puppet manifests need to be declared
+</span><span class='line'>               before they can be used).
+</span><span class='line'>&lt;/code>&lt;/pre>
+</span><span class='line'>
+</span><span class='line'>&lt;p></span></code></pre></td></tr></table></div></figure></notextile></div></p>
 
 <h2>Why Puppet doesn&rsquo;t care about execution order (until it does)</h2>
 

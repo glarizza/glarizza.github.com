@@ -4,7 +4,7 @@
   <title><![CDATA[Category: data | Shit Gary Says]]></title>
   <link href="http://garylarizza.com/blog/categories/data/atom.xml" rel="self"/>
   <link href="http://garylarizza.com/"/>
-  <updated>2017-02-07T12:07:41-08:00</updated>
+  <updated>2017-02-07T12:10:45-08:00</updated>
   <id>http://garylarizza.com/</id>
   <author>
     <name><![CDATA[Gary larizza]]></name>
@@ -18,13 +18,11 @@
     <link href="http://garylarizza.com/blog/2017/02/07/data-escalation-path/"/>
     <updated>2017-02-07T11:39:13-08:00</updated>
     <id>http://garylarizza.com/blog/2017/02/07/data-escalation-path</id>
-    <content type="html"><![CDATA[<p><strong>NOTE</strong>: This post is lacking a lot of the humor and playful tone I normally
+    <content type="html"><![CDATA[<p><strong>NOTE</strong>: <em>This post is lacking a lot of the humor and playful tone I normally
 use when writing posts because it was originally designed for another purpose.
 I&rsquo;m posting it in its entirety here because I consider the information useful
 and want to get it out to people who ask me about this topic. Insert some Harry
-Potter references if it gets a bit dry&hellip;</p>
-
-<h1>Data Escalation Paths</h1>
+Potter references if it gets a bit dry&hellip;</em></p>
 
 <p>Writing reusable Puppet manifests involves a combination of static and dynamic
 data, but the decision of whether to &ldquo;hardcode data&rdquo;, use a variable, set
@@ -429,7 +427,7 @@ work its way up. In the end, it&rsquo;s all about choosing the right data mechan
 for the problem. If you&rsquo;re a more visual learner, the flowchart below will help
 clarify when to use each method:</p>
 
-<p><a href="http://garylarizza.com/images/data/data_escalation_path.png">{% img left http://garylarizza.com/images/data/data_escalation_path.png %}</a></p>
+<p><a href="http://garylarizza.com/images/data/data_escalation_path.png"><img class="left" src="http://garylarizza.com/images/data/data_escalation_path.png"></a></p>
 ]]></content>
   </entry>
   
