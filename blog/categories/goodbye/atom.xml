@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: goodbye | Shit Gary Says]]></title>
+  <link href="http://garylarizza.com/blog/categories/goodbye/atom.xml" rel="self"/>
+  <link href="http://garylarizza.com/"/>
+  <updated>2017-08-25T16:13:19-05:00</updated>
+  <id>http://garylarizza.com/</id>
+  <author>
+    <name><![CDATA[Gary larizza]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Some other beginning's end]]></title>
+    <link href="http://garylarizza.com/blog/2017/08/25/some-other-beginnings-end/"/>
+    <updated>2017-08-25T15:35:29-05:00</updated>
+    <id>http://garylarizza.com/blog/2017/08/25/some-other-beginnings-end</id>
+    <content type="html"><![CDATA[<p>My first day at Puppet, James Turnbull sat me down next to Jeff McCune and
+waited for things to happen. That was partly because he knew that Jeff&rsquo;s
+attention to detail would offset my attention to <code>git commit -a -m 'blkajdfs'</code>,
+and partly because there were about 30 of us in the office and we all had shit
+to do. Jeff was kinda working on an MCollective module back then, and I had
+been using it pretty heavily at the school, so I decided to jump right in and
+start hacking it up. To make a long story short, that experience working on the
+MCollective module resulted in:</p>
+
+<ol>
+<li><a href="https://projects.puppetlabs.com/issues/8040">Ticket number 8040 on class containment being filed by Jeff</a> (AKA &ldquo;How the Anchor pattern was born&rdquo;)</li>
+<li>An understanding in how to use git as something more than just glorified rsync</li>
+<li>An &ldquo;Odd Couple&rdquo; friendship with a guy who has &ldquo;right foot&rdquo; and &ldquo;left foot&rdquo; socks</li>
+</ol>
+
+
+<p>Over the next 4 years I would keep going back to Jeff whenever something new
+puzzled me, and he would keep giving me pointers that directed me down the
+right path.  I <a href="http://bit.ly/pryisawesome">learned about Pry</a> from Jeff when
+I was working on the <code>directoryservice</code> provider and couldn&rsquo;t figure out why my
+variables had no value, my understanding on the principles of unit testing came
+from completely screwing up spec tests, and my blog posts on type/provider
+development never would have happened if I didn&rsquo;t make all those mistakes and
+have someone help me learn from them.  So when I hit that point at Puppet where
+I began thinking about moving on to &ldquo;the next big thing,&rdquo; Jeff was a natural
+choice.</p>
+
+<p>With that in mind, I&rsquo;m happy to announce that as of September 7th, 2017 I&rsquo;ll be
+joining Jeff at <a href="openinfrastructure.co">openinfrastructure.co</a> where we&rsquo;ll be
+available to consult on everything from DevOps practices, Puppet
+deployments/module development/etc, and &ldquo;how you turn ordinary socks into
+&lsquo;right foot socks&rsquo; and &lsquo;left foot socks.&rsquo;&rdquo; (I&rsquo;m MOSTLY kidding on the last bit,
+but that&rsquo;s not my area of expertise, soooo&hellip;..)</p>
+
+<p>It&rsquo;s been 6.5 years of consulting with Puppet Inc. and I&rsquo;m not planning on
+stopping anytime soon. I&rsquo;m grateful for all the opportunities and experiences
+that have come my way, and I&rsquo;m looking forward to going back to a smaller work
+environment and more freedom to choose those opportunities! If you have one of
+those opportunities and are looking for someone to help you out,
+please look us up at
+<a href="http://www.openinfrastructure.co">http://www.openinfrastructure.co</a> and let us
+know about it!</p>
+]]></content>
+  </entry>
+  
+</feed>
