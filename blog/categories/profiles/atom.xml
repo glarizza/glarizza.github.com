@@ -4,7 +4,7 @@
   <title><![CDATA[Category: profiles | Shit Gary Says]]></title>
   <link href="http://garylarizza.com/blog/categories/profiles/atom.xml" rel="self"/>
   <link href="http://garylarizza.com/"/>
-  <updated>2017-08-24T21:31:59-05:00</updated>
+  <updated>2017-08-24T21:37:26-05:00</updated>
   <id>http://garylarizza.com/</id>
   <author>
     <name><![CDATA[Gary larizza]]></name>
@@ -290,78 +290,148 @@ Wordpress, or Tomcat, or whatever).</p>
 
 <p>Let&rsquo;s look at a simple profile for Wordpress:</p>
 
-<p>{% codeblock lang:puppet profiles/manifests/wordpress.pp %}
-class profiles::wordpress {</p>
-
-<p>  ## Hiera lookups
-  $site_name               = hiera(&lsquo;profiles::wordpress::site_name&rsquo;)
-  $wordpress_user_password = hiera(&lsquo;profiles::wordpress::wordpress_user_password&rsquo;)
-  $mysql_root_password     = hiera(&lsquo;profiles::wordpress::mysql_root_password&rsquo;)
-  $wordpress_db_host       = hiera(&lsquo;profiles::wordpress::wordpress_db_host&rsquo;)
-  $wordpress_db_name       = hiera(&lsquo;profiles::wordpress::wordpress_db_name&rsquo;)
-  $wordpress_db_password   = hiera(&lsquo;profiles::wordpress::wordpress_db_password&rsquo;)
-  $wordpress_user          = hiera(&lsquo;profiles::wordpress::wordpress_user&rsquo;)
-  $wordpress_group         = hiera(&lsquo;profiles::wordpress::wordpress_group&rsquo;)
-  $wordpress_docroot       = hiera(&lsquo;profiles::wordpress::wordpress_docroot&rsquo;)
-  $wordpress_port          = hiera(&lsquo;profiles::wordpress::wordpress_port&rsquo;)</p>
-
-<p>  ## Create user
-  group { &lsquo;wordpress&rsquo;:</p>
-
-<pre><code>ensure =&gt; present,
-name   =&gt; $wordpress_group,
-</code></pre>
-
-<p>  }
-  user { &lsquo;wordpress&rsquo;:</p>
-
-<pre><code>ensure   =&gt; present,
-gid      =&gt; $wordpress_group,
-password =&gt; $wordpress_user_password,
-name     =&gt; $wordpress_group,
-home     =&gt; $wordpress_docroot,
-</code></pre>
-
-<p>  }</p>
-
-<p>  ## Configure mysql
-  class { &lsquo;mysql::server&rsquo;:</p>
-
-<pre><code>root_password =&gt; $wordpress_root_password,
-</code></pre>
-
-<p>  }</p>
-
-<p>  class { &lsquo;mysql::bindings&rsquo;:</p>
-
-<pre><code>php_enable =&gt; true,
-</code></pre>
-
-<p>  }</p>
-
-<p>  ## Configure apache
-  include apache
-  include apache::mod::php
-  apache::vhost { $::fqdn:</p>
-
-<pre><code>port    =&gt; $wordpress_port,
-docroot =&gt; $wordpress_docroot,
-</code></pre>
-
-<p>  }</p>
-
-<p>  ## Configure wordpress
-  class { &lsquo;::wordpress&rsquo;:</p>
-
-<pre><code>install_dir =&gt; $wordpress_docroot,
-db_name     =&gt; $wordpress_db_name,
-db_host     =&gt; $wordpress_db_host,
-db_password =&gt; $wordpress_db_password,
-</code></pre>
-
-<p>  }
-}
-{% endcodeblock %}</p>
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>profiles/manifests/wordpress.pp </span></figcaption>
+<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="kd">class</span> <span class="nc">profiles::wordpress</span> <span class="p">{</span><span class="err">&lt;/p&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">&lt;p&gt;</span><span class="c-Singleline">  ## Hiera lookups</span>
+</span><span class='line'>  <span class="nv">$site_name</span>               <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">profiles</span><span class="err">::</span><span class="ss">wordpress</span><span class="err">::</span><span class="ss">site_name</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span>
+</span><span class='line'>  <span class="nv">$wordpress_user_password</span> <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">profiles</span><span class="err">::</span><span class="ss">wordpress</span><span class="err">::</span><span class="ss">wordpress_user_password</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span>
+</span><span class='line'>  <span class="nv">$mysql_root_password</span>     <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">profiles</span><span class="err">::</span><span class="ss">wordpress</span><span class="err">::</span><span class="ss">mysql_root_password</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span>
+</span><span class='line'>  <span class="nv">$wordpress_db_host</span>       <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">profiles</span><span class="err">::</span><span class="ss">wordpress</span><span class="err">::</span><span class="ss">wordpress_db_host</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span>
+</span><span class='line'>  <span class="nv">$wordpress_db_name</span>       <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">profiles</span><span class="err">::</span><span class="ss">wordpress</span><span class="err">::</span><span class="ss">wordpress_db_name</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span>
+</span><span class='line'>  <span class="nv">$wordpress_db_password</span>   <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">profiles</span><span class="err">::</span><span class="ss">wordpress</span><span class="err">::</span><span class="ss">wordpress_db_password</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span>
+</span><span class='line'>  <span class="nv">$wordpress_user</span>          <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">profiles</span><span class="err">::</span><span class="ss">wordpress</span><span class="err">::</span><span class="ss">wordpress_user</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span>
+</span><span class='line'>  <span class="nv">$wordpress_group</span>         <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">profiles</span><span class="err">::</span><span class="ss">wordpress</span><span class="err">::</span><span class="ss">wordpress_group</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span>
+</span><span class='line'>  <span class="nv">$wordpress_docroot</span>       <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">profiles</span><span class="err">::</span><span class="ss">wordpress</span><span class="err">::</span><span class="ss">wordpress_docroot</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span>
+</span><span class='line'>  <span class="nv">$wordpress_port</span>          <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">profiles</span><span class="err">::</span><span class="ss">wordpress</span><span class="err">::</span><span class="ss">wordpress_port</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span><span class="o">&lt;</span><span class="err">/</span><span class="ss">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="ss">p</span><span class="o">&gt;</span>  <span class="c-Singleline">## Create user</span>
+</span><span class='line'>  <span class="nc">group</span> <span class="p">{</span> <span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">wordpress</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">:</span><span class="err">&lt;/</span><span class="ss">p</span><span class="err">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">&lt;</span><span class="ss">pre</span><span class="err">&gt;&lt;</span><span class="ss">code</span><span class="err">&gt;</span><span class="ss">ensure</span> <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="ss">present</span><span class="err">,</span>
+</span><span class='line'><span class="ss">name</span>   <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="nv">$wordpress_group</span><span class="err">,</span>
+</span><span class='line'><span class="err">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="ss">pre</span><span class="err">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">&lt;</span><span class="ss">p</span><span class="err">&gt;</span>  <span class="p">}</span>
+</span><span class='line'>  <span class="ss">user</span> <span class="p">{</span> <span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">wordpress</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;:&lt;/</span><span class="ss">p</span><span class="err">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">&lt;</span><span class="ss">pre</span><span class="err">&gt;&lt;</span><span class="ss">code</span><span class="err">&gt;</span><span class="ss">ensure</span>   <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="ss">present</span><span class="p">,</span>
+</span><span class='line'><span class="ss">gid</span>      <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="nv">$wordpress_group</span><span class="p">,</span>
+</span><span class='line'><span class="ss">password</span> <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="nv">$wordpress_user_password</span><span class="p">,</span>
+</span><span class='line'><span class="ss">name</span>     <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="nv">$wordpress_group</span><span class="p">,</span>
+</span><span class='line'><span class="ss">home</span>     <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="nv">$wordpress_docroot</span><span class="p">,</span>
+</span><span class='line'><span class="err">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="ss">pre</span><span class="err">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">&lt;</span><span class="ss">p</span><span class="err">&gt;</span>  <span class="p">}</span><span class="err">&lt;/</span><span class="ss">p</span><span class="err">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">&lt;</span><span class="ss">p</span><span class="err">&gt;</span><span class="c-Singleline">  ## Configure mysql</span>
+</span><span class='line'>  <span class="ss">class</span> <span class="p">{</span> <span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">mysql</span><span class="err">::</span><span class="ss">server</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;:&lt;/</span><span class="ss">p</span><span class="err">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">&lt;</span><span class="ss">pre</span><span class="err">&gt;&lt;</span><span class="ss">code</span><span class="err">&gt;</span><span class="ss">root_password</span> <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="nv">$wordpress_root_password</span><span class="p">,</span>
+</span><span class='line'><span class="err">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="ss">pre</span><span class="err">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">&lt;</span><span class="ss">p</span><span class="err">&gt;</span>  <span class="p">}</span><span class="err">&lt;/</span><span class="ss">p</span><span class="err">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">&lt;</span><span class="ss">p</span><span class="err">&gt;</span>  <span class="ss">class</span> <span class="p">{</span> <span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">mysql</span><span class="err">::</span><span class="ss">bindings</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;:&lt;/</span><span class="ss">p</span><span class="err">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">&lt;</span><span class="ss">pre</span><span class="err">&gt;&lt;</span><span class="ss">code</span><span class="err">&gt;</span><span class="ss">php_enable</span> <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="ss">true</span><span class="p">,</span>
+</span><span class='line'><span class="err">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="ss">pre</span><span class="err">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">&lt;</span><span class="ss">p</span><span class="err">&gt;</span>  <span class="p">}</span><span class="err">&lt;/</span><span class="ss">p</span><span class="err">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">&lt;</span><span class="ss">p</span><span class="err">&gt;</span><span class="c-Singleline">  ## Configure apache</span>
+</span><span class='line'>  <span class="ss">include</span> <span class="ss">apache</span>
+</span><span class='line'>  <span class="ss">include</span> <span class="ss">apache</span><span class="p">::</span><span class="ss">mod</span><span class="p">::</span><span class="ss">php</span>
+</span><span class='line'>  <span class="ss">apache</span><span class="p">::</span><span class="ss">vhost</span> <span class="p">{</span> <span class="nv">$::fqdn</span><span class="err">:&lt;/</span><span class="ss">p</span><span class="err">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">&lt;</span><span class="ss">pre</span><span class="err">&gt;&lt;</span><span class="ss">code</span><span class="err">&gt;</span><span class="ss">port</span>    <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="nv">$wordpress_port</span><span class="p">,</span>
+</span><span class='line'><span class="ss">docroot</span> <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="nv">$wordpress_docroot</span><span class="p">,</span>
+</span><span class='line'><span class="err">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="ss">pre</span><span class="err">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">&lt;</span><span class="ss">p</span><span class="err">&gt;</span>  <span class="p">}</span><span class="err">&lt;/</span><span class="ss">p</span><span class="err">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">&lt;</span><span class="ss">p</span><span class="err">&gt;</span><span class="c-Singleline">  ## Configure wordpress</span>
+</span><span class='line'>  <span class="ss">class</span> <span class="p">{</span> <span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;::</span><span class="ss">wordpress</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;:&lt;/</span><span class="ss">p</span><span class="err">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">&lt;</span><span class="ss">pre</span><span class="err">&gt;&lt;</span><span class="ss">code</span><span class="err">&gt;</span><span class="ss">install_dir</span> <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="nv">$wordpress_docroot</span><span class="p">,</span>
+</span><span class='line'><span class="ss">db_name</span>     <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="nv">$wordpress_db_name</span><span class="p">,</span>
+</span><span class='line'><span class="ss">db_host</span>     <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="nv">$wordpress_db_host</span><span class="p">,</span>
+</span><span class='line'><span class="ss">db_password</span> <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="nv">$wordpress_db_password</span><span class="p">,</span>
+</span><span class='line'><span class="err">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="ss">pre</span><span class="err">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">&lt;</span><span class="ss">p</span><span class="err">&gt;</span>  <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
 
 <h3>Name your profiles according to the technology they setup</h3>
 

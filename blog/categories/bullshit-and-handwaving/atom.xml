@@ -4,7 +4,7 @@
   <title><![CDATA[Category: bullshit and handwaving | Shit Gary Says]]></title>
   <link href="http://garylarizza.com/blog/categories/bullshit-and-handwaving/atom.xml" rel="self"/>
   <link href="http://garylarizza.com/"/>
-  <updated>2017-08-24T21:31:59-05:00</updated>
+  <updated>2017-08-24T21:37:26-05:00</updated>
   <id>http://garylarizza.com/</id>
   <author>
     <name><![CDATA[Gary larizza]]></name>
@@ -89,29 +89,50 @@ paragraph where I describe how Finch DID JUST THAT).</p>
 to setup R10k. Let&rsquo;s revisit that manifest it and modify it for
 <a href="https://github.com/glarizza/hiera_environment">my Hiera repo:</a></p>
 
-<p>{% codeblock lang:puppet /var/tmp/r10k_installation.pp %}
-class { &lsquo;r10k&rsquo;:
-  version           => &lsquo;1.1.4&rsquo;,
-  sources           => {</p>
-
-<pre><code>'puppet' =&gt; {
-  'remote'  =&gt; 'https://github.com/glarizza/puppet_repository.git',
-  'basedir' =&gt; "${::settings::confdir}/environments",
-  'prefix'  =&gt; false,
-},
-'hiera' =&gt; {
-  'remote'  =&gt; 'https://github.com/glarizza/hiera_environment.git',
-  'basedir' =&gt; "${::settings::confdir}/hiera",
-  'prefix'  =&gt; true,
-}
-</code></pre>
-
-<p>  },
-  purgedirs         => [&ldquo;${::settings::confdir}/environments&rdquo;],
-  manage_modulepath => true,
-  modulepath        => &ldquo;${::settings::confdir}/environments/\$environment/modules:/opt/puppet/share/puppet/modules&rdquo;,
-}
-{% endcodeblock %}</p>
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>/var/tmp/r10k_installation.pp </span></figcaption>
+<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="nc">class</span> <span class="p">{</span> <span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">r10k</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">:</span>
+</span><span class='line'>  <span class="nt">version</span>           <span class="p">=&gt;</span> <span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="m">1.1.4</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;,</span>
+</span><span class='line'>  <span class="ss">sources</span>           <span class="err">=&gt;</span> <span class="p">{</span><span class="err">&lt;/</span><span class="ss">p</span><span class="err">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">&lt;</span><span class="ss">pre</span><span class="err">&gt;&lt;</span><span class="ss">code</span><span class="err">&gt;</span><span class="s1">&#39;puppet&#39;</span> <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="p">{</span>
+</span><span class='line'>  <span class="s1">&#39;remote&#39;</span>  <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="s1">&#39;https://github.com/glarizza/puppet_repository.git&#39;</span><span class="p">,</span>
+</span><span class='line'>  <span class="s1">&#39;basedir&#39;</span> <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="s2">&quot;</span><span class="si">${::settings::confdir}</span><span class="s2">/environments&quot;</span><span class="p">,</span>
+</span><span class='line'>  <span class="s1">&#39;prefix&#39;</span>  <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="ss">false</span><span class="p">,</span>
+</span><span class='line'><span class="p">},</span>
+</span><span class='line'><span class="s1">&#39;hiera&#39;</span> <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="p">{</span>
+</span><span class='line'>  <span class="s1">&#39;remote&#39;</span>  <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="s1">&#39;https://github.com/glarizza/hiera_environment.git&#39;</span><span class="p">,</span>
+</span><span class='line'>  <span class="s1">&#39;basedir&#39;</span> <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="s2">&quot;</span><span class="si">${::settings::confdir}</span><span class="s2">/hiera&quot;</span><span class="p">,</span>
+</span><span class='line'>  <span class="s1">&#39;prefix&#39;</span>  <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="ss">true</span><span class="p">,</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="err">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="ss">pre</span><span class="err">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">&lt;</span><span class="ss">p</span><span class="err">&gt;</span>  <span class="p">}</span><span class="err">,</span>
+</span><span class='line'>  <span class="ss">purgedirs</span>         <span class="err">=&gt;</span> <span class="p">[</span><span class="err">&amp;</span><span class="ss">ldquo</span><span class="err">;$</span><span class="p">{</span><span class="err">::</span><span class="ss">settings</span><span class="err">::</span><span class="ss">confdir</span><span class="p">}</span><span class="err">/</span><span class="ss">environments</span><span class="err">&amp;</span><span class="ss">rdquo</span><span class="err">;</span><span class="p">]</span><span class="err">,</span>
+</span><span class='line'>  <span class="ss">manage_modulepath</span> <span class="err">=&gt;</span> <span class="ss">true</span><span class="err">,</span>
+</span><span class='line'>  <span class="ss">modulepath</span>        <span class="err">=&gt;</span> <span class="err">&amp;</span><span class="ss">ldquo</span><span class="err">;$</span><span class="p">{</span><span class="err">::</span><span class="ss">settings</span><span class="err">::</span><span class="ss">confdir</span><span class="p">}</span><span class="sr">/environments/</span><span class="err">\</span><span class="nv">$environment</span><span class="sr">/modules:/</span><span class="ss">opt</span><span class="sr">/puppet/</span><span class="ss">share</span><span class="sr">/puppet/</span><span class="ss">modules</span><span class="err">&amp;</span><span class="ss">rdquo</span><span class="err">;,</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
 
 <p><strong>NOTE: For the duration of this post, I&rsquo;ll be referring to Puppet Enterprise
 specific paths (like <code>/etc/puppetlabs/puppet</code> for $confdir). Please do the
@@ -259,18 +280,30 @@ environments is in <code>puppet.conf</code>, but for Hiera that&rsquo;s the <cod
 I&rsquo;ve included that file in my <a href="https://github.com/glarizza/hiera_environment">Hiera repo</a>, so let&rsquo;s look at the
 copy at <code>/etc/puppetlabs/puppet/hiera/hiera_production/hiera.yaml</code>:</p>
 
-<h2>{% codeblock lang:yaml /etc/puppetlabs/puppet/hiera/hiera_production/hiera.yaml %}</h2>
-
-<p>:backends:
-  &ndash; yaml
-:hierarchy:
-  &ndash; &ldquo;%{clientcert}&rdquo;
-  &ndash; &ldquo;%{environment}&rdquo;
-  &ndash; global</p>
-
-<p>:yaml:
-  :datadir: &lsquo;/etc/puppetlabs/puppet/hiera/hiera_%{environment}/hieradata&rsquo;
-{% endcodeblock %}</p>
+<h2><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>/etc/puppetlabs/puppet/hiera/hiera_production/hiera.yaml </span></figcaption>
+<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">&lt;/h2&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="l-Scalar-Plain">&lt;p&gt;:backends</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="nl">&amp;ndash</span><span class="l-Scalar-Plain">; yaml</span>
+</span><span class='line'><span class="l-Scalar-Plain">:hierarchy</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="nl">&amp;ndash</span><span class="l-Scalar-Plain">; &amp;ldquo;%{clientcert}&amp;rdquo;</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">&amp;ndash; &amp;ldquo;%{environment}&amp;rdquo;</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">&amp;ndash; global&lt;/p&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="l-Scalar-Plain">&lt;p&gt;:yaml</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">:datadir</span><span class="p-Indicator">:</span> <span class="nl">&amp;lsquo</span><span class="l-Scalar-Plain">;/etc/puppetlabs/puppet/hiera/hiera_%{environment}/hieradata&amp;rsquo;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
 
 <p>The magical line is in the <code>:datadir:</code> setting of the <code>:yaml:</code> section; it
 uses <code>%{environment}</code> to evaluate the environment variable set by Puppet and
@@ -368,11 +401,14 @@ you to tie a repository, and some version reference, to a directory using
 R10k. Incorporating a monolithic repository starts with an entry in the
 <code>Puppetfile</code> like so:</p>
 
-<p>{% codeblock lang:ruby Puppetfile %}
-mod &ldquo;my_big_module_repo&rdquo;,
-  :git => &ldquo;git://github.com/glarizza/my_big_module_repo.git&rdquo;,
-  :ref => &lsquo;1.0.0&rsquo;
-{% endcodeblock %}</p>
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>Puppetfile </span></figcaption>
+<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">mod</span> <span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;</span><span class="n">my_big_module_repo</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="p">;,</span>
+</span><span class='line'>  <span class="ss">:git</span> <span class="o">=&gt;</span> <span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;</span><span class="ss">git</span><span class="p">:</span><span class="sr">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">glarizza</span><span class="o">/</span><span class="n">my_big_module_repo</span><span class="o">.</span><span class="n">git</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="p">;,</span>
+</span><span class='line'>  <span class="ss">:ref</span> <span class="o">=&gt;</span> <span class="o">&amp;</span><span class="n">lsquo</span><span class="p">;</span><span class="mi">1</span><span class="o">.</span><span class="mi">0</span><span class="o">.</span><span class="mi">0</span><span class="o">&amp;</span><span class="n">rsquo</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
 
 <p><strong>NOTE: That git repository doesn&rsquo;t exist. I don&rsquo;t HAVE a monolithic repo to
 demonstrate, so I&rsquo;ve chosen an arbitrary URI. Also note that you can use ANY

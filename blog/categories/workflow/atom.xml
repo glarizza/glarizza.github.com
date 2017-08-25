@@ -4,7 +4,7 @@
   <title><![CDATA[Category: workflow | Shit Gary Says]]></title>
   <link href="http://garylarizza.com/blog/categories/workflow/atom.xml" rel="self"/>
   <link href="http://garylarizza.com/"/>
-  <updated>2017-08-24T21:31:59-05:00</updated>
+  <updated>2017-08-24T21:37:26-05:00</updated>
   <id>http://garylarizza.com/</id>
   <author>
     <name><![CDATA[Gary larizza]]></name>
@@ -12,6 +12,489 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Profiles and the path to Hiera data]]></title>
+    <link href="http://garylarizza.com/blog/2017/08/24/data-escalation-path/"/>
+    <updated>2017-08-24T20:41:25-05:00</updated>
+    <id>http://garylarizza.com/blog/2017/08/24/data-escalation-path</id>
+    <content type="html"><![CDATA[<p><em>This blog post first appeared on the Puppet blog as <a href="https://puppet.com/blog/hiera-data-and-puppet-code-your-path-right-data-decisions">Hiera, data, and Puppet code: your path to the right data decisions</a>, and is published here with permission of the Puppet blog editor.</em></p>
+
+<p>The subject that generates the most questions for me from the Puppet community
+is <a href="https://docs.puppet.com/hiera/">Hiera</a>. Not only do people want to know
+what it is (a data lookup tool) and how to spell it (I before E except after
+C), but even saying the word causes problems (It&rsquo;s HIGH-rah — two syllables,
+with the accent on the first).</p>
+
+<p>I get so many questions about Hiera because it&rsquo;s a tool for storing and
+accessing site-specific data, and it&rsquo;s actually this problem of accessing data
+within reusable code that most people are trying to solve. Many people think
+the ONLY place data can live is within Hiera, but that&rsquo;s not always the case
+(as we will see later with profiles). To help with these problems, I&rsquo;ve
+identified all the ways that data can be expressed within Puppet, listed the
+pros and cons of each, and made recommendations as to when each method should
+be used.</p>
+
+<p>For those people who are visual learners, here&rsquo;s a simplified flow chart below,
+detailing the choices you need to make when deciding how to express your
+configuration data.</p>
+
+<p><a href="http://garylarizza.com/images/data_escalation_path.png"><img class="left" src="/images/data_escalation_path.png"></a></p>
+
+<h2>What is data and what is code?</h2>
+
+<p>This issue of what constitutes data is the first wrinkle in devising what I
+call a <strong>data escalation path</strong>. For background reading, the <a href="https://docs.puppet.com/pe/2017.2/r_n_p_intro.html">Puppet docs page
+on roles and profiles</a> does
+a great job of describing the difference between a component module and a
+profile.</p>
+
+<p>To quickly summarize: A component module is a general-purpose module designed
+to model the configuration of a piece of technology (e.g., Apache, Tomcat or
+ntpd), and a profile is an organization-specific Puppet module that describes
+an organization&rsquo;s <em>implementation</em> of a piece of technology. (We also use the
+term &ldquo;site-specific&rdquo; to refer to an organization&rsquo;s own particular data.)</p>
+
+<p>For example, an Apache profile that an organization creates for itself might
+use <a href="https://forge.puppet.com/puppetlabs/apache">the official Puppet Apache
+module</a> to install and configure
+Apache. But the profile might also contain resources for an organization&rsquo;s SSL
+certificates or credentials, layered on top of the configuration provided by
+the Puppet Apache module. The resource(s) modeling the SSL certificate(s) are
+necessary <strong>only</strong> for that particular organization, which is why they don&rsquo;t
+show up in the official Puppet Apache module.</p>
+
+<p>In this example, the official Puppet Apache module itself represents the code,
+or the generic and reusable aspect of the configuration (as any good component
+module would). The profile contains the organizational (or site-specific) data
+that is fed to the component module (or code) when that module is used. This
+separation — and the fact that data can be represented within the same
+constructs used to represent code — is frequently a source of confusion or
+frustration for new Puppet users (and especially for users with a background in
+object-oriented programming, which is almost antithetical to the
+<a href="https://en.wikipedia.org/wiki/Declarative_programming">declarative</a> approach
+that is core to Puppet).</p>
+
+<p>Data within a profile can come in different forms:</p>
+
+<ul>
+<li>A variable assigned within the profile.</li>
+<li>A Hiera/data lookup (done explicitly, or by way of the <a href="https://docs.puppet.com/puppet/4.10/hiera_automatic.html">automatic parameter lookup</a>).</li>
+<li>A parameter&rsquo;s value when the profile is declared.</li>
+</ul>
+
+
+<p>With the above items all considered to be data, which option do you choose?
+It&rsquo;s this question that the data escalation path will answer.</p>
+
+<p><strong>NOTE</strong>: This post specifically covers data escalation paths within profiles,
+and NOT within component modules. Unless explicitly noted, assume that
+recommendations apply ONLY to profiles, and not component modules (since
+profiles represent site-specific data).</p>
+
+<h2>Why an escalation path?</h2>
+
+<p>The decisions you make when writing Puppet manifests will seldom be plain and
+obvious. Instead of focusing on whether something is in the right place, it&rsquo;s
+better to think about the ways that complexity can help you solve problems.</p>
+
+<p>You can absolutely put everything you would consider data inside Hiera, and
+that would immediately provide you a way to handle most use cases. But the
+legibility of your Puppet manifest suffers when you have to jump back to Hiera
+every time you need to retrieve or debug a data value (which is a very
+labor-intensive thing to do if you don&rsquo;t have direct access to the Puppet
+masters). Plus, things like resource dependencies are particularly hard to
+model in Hiera data, as opposed to using resource declarations within a class.</p>
+
+<p>For simpler use cases, putting data into Hiera isn&rsquo;t necessary. But once you
+reach a certain level of complexity, Hiera becomes extremely useful. I&rsquo;m going
+to define those &ldquo;certain levels of complexity&rdquo; explicitly here, as well as both
+the pros and the cons for each method of expressing data within your profiles.</p>
+
+<h2>Hardcoding  variables</h2>
+
+<p>The term &ldquo;hardcoding&rdquo; is wrapped in quotes here because traditionally the term
+has negative connotations. When I refer to hardcoding, I&rsquo;m talking about
+directly editing an item within a Puppet manifest, without assigning a
+variable. In the example below, if you opened up the Puppet manifest and
+changed the owner from &lsquo;root&rsquo; to &lsquo;puppet&rsquo;, that would be considered hardcoding
+the value:</p>
+
+<p><code>puppet
+file { '/etc/puppetlabs/puppet/puppet.conf':
+  ensure =&gt; file,
+  owner  =&gt; 'root',
+  group  =&gt; 'root',
+  mode   =&gt; '0644',
+  source =&gt; 'puppet:///modules/mymodule/puppet.conf',
+}
+</code></p>
+
+<p>Hardcoding has a negative connotation because typically, when someone would
+hardcode a value in a script, it represented a workaround where a data item is
+injected into the code — and mixing data and code means that your code is no
+longer as generic and extensible as it once was.</p>
+
+<p>That concern is still valid for Puppet: If you open up the official Puppet
+Apache module and change or add a site-specific value within that component
+module, then you ARE, in fact, mixing data with code. If instead you edit the
+Apache profile for your organization and change a value in that profile, then
+you&rsquo;re changing site-specific data in something that is already considered
+site-specific. The difference is that the official Puppet Apache module is
+designed to be extensible, and used where necessary, while the profile is meant
+to be used only by your own organization (or site, or group).</p>
+
+<p>Hardcoding a value is the easiest method to understand: Something that was
+previously set to one value is now set to another value. It&rsquo;s also the easiest
+change to implement — you simply change the value and move along. If done
+correctly, someone could change the value without needing to understand the
+Puppet DSL (domain specific language — i.e. the rules governing Puppet code in
+a Puppet manifest). Finally, because it&rsquo;s simply text, a hardcoded value cannot
+be overridden, and the value is exactly the same for all nodes.</p>
+
+<h3>Pros</h3>
+
+<ul>
+<li>The easiest technique to understand: Something was changed from one value to another.</li>
+<li>The easiest change to implement.</li>
+</ul>
+
+
+<h3>Cons</h3>
+
+<ul>
+<li>If you hardcode the same value in multiple places, then changing that value requires multiple individual changes.</li>
+</ul>
+
+
+<h3>Recommendations</h3>
+
+<p>You should hardcode a value when:</p>
+
+<ul>
+<li>The value applies to EVERY NODE being managed by Puppet.</li>
+<li>The value occurs once. If it occurs more than once within a manifest, use a variable instead.</li>
+</ul>
+
+
+<h2>Assigning a variable</h2>
+
+<p>The next logical step after hardcoding a value is to assign a variable within a
+Puppet manifest. Assigning a variable is useful when a value is going to be
+used in more than one place within a manifest. Because variables within the
+Puppet DSL cannot be reassigned, and because variables within a manifest cannot
+be assigned or changed by Hiera, variables are considered private to the
+implementation. This means they can be changed only by users with permission to
+change Puppet manifests, not by people who are responsible for using the
+console to pass data to the code written by manifest authors. So variables
+really assist writers of Puppet code more than they assist consumers of Puppet
+code.</p>
+
+<p>Anytime there&rsquo;s a data value that will be expressed more than once within a
+Puppet manifest, it&rsquo;s recommended that you use a variable. In the future, if
+that value needs to be changed, all you need to do is change the variable&rsquo;s
+value, and it will be updated wherever the variable was used.  Below is an
+example of that concept in action:</p>
+
+<p>```puppet
+$confdir = &lsquo;/etc/puppetlabs/puppet&rsquo;</p>
+
+<p>file { &ldquo;${confdir}/puppet.conf&rdquo;:
+  ensure => file,
+  owner  => &lsquo;root&rsquo;,
+  group  => &lsquo;root&rsquo;,
+  mode   => &lsquo;0644&rsquo;,
+  source => &lsquo;puppet:///modules/mymodule/puppet.conf&rsquo;,
+}</p>
+
+<p>file { &ldquo;${confdir}/puppetdb.conf&rdquo;:
+  ensure => file,
+  owner  => &lsquo;root&rsquo;,
+  group  => &lsquo;root&rsquo;,
+  mode   => &lsquo;0644&rsquo;,
+  source => &lsquo;puppet:///modules/mymodule/puppetdb.conf&rsquo;,
+}
+```</p>
+
+<h3>Pros</h3>
+
+<ul>
+<li>Assigning a variable provides a single point within a manifest where data can be assigned or changed.</li>
+<li>Assigning a variable within the DSL makes it visible to anyone reviewing the Puppet manifest. This means you don&rsquo;t need to flip back and forth between Hiera and Puppet to look up data values.</li>
+</ul>
+
+
+<h3>Cons</h3>
+
+<ul>
+<li>The value applies to EVERYONE — it must be changed if a different value is desired, and that change applies to everyone.</li>
+<li>No ability to override a value.</li>
+</ul>
+
+
+<h3>Recommendations</h3>
+
+<p>You should assign a variable when:</p>
+
+<ul>
+<li>The data value shows up more than once within a manifest.</li>
+<li>The data value applies to EVERY node.</li>
+</ul>
+
+
+<h2>Conditionally assigning a variable</h2>
+
+<p>In the previous section on assigning a variable, I recommend that variables be
+used only when their value applies to EVERY node. But there is a way to work
+around this: <strong>conditional statements</strong>.</p>
+
+<p>Conditional statements in the Puppet DSL (such as <em>if</em>, <em>unless</em>, <em>case</em>, and
+the selector operator) allow you to assign a variable once, but assign it
+differently based on a specific condition. Using the previous example of
+Puppet&rsquo;s configuration directory, let&rsquo;s see how that would be assigned
+differently, based on the system&rsquo;s kernel fact:</p>
+
+<p>```puppet
+$confdir = $facts[&lsquo;kernel&rsquo;] ? {
+  &lsquo;windows&rsquo; => &lsquo;C:\ProgramData\PuppetLabs\puppet\etc&rsquo;,
+  default   => &lsquo;/etc/puppetlabs/puppet&rsquo;,
+}</p>
+
+<p>file { &ldquo;${confdir}/puppet.conf&rdquo;:
+  ensure => file,
+  owner  => &lsquo;root&rsquo;,
+  group  => &lsquo;root&rsquo;,
+  mode   => &lsquo;0644&rsquo;,
+  source => &lsquo;puppet:///modules/mymodule/puppet.conf&rsquo;,
+}</p>
+
+<p>file { &ldquo;${confdir}/puppetdb.conf&rdquo;:
+  ensure => file,
+  owner  => &lsquo;root&rsquo;,
+  group  => &lsquo;root&rsquo;,
+  mode   => &lsquo;0644&rsquo;,
+  source => &lsquo;puppet:///modules/mymodule/puppetdb.conf&rsquo;,
+}
+```</p>
+
+<p>Conditionally assigning a variable has its own section because when people
+think about the choices they have for expressing data within Puppet, they
+usually think of Hiera. Hiera is an excellent tool for conditionally assigning
+a value, based on its internal hierarchy. But what if the conditional logic you
+need to use doesn&rsquo;t follow Hiera&rsquo;s configured hierarchy? Your choices are to:</p>
+
+<p>Edit Hiera&rsquo;s hierarchy to add the logic you need (which is potentially a
+disruptive change to Hiera that will affect lookups), or Use conditional logic
+within the DSL.</p>
+
+<p>Since we&rsquo;re talking about an escalation path, conditionally assigning a
+variable is the next logical progression when complexity arises.</p>
+
+<h3>Pros</h3>
+
+<ul>
+<li>Values can be assigned based on whatever conditional logic is necessary.</li>
+<li>Values are assigned within the Puppet DSL, and thus are more visible to Puppet code reviewers (versus reviewing Hiera data, which may be located elsewhere).</li>
+<li>Reusability remains intact: The variable is assigned once, and used throughout the manifest.</li>
+</ul>
+
+
+<h3>Cons</h3>
+
+<ul>
+<li>Variables still cannot be reassigned or overridden.</li>
+<li>Conditional logic can grow to become stringy and overly complex if left unchecked.</li>
+<li>Conditional logic is syntax-heavy, and requires knowledge of the Puppet DSL (i.e., it&rsquo;s not something easily used by people who don&rsquo;t know Puppet).</li>
+</ul>
+
+
+<h3>Recommendations</h3>
+
+<p>You should use conditional logic to assign a value within a profile when:</p>
+
+<ul>
+<li>The conditional logic isn&rsquo;t overly complex.</li>
+<li>The conditional logic is different from the Hiera hierarchy.</li>
+<li>Visibility of the data value within the Puppet DSL is a priority.</li>
+</ul>
+
+
+<h2>Hiera lookups and class parameters</h2>
+
+<p>Puppet&rsquo;s data lookup tool is Hiera, and Hiera is an excellent way to model data
+in a hierarchical manner based on layers of business logic. Demonstrating how
+Hiera works is the easy part; implementing it (and knowing when to do Hiera
+calls) is another story.</p>
+
+<p>Before we get there, it&rsquo;s important to understand that Hiera lookups can be
+done ad hoc <a href="https://docs.puppet.com/puppet/latest/lookup_quick.html">through the use of the <code>hiera()</code> or <code>lookup()</code> functions</a>,
+or through the <a href="https://docs.puppet.com/hiera/latest/puppet.html#automatic-parameter-lookup">automatic class parameter lookup functionality</a>. The
+previous links will give you detailed explanations. Briefly, if a class is
+declared and a value is not explicitly assigned for any of the class&rsquo;s
+parameters, Hiera will automatically do a lookup for the full parameter name.
+For example, if the class is called &lsquo;<code>apache</code>&rsquo; and the parameter is called
+&lsquo;<code>port</code>&rsquo;, then Hiera does an automatic parameter lookup for <code>apache::port</code>.</p>
+
+<p>We&rsquo;ll get back to automatic parameter lookups in a second, but for now let&rsquo;s
+focus on explicit lookups. Here&rsquo;s an example using both the older <code>hiera</code>
+function and the newer <code>lookup</code> function:</p>
+
+<p><code>puppet
+$apache_port    = hiera('apache_port')
+$apache_docroot = lookup('apache_docroot')
+</code></p>
+
+<p>Explicit lookups using one of the above functions are easier to see and
+understand when you&rsquo;re new to Puppet, because <a href="https://docs.puppet.com/hiera/latest/puppet.html#automatic-parameter-lookup">the automatic parameter
+lookup</a> functionality is relatively hidden to you (should you not be aware
+of its existence). More importantly, explicit lookups within a Puppet class are
+considered to be private to that class. By &ldquo;private,&rdquo; I mean the
+object-oriented programming definition: The data is limited in scope to this
+implementation, and there&rsquo;s no other external way to override or affect this
+value, short of changing what value Hiera ends up returning. You can&rsquo;t, for
+example, pass in a parameter and have it take precedence over an explicit
+lookup — the result of the lookup stands alone.</p>
+
+<p>More than anything, the determining factor for whether you use an explicit
+lookup or expose a class parameter to the profile should be whether the Hiera
+lookup is merely a shorthand for getting a value that others SHOULDN&rsquo;T be able
+to change, or whether this value should be exposed to the profile as part of
+the API. If you don&rsquo;t want people to be able to override this value outside of
+Hiera, then an explicit lookup is the correct choice.</p>
+
+<h3>Explicit lookup pros</h3>
+
+<ul>
+<li>No need for conditional logic since Hiera is configured independently. Simply do a lookup for a value, and assign it to a variable.</li>
+<li>Using a lookup function is a visible indicator that the data lives outside the DSL (in Hiera).</li>
+</ul>
+
+
+<h3>Explicit lookup cons</h3>
+
+<ul>
+<li>Loss of visibility: The data is inside Hiera&rsquo;s hierarchy, and determining the value requires invoking Hiera in some manner (as opposed to simply observing a value in the DSL).</li>
+<li>If the lookup you want to perform doesn&rsquo;t conform to Hiera&rsquo;s existing hierarchy, then Hiera&rsquo;s hierarchy will need to be changed, which is disruptive.</li>
+</ul>
+
+
+<h3>Explicit lookup recommendations</h3>
+
+<p>You should use an explicit data lookup when:</p>
+
+<ul>
+<li>The data item is private to the implementation of the class (i.e., not exposed as an API to the profile).</li>
+<li>The value from Hiera should not be overridden within the Puppet DSL.</li>
+</ul>
+
+
+<h3>Class parameters</h3>
+
+<h4>API vs. internal logic</h4>
+
+<p>When building a profile, the implementation of the profile (i.e., anything
+between the open and closing curly braces {} of a class definition:  <code>class
+apache { … }</code> ) is considered to be private. This means that there really are
+no guarantees around specific resource declarations as long as the technology
+is configured properly in the end. Class parameters are considered to be part
+of the profile&rsquo;s API, and thus there&rsquo;s a guarantee that existing parameters
+won&rsquo;t be removed or have their functionality changed within a major release (if
+you follow semantic versioning).</p>
+
+<p>More specifically, exposing a parameter indicates to your Puppet code users
+that this is something that can be set or changed. Think of computer hardware
+and the differentiation between Phillips head screws and Torx screws. The
+Phillips head screws usually mean that customer intervention is allowed, much
+the same way that parameters indicate data values that can be changed, while
+Torx screws usually mean that customer intervention is disallowed, much the
+same way as variables or explicit lookups within a profile cannot be reassigned
+or overridden.</p>
+
+<p>As referenced in the previous section, <a href="https://docs.puppet.com/hiera/latest/puppet.html#automatic-parameter-lookup">this document on the automatic class
+parameter lookup functionality</a> describes the order of precedence for
+setting class parameters:</p>
+
+<ol>
+<li>Parameter values are explicitly set with a <a href="https://docs.puppet.com/puppet/latest/lang_classes.html#using-resource-like-declarations">resource-like class declaration</a>.</li>
+<li>Puppet performs a Hiera lookup in the style of <code>(CLASS NAME)::(PARAMETER NAME)</code>.</li>
+<li>The default value set in the class definition.</li>
+</ol>
+
+
+<p>By exposing a class parameter to your profile, you allow for the data to be
+entered into Hiera without needing an explicit lookup in the profile.
+Additionally, class parameters can be specified during a resource-like class
+declaration that allows the user to override the Hiera lookup layer and pass in
+their desired value. The user understands that class parameters are Puppet&rsquo;s
+way of allowing input and altering the way Puppet configures the piece of
+technology. In this way, class parameters aren&rsquo;t merely another method for
+performing a Hiera lookup; they&rsquo;re also an invitation for user input.</p>
+
+<h4>Discoverability and extensibility</h4>
+
+<p>One important distinction with class parameters: The Puppet Enterprise console
+is able to discover class parameters and present them visually. It can do this
+because <a href="https://docs.puppet.com/puppetserver/2.4/puppet-api/v3/environment_classes.html">Puppet Server has an API that exposes this data</a>, and that
+means parameters and classes can be queried and enumerated. Explicit Hiera
+lookups are not discoverable in the same way; you will need to search through
+your codebase manually.</p>
+
+<p>Next, class parameters can have their values assigned by an external node
+classifier, or ENC, but explicit Hiera lookups cannot. An ENC is an arbitrary
+script or application that can tell Puppet which classes a node should have.
+(For more information, <a href="https://docs.puppet.com/puppet/5.0/nodes_external.html#what-is-an-enc">refer to this document on ENCs</a>.)  For Puppet
+Enterprise, the Puppet Enterprise console acts as an ENC.</p>
+
+<p>Finally, consider the extensibility of explicit lookups versus class
+parameters. Puppet introduced the <code>lookup()</code> function a while back as a
+replacement for the <code>hiera()</code> function, which means that over time, all
+<code>hiera()</code> function calls will need to be converted to <code>lookup()</code> function
+calls. Class parameters have remained largely unchanged since their
+introduction (with <a href="https://docs.puppet.com/puppet/4.10/lang_data.html">data types being an additional change</a>), so
+people using class parameters and the automatic parameter lookup don&rsquo;t need to
+convert all those explicit lookups. In this case, explicit lookups may require
+more work than class parameters when performing an upgrade.</p>
+
+<p>Because these two lookups have two fundamentally different purposes, I&rsquo;m
+treating their usages separately.</p>
+
+<h3>Class parameter lookup pros</h3>
+
+<ul>
+<li>Signals to users of Puppet code that this data item is configurable.</li>
+<li>Allows the value to be assigned either by the Puppet Enterprise console (<a href="https://docs.puppet.com/puppet/5.0/nodes_external.html#what-is-an-enc">or other configured ENC</a>) or Hiera.</li>
+<li>Classes and parameters are discoverable through the Puppet Server API.</li>
+</ul>
+
+
+<h3>Class parameter lookup cons</h3>
+
+<ul>
+<li>Automatic parameter lookup is unexpected if you don&rsquo;t know it exists.</li>
+<li>Loss of visibility: The data is inside Hiera&rsquo;s hierarchy, and determining the value requires invoking Hiera in some manner (as opposed to simply  observing a value in the DSL).</li>
+<li>Each parameter is unique, so even if multiple profiles expose a parameter of the same name that requires the same value, there needs to be a value in Hiera for each unique parameter.</li>
+</ul>
+
+
+<h3>Class parameter recommendations</h3>
+
+<p>You should expose a class parameter when:</p>
+
+<ul>
+<li>You require the conditional logic within Hiera&rsquo;s hierarchy to determine the value of a data item.</li>
+<li>If or when you need to override the value using the Puppet Enterprise console (or other configured ENC).</li>
+<li>To indicate that this part of the profile is configurable to users of Puppet code.</li>
+</ul>
+
+
+<h2>Summary</h2>
+
+<p>Writing extensible code and keeping configuration data separate are always in
+the back of every Puppet user&rsquo;s mind, but the mechanics of how to achieve this
+goal can seem daunting. With this post, I hope you now have a clearer path for
+structuring your Puppet code!</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Roles and Profiles in a Control Repo?]]></title>
@@ -437,9 +920,8 @@ For the purposes of cleanliness, we usually end up putting both roles/profiles
 inside a <code>site</code> folder in the control repo. If you do that, your modulepath
 in <code>environment.conf</code> looks a little something like this:</p>
 
-<p>{% codeblock %}
-modulepath = site:modules:$basemodulepath
-{% endcodeblock %}</p>
+<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>modulepath = site:modules:$basemodulepath</span></code></pre></td></tr></table></div></figure></notextile></div></p>
 
 <p>This means that Puppet will look for modules first in the &lsquo;site&rsquo; directory of
 its current environment (this is the directory where we put roles/profiles),
@@ -581,32 +1063,43 @@ server), that bit of data goes into Hiera (and by &lsquo;that bit of data&rsquo;
 &lsquo;the value of the NTP server&rsquo; or &lsquo;the NTP server&rsquo;s FQDN&rsquo;), which would look
 SOMETHING like this:</p>
 
-<p>{% codeblock lang:yaml %}
-ntpserver: pool.ntp.org
-{% endcodeblock %}</p>
+<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">ntpserver</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">pool.ntp.org</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
 
 <p>What does NOT go into Hiera is a hash-based representation of the Puppet
 resource that would then be passed to create_resources() and used to create
 the resource in the catalog&hellip;which would look something like this:</p>
 
-<p>{% codeblock lang:yaml %}
-ntpfiles:
-  &lsquo;/etc/ntp/ntpd.conf&rsquo;:</p>
-
-<pre><code>ensure: file
-owner:  0
-group:  0
-mode:   0644
-source: 'puppet:///modules/ntp/ntpd.conf'
-</code></pre>
-
-<p>{% endcodeblock %}</p>
+<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">ntpfiles</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="nl">&amp;lsquo</span><span class="l-Scalar-Plain">;/etc/ntp/ntpd.conf&amp;rsquo;:&lt;/p&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="l-Scalar-Plain">&lt;pre&gt;&lt;code&gt;ensure</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">file</span>
+</span><span class='line'><span class="l-Scalar-Plain">owner</span><span class="p-Indicator">:</span>  <span class="l-Scalar-Plain">0</span>
+</span><span class='line'><span class="l-Scalar-Plain">group</span><span class="p-Indicator">:</span>  <span class="l-Scalar-Plain">0</span>
+</span><span class='line'><span class="l-Scalar-Plain">mode</span><span class="p-Indicator">:</span>   <span class="l-Scalar-Plain">0644</span>
+</span><span class='line'><span class="l-Scalar-Plain">source</span><span class="p-Indicator">:</span> <span class="s">&#39;puppet:///modules/ntp/ntpd.conf&#39;</span>
+</span><span class='line'><span class="l-Scalar-Plain">&lt;/code&gt;&lt;/pre&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="l-Scalar-Plain">&lt;p&gt;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
 
 <p>&hellip;which would then be passed into Puppet like this:</p>
 
-<p>{% codeblock lang:puppet %}
-create_resources(&lsquo;file&rsquo;, hiera_hash(&lsquo;ntpfiles))
-{% endcodeblock %}</p>
+<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="nf">create_resources</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">file</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">,</span> <span class="nf">hiera_hash</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">ntpfiles</span><span class="p">))</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
 
 <p>Yes, this is an exaggeration based on a very narrow use case, but what I&rsquo;m trying
 to highlight is that the &lsquo;data&rsquo; bit in all that above mess is SOLELY an FQDN,
@@ -838,14 +1331,19 @@ you add in that you should probably have a node-specific level at the top (for
 overrides) and a default level at the bottom (or not: see the next section), I&rsquo;m
 starting to picture this:</p>
 
-<p>{% codeblock lang:yaml %}
-:hierarchy:
-  &ndash; &ldquo;nodes/%{::clientcert}&rdquo;
-  &ndash; &ldquo;%{::location}/%{::applicationtier}&rdquo;
-  &ndash; &ldquo;%{::location}/common&rdquo;
-  &ndash; &ldquo;tier/%{::applicationtier}&rdquo;
-  &ndash; common
-{% endcodeblock %}</p>
+<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">:hierarchy</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="nl">&amp;ndash</span><span class="l-Scalar-Plain">; &amp;ldquo;nodes/%{::clientcert}&amp;rdquo;</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">&amp;ndash; &amp;ldquo;%{::location}/%{::applicationtier}&amp;rdquo;</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">&amp;ndash; &amp;ldquo;%{::location}/common&amp;rdquo;</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">&amp;ndash; &amp;ldquo;tier/%{::applicationtier}&amp;rdquo;</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">&amp;ndash; common</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
 
 <p>Every time you have a need, you consider a level.  Now, obviously, it doesn&rsquo;t
 mean that you NEED a level for every request (sometimes if it&rsquo;s an edge case
@@ -897,18 +1395,30 @@ means. I&rsquo;m going to revise what I wrote below to point out the relevant de
 <p>When using Hiera, you need to define a hierarchy that Hiera uses in its search
 for your data. Most often, it looks something like this:</p>
 
-<h2>{% codeblock lang:yaml hiera.yaml %}</h2>
-
-<p>:backends:
-  &ndash; yaml
-:yaml:
-  :datadir: /etc/puppetlabs/puppet/hieradata
-:hierarchy:
-  &ndash; &ldquo;nodes/%{::clientcert}&rdquo;
-  &ndash; &ldquo;location/%{::location}&rdquo;
-  &ndash; &ldquo;environment/%{::applicationtier}&rdquo;
-  &ndash; common
-{% endcodeblock %}</p>
+<h2><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>hiera.yaml </span></figcaption>
+<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">&lt;/h2&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="l-Scalar-Plain">&lt;p&gt;:backends</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="nl">&amp;ndash</span><span class="l-Scalar-Plain">; yaml</span>
+</span><span class='line'><span class="l-Scalar-Plain">:yaml</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">:datadir</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">/etc/puppetlabs/puppet/hieradata</span>
+</span><span class='line'><span class="l-Scalar-Plain">:hierarchy</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="nl">&amp;ndash</span><span class="l-Scalar-Plain">; &amp;ldquo;nodes/%{::clientcert}&amp;rdquo;</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">&amp;ndash; &amp;ldquo;location/%{::location}&amp;rdquo;</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">&amp;ndash; &amp;ldquo;environment/%{::applicationtier}&amp;rdquo;</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">&amp;ndash; common</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
 
 <p>Notice that little &ldquo;common&rdquo; at the end?  That means that, failing everything
 else, it&rsquo;s going to look in <code>common.yaml</code> for a value. I had thought of common
@@ -920,9 +1430,9 @@ higher level, these values are your organization&rsquo;s &lsquo;defaults&rsquo;,
 <p>Previously, you may have heard me rail against Hiera&rsquo;s optional second argument
 and how I really don&rsquo;t like it.  Take this example:</p>
 
-<p>{% codeblock lang:puppet %}
-$foo = hiera(&lsquo;port&rsquo;, &lsquo;80&rsquo;)
-{% endcodeblock %}</p>
+<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="nv">$foo</span> <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">port</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">,</span> <span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="m">80</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
 
 <p>Given this code, Hiera is going to look for a parameter called &lsquo;port&rsquo; in its
 hierarchy, and, if it doesn&rsquo;t find one in ANY of the levels, assign back a default
@@ -995,9 +1505,8 @@ value.  That&rsquo;s a hell of a performance hit.  Fortunately, there&rsquo;s a 
 disable this lookup.  Simply add the following to the Puppet master&rsquo;s <code>puppet.conf</code>
 file:</p>
 
-<p>{% codeblock %}
-data_binding_terminus = none
-{% endcodeblock _%}</p>
+<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>data_binding_terminus = none</span></code></pre></td></tr></table></div></figure></notextile></div></p>
 
 <p>It&rsquo;s going to be up to how your team needs to work as to whether you use Hiera
 data bindings or not. If you have a savvy team that feels they can debug these
@@ -1164,17 +1673,25 @@ for &ndash; and so it becomes slightly confusing. It IS, however, easier to unde
 that this magical phrase will return data, and that that data is going to be used
 to set the value for an attribute. Consider this example:</p>
 
-<p>{% codeblock lang:puppet %}
-$password = hiera(&lsquo;garypassword&rsquo;)</p>
-
-<p>user { &lsquo;gary&rsquo;:
-  ensure   => present,
-  uid      => &lsquo;5001&rsquo;,
-  gid      => &lsquo;gary&rsquo;,
-  shell    => &lsquo;zsh&rsquo;,
-  password => $password,
-}
-{% endcodeblock %}</p>
+<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="nv">$password</span> <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">garypassword</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span><span class="o">&lt;</span><span class="err">/</span><span class="ss">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="ss">p</span><span class="o">&gt;</span><span class="ss">user</span> <span class="err">{</span> <span class="err">&amp;lsquo;gary&amp;rsquo;:</span>
+</span><span class='line'>  <span class="err">ensure</span>   <span class="err">=&gt;</span> <span class="err">present,</span>
+</span><span class='line'>  <span class="err">uid</span>      <span class="err">=&gt;</span> <span class="err">&amp;lsquo;5001&amp;rsquo;,</span>
+</span><span class='line'>  <span class="err">gid</span>      <span class="err">=&gt;</span> <span class="err">&amp;lsquo;gary&amp;rsquo;,</span>
+</span><span class='line'>  <span class="err">shell</span>    <span class="err">=&gt;</span> <span class="err">&amp;lsquo;zsh&amp;rsquo;,</span>
+</span><span class='line'>  <span class="err">password</span> <span class="err">=&gt;</span> <span class="nv">$password</span><span class="err">,</span>
+</span><span class='line'><span class="err">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
 
 <p>This leads us to bullet 3, which is &ldquo;the Hiera + create_resources() solution.&rdquo;
 This solution allows you to lookup data from within Hiera and pass it directly
@@ -1182,25 +1699,38 @@ to a function where Puppet creates the individual resources as if you had typed
 them into a Puppet manifest itself. The previous example can be entered into
 a Hiera YAML file like so:</p>
 
-<p>{% codeblock lang:yaml sysadmins.yaml %}
-users:
-  gary:</p>
-
-<pre><code>ensure: 'present'
-uid: '5001'
-gid: 'gary'
-shell: 'zsh'
-password: 'biglongpasswordhash'
-</code></pre>
-
-<p>{% endcodeblock %}</p>
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>sysadmins.yaml </span></figcaption>
+<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">users</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">gary:&lt;/p&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="l-Scalar-Plain">&lt;pre&gt;&lt;code&gt;ensure</span><span class="p-Indicator">:</span> <span class="s">&#39;present&#39;</span>
+</span><span class='line'><span class="l-Scalar-Plain">uid</span><span class="p-Indicator">:</span> <span class="s">&#39;5001&#39;</span>
+</span><span class='line'><span class="l-Scalar-Plain">gid</span><span class="p-Indicator">:</span> <span class="s">&#39;gary&#39;</span>
+</span><span class='line'><span class="l-Scalar-Plain">shell</span><span class="p-Indicator">:</span> <span class="s">&#39;zsh&#39;</span>
+</span><span class='line'><span class="l-Scalar-Plain">password</span><span class="p-Indicator">:</span> <span class="s">&#39;biglongpasswordhash&#39;</span>
+</span><span class='line'><span class="l-Scalar-Plain">&lt;/code&gt;&lt;/pre&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="l-Scalar-Plain">&lt;p&gt;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
 
 <p>And then a resource can be created inside the Puppet DSL by doing the following:</p>
 
-<p>{% codeblock lang:puppet %}
-$users = hiera(&lsquo;users&rsquo;)
-create_resources(&lsquo;users&rsquo;)
-{% endcodeblock _%}</p>
+<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="nv">$users</span> <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">users</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span>
+</span><span class='line'><span class="nf">create_resources</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">users</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
 
 <p>Both examples are functionally identical, except the first one only uses Hiera
 to get the password hash value, whereas the second one grabs both the
@@ -1272,10 +1802,10 @@ away.</p>
 
 <h3>Final word on create_resources?</h3>
 
-<p>{% codeblock %}
-Some people, when confronted with a problem, think “I know, I&rsquo;ll use create_resources().&ldquo;
-Now they have two problems.
-{% endcodeblock _%}</p>
+<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>Some people, when confronted with a problem, think “I know, I&rsquo;ll use create_resources().&ldquo;
+</span><span class='line'>Now they have two problems.</span></code></pre></td></tr></table></div></figure></notextile></div></p>
 
 <p>The create_resources() function is often called the &ldquo;PSE Swiss Army knife&rdquo;
 (or, Professional Services Engineer &ndash; the people who do what
@@ -1333,22 +1863,30 @@ External Node Classifier, or ENC. There is a function called <code>hiera_include
 that allows you to include classes into the catalog as if you were to write
 &ldquo;include (classname)&rdquo; in a Puppet manifest.  It works like this:</p>
 
-<p>{% codeblock lang:yaml london.yaml %}
-classes:
-  &ndash; profiles::london::base
-  &ndash; profiles::london::network
-{% endcodeblock %}</p>
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>london.yaml </span></figcaption>
+<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">classes</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="nl">&amp;ndash</span><span class="l-Scalar-Plain">; profiles::london::base</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">&amp;ndash; profiles::london::network</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
 
-<p>{% codeblock lang:yaml dev.yaml %}
-classes:
-  &ndash; profiles::tomcat::application2
-{% endcodeblock %}</p>
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>dev.yaml </span></figcaption>
+<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">classes</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="nl">&amp;ndash</span><span class="l-Scalar-Plain">; profiles::tomcat::application2</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
 
-<p>{% codeblock lang:puppet site.pp%}
-node default {
-  hiera_include(&lsquo;classes&rsquo;)
-}
-{% endcodeblock _%}</p>
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>site.pp</span></figcaption>
+<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="kd">node</span> <span class="s">default</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nf">hiera_include</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">classes</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span>
+</span><span class='line'>}
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
 
 <p>Given the above example, the hiera_include() function will search every level
 of the hierarchy looking for a parameter called &lsquo;classes&rsquo;. It returns
@@ -1376,9 +1914,10 @@ ONCE. You don&rsquo;t NEED this conditional classification behavior. It&rsquo;s 
 returns the node&rsquo;s role, add a level to the Hiera hierarchy for this role fact,
 and in the role&rsquo;s YAML file in Hiera, simply do:</p>
 
-<p>{% codeblock lang:yaml appserver.yaml %}
-classes: role::application_server
-{% endcodeblock _%}</p>
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>appserver.yaml </span></figcaption>
+<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">classes</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">role::application_server</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
 
 <p>Then you can use the same hiera_include() call in the default node definition
 in <code>site.pp</code>. The ONLY time I recommend this is if you don&rsquo;t already have some
@@ -1962,158 +2501,6 @@ there are still some new features that may take you by surprise. Hopefully this
 post gets you started with just enough information to setup your own test
 environment and start playing. PLEASE DO make sure to file bugs on any behavior
 that comes as unexpected or stops you from using your existing workflow. Cheers!</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[On R10k and 'Environments']]></title>
-    <link href="http://garylarizza.com/blog/2014/03/26/random-r10k-workflow-ideas/"/>
-    <updated>2014-03-26T03:00:00-05:00</updated>
-    <id>http://garylarizza.com/blog/2014/03/26/random-r10k-workflow-ideas</id>
-    <content type="html"><![CDATA[<p>There have been more than a couple of moments where I&rsquo;m on-site with a customer
-who asks a seemingly simple question and I&rsquo;ve gone &ldquo;Oh shit; that&rsquo;s a great
-question and I&rsquo;ve never thought of that&hellip;&rdquo;  Usually that&rsquo;s followed by me
-changing up the workflow and immediately regretting things I&rsquo;ve done on prior
-gigs. Some people call that &lsquo;agile&rsquo;; I call it &lsquo;me not having the
-forethought to consider conditions properly&rsquo;.</p>
-
-<h2>&lsquo;Environment&rsquo;, like &lsquo;scaling&rsquo;, &lsquo;agent&rsquo;, and &lsquo;test&rsquo;, has many meanings</h2>
-
-<p>It&rsquo;s not a secret that we&rsquo;ve made some shitty decisions in the past with regard
-to naming things in Puppet (and anyone who asks me what <code>puppet agent -t</code>
-stands for usually gets a heavy sigh, a shaken head, and an explanation emitted
-in dulcet, apologetic tones). It&rsquo;s also very easy to conflate certain concepts
-that unfortunately share very common labels (quick &ndash; what&rsquo;s the difference
-between properties and parameters, and give me the lowdown on MCollective
-agents versus Puppet agents!).</p>
-
-<p>And then we have &lsquo;environments&rsquo; + Hiera + R10k.</p>
-
-<h3>Puppet &lsquo;environments&rsquo;</h3>
-
-<p>Puppet has the concept of &lsquo;environments&rsquo;, which, to me, exist to provide a
-means of compiling a catalog using different paths to Puppet modules on the
-Puppet master. Using a Puppet environment is the same as saying &ldquo;I made some
-changes to my tomcat class, but I don&rsquo;t want to push it DIRECTLY to my production
-machines yet because I don&rsquo;t drink Dos Equis. It would be great if I could stick
-this code somewhere and have a couple of my nodes test how it works before
-merging it in!&rdquo;</p>
-
-<p>Puppet environments suffer some &lsquo;seepage&rsquo; issues,
-<a href="http://projects.puppetlabs.com/issues/12173">which you can read about here,</a> but do a reasonable job of quickly
-testing out changes you&rsquo;ve made to the Puppet DSL (as opposed to custom
-plugins, as detailed in the bug). Puppet environments work well when you
-need a pipeline for testing your Puppet code (again, when you&rsquo;re refactoring
-or adding new functionality), and using them for that purpose is great.</p>
-
-<h3>Internal &lsquo;environments&rsquo;</h3>
-
-<p>What I consider &lsquo;internal environments&rsquo; have a couple of names &ndash; sometimes
-they&rsquo;re referred to as application or deployment gateways, sometimes as &lsquo;tiers&rsquo;, but
-in general they&rsquo;re long-term groupings that machines/nodes are attached to
-(usually for the purpose of phased-out application deployments). They
-frequently have names such as &lsquo;dev&rsquo;, &lsquo;test&rsquo;, &lsquo;prod&rsquo;, &lsquo;qa&rsquo;, &lsquo;uat&rsquo;, and the
-like.</p>
-
-<p>For the purpose of distinguishing them from Puppet environments, I&rsquo;m going to
-refer to them as &lsquo;application tiers&rsquo; or just &lsquo;tiers&rsquo; because, fuck it, it&rsquo;s a
-word.</p>
-
-<h3>Making both of them work</h3>
-
-<p>The problems with having Puppet environments and application tiers are:</p>
-
-<ul>
-<li>Puppet environments are usually assigned to a node for short periods of time,
-while application tiers are usually assigned to a node for the life of the node.</li>
-<li>Application tiers usually need different bits of data (i.e. NTP server
-addresses, versions of packages, etc), while Puppet environments usually
-use/involve differences to the Puppet DSL.</li>
-<li>Similarly to the first point, the goal of Puppet environments is to eventually
-merge code differences into the main production Puppet environment. Application
-tiers, however, may always have differences about them and never become unified.</li>
-</ul>
-
-
-<p>You can see where this would be problematic &ndash; especially when you might want to
-do things like use different Hiera values between different application tiers,
-but you want to TEST out those values before applying them to all nodes in an
-application tier. If you previously didn&rsquo;t have a way to separate Puppet
-environments from application tiers, and you used R10k to generate Puppet
-environments, you would have things like long-term branches in your repositories
-that would make it difficult/annoying to manage.</p>
-
-<p><strong>NOTE: This is all assuming you&rsquo;re managing component modules, Hiera data,
-and Puppet environments using R10k.</strong></p>
-
-<p>The first step in making both monikers work together is to have two separate
-variables in Puppet &ndash; namely <code>$environment</code> for Puppet environments, and
-something ELSE (say, <code>$tier</code>) for the application tier. The &ldquo;something else&rdquo; is
-going to depend on how your workflow works. For example, do you have something
-centrally that can correlate nodes to the tier in which they belong? If so, you
-can write a custom fact that will query that service. If you don&rsquo;t have this
-magical service, you can always just attach an application tier to a node in
-your classification service (i.e. the Puppet Enterprise Console or Foreman).
-Failing both of those, <a href="http://docs.puppetlabs.com/guides/custom_facts.html#external-facts">you can look to external facts.</a> External Fact
-support was introduced into Facter 1.7 (but Puppet Enterprise has supported
-them through the standard lib for quite awhile). External facts give you the
-ability to create a text file inside the facts.d directory in the format of:</p>
-
-<p><code>
-tier=qa
-location=portland
-</code></p>
-
-<p>Facter will read this text file and store the values as facts for a Puppet run,
-so <code>$tier</code> will be <code>qa</code> and <code>$location</code> will be <code>portland</code>. This is handy for
-when you have arbitrary information that can&rsquo;t be easily discovered by the
-node, but DOES need to be assigned for the node on a reasonably consistent
-basis.  Usually these files are created during the provisioning process, but
-can also be managed by Puppet.  At any rate, having <code>$environment</code> and <code>$tier</code>
-available allow us to start to make decisions based on the values.</p>
-
-<h3>Branch with $environment, Hiera with $tier</h3>
-
-<p>Like we said above, Puppet environments are frequently short-term assignments,
-while application tiers are usually long-term residencies. Relating those back
-to the R10k workflow: branches to the main puppet repo (containing the
-<code>Puppetfile</code>) are usually short-lived, while data in Hiera is usually
-longer-lived. It would then make sense that the name of the branches to the
-main puppet repo would resolve to being <code>$environment</code> (and thus the Puppet
-environment name), and <code>$tier</code> (and thus the application tier) would be used
-in the Hiera hierarchy for lookups of values that would remain different across
-application tiers (like package versions, credentials, and etc&hellip;).</p>
-
-<p>Wins:</p>
-
-<ul>
-<li>Puppet environment names (like repository branch names) become relatively
-meaningless and are the &ldquo;means&rdquo; to the end of getting Puppet code merged into
-the PUPPET CODE&rsquo;s production branch (i.e. code that has been tested to work
-across all application tiers)</li>
-<li>Puppet environments become short lived and thus have less opportunity to
-deviate from the main production codebase</li>
-<li>Differences across application tiers are locked in one place (Hiera)</li>
-<li>Differences to Puppet DSL code (i.e. in Manifests) can be pushed up to the
-profile level, and you have a fact (<code>$tier</code>) to catch those differences.</li>
-</ul>
-
-
-<p>The ultimate reason why I&rsquo;m writing about this is because I&rsquo;ve seen people try
-to incorporate both the Puppet environment and application tier into both the
-environment name and/or the Hiera hierarchy. Many times, they run into all
-kinds of unscalable issues (large hierarchies, many Puppet environments,
-confusing testing paths to &lsquo;production&rsquo;). I tend to prefer this workflow
-choice, but, like everything I write about, take it and model it toward what
-works for you (because what works now may not work 6 months from now).</p>
-
-<h2>Thoughts?</h2>
-
-<p>Like I said before, I tend to discover new corner cases that change my mind
-on things like this, so it&rsquo;s quite possible that this theory isn&rsquo;t the most
-solid in the world. It HAS helped out some customers to clean up their code
-and make for a cleaner pipeline, though, and that&rsquo;s always a good thing. Feel
-free to comment below &ndash; I look forward to making the process better for all!</p>
 ]]></content>
   </entry>
   
