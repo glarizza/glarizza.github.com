@@ -4,7 +4,7 @@
   <title><![CDATA[Category: linux | Shit Gary Says]]></title>
   <link href="http://garylarizza.com/blog/categories/linux/atom.xml" rel="self"/>
   <link href="http://garylarizza.com/"/>
-  <updated>2017-02-07T13:19:51-08:00</updated>
+  <updated>2017-08-24T21:31:59-05:00</updated>
   <id>http://garylarizza.com/</id>
   <author>
     <name><![CDATA[Gary larizza]]></name>
@@ -16,7 +16,7 @@
   <entry>
     <title type="html"><![CDATA[When to Hiera (aka: How do I Module?)]]></title>
     <link href="http://garylarizza.com/blog/2013/12/08/when-to-hiera/"/>
-    <updated>2013-12-08T15:31:54-08:00</updated>
+    <updated>2013-12-08T17:31:54-06:00</updated>
     <id>http://garylarizza.com/blog/2013/12/08/when-to-hiera</id>
     <content type="html"><![CDATA[<p>I&rsquo;m convinced that writing Puppet modules is the ultimate exercise in bikeshedding:
 if it works, someone&rsquo;s probably going to tell you that you could have done it better,
@@ -46,121 +46,66 @@ that inspired this post:</p>
 
 <p>Many Puppet modules out there since Puppet 2.6 have begun using this pattern:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>puppetlabs-mysql/manifests/server.pp </span></figcaption>
-<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="kd">class</span> <span class="nc">mysql::server</span> <span class="p">(</span>
-</span><span class='line'>  <span class="nv">$config_file</span>             <span class="p">=</span> <span class="nv">$mysql::params::config_file</span><span class="p">,</span>
-</span><span class='line'>  <span class="nv">$manage_config_file</span>      <span class="p">=</span> <span class="nv">$mysql::params::manage_config_file</span><span class="p">,</span>
-</span><span class='line'>  <span class="nv">$old_root_password</span>       <span class="p">=</span> <span class="nv">$mysql::params::old_root_password</span><span class="p">,</span>
-</span><span class='line'>  <span class="nv">$override_options</span>        <span class="p">=</span> <span class="p">{},</span>
-</span><span class='line'>  <span class="nv">$package_ensure</span>          <span class="p">=</span> <span class="nv">$mysql::params::server_package_ensure</span><span class="p">,</span>
-</span><span class='line'>  <span class="nv">$package_name</span>            <span class="p">=</span> <span class="nv">$mysql::params::server_package_name</span><span class="p">,</span>
-</span><span class='line'>  <span class="nv">$purge_conf_dir</span>          <span class="p">=</span> <span class="nv">$mysql::params::purge_conf_dir</span><span class="p">,</span>
-</span><span class='line'>  <span class="nv">$remove_default_accounts</span> <span class="p">=</span> <span class="ss">false</span><span class="p">,</span>
-</span><span class='line'>  <span class="nv">$restart</span>                 <span class="p">=</span> <span class="nv">$mysql::params::restart</span><span class="p">,</span>
-</span><span class='line'>  <span class="nv">$root_group</span>              <span class="p">=</span> <span class="nv">$mysql::params::root_group</span><span class="p">,</span>
-</span><span class='line'>  <span class="nv">$root_password</span>           <span class="p">=</span> <span class="nv">$mysql::params::root_password</span><span class="p">,</span>
-</span><span class='line'>  <span class="nv">$service_enabled</span>         <span class="p">=</span> <span class="nv">$mysql::params::server_service_enabled</span><span class="p">,</span>
-</span><span class='line'>  <span class="nv">$service_manage</span>          <span class="p">=</span> <span class="nv">$mysql::params::server_service_manage</span><span class="p">,</span>
-</span><span class='line'>  <span class="nv">$service_name</span>            <span class="p">=</span> <span class="nv">$mysql::params::server_service_name</span><span class="p">,</span>
-</span><span class='line'>  <span class="nv">$service_provider</span>        <span class="p">=</span> <span class="nv">$mysql::params::server_service_provider</span><span class="p">,</span><span class="c-Singleline"></span>
-</span><span class='line'><span class="c-Singleline">  # Deprecated parameters</span>
-</span><span class='line'>  <span class="nv">$enabled</span>                 <span class="p">=</span> <span class="ss">undef</span><span class="p">,</span>
-</span><span class='line'>  <span class="nv">$manage_service</span>          <span class="p">=</span> <span class="ss">undef</span>
-</span><span class='line'><span class="p">)</span> <span class="kd">inherits</span> <span class="nc">mysql::params</span> <span class="p">{</span><span class="err">&lt;/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;p&gt;</span><span class="c-Singleline">  ## Puppet goodness goes here</span>
-</span><span class='line'>}<span class="err">&lt;/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;p&gt;</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:puppet puppetlabs-mysql/manifests/server.pp %}
+class mysql::server (
+  $config_file             = $mysql::params::config_file,
+  $manage_config_file      = $mysql::params::manage_config_file,
+  $old_root_password       = $mysql::params::old_root_password,
+  $override_options        = {},
+  $package_ensure          = $mysql::params::server_package_ensure,
+  $package_name            = $mysql::params::server_package_name,
+  $purge_conf_dir          = $mysql::params::purge_conf_dir,
+  $remove_default_accounts = false,
+  $restart                 = $mysql::params::restart,
+  $root_group              = $mysql::params::root_group,
+  $root_password           = $mysql::params::root_password,
+  $service_enabled         = $mysql::params::server_service_enabled,
+  $service_manage          = $mysql::params::server_service_manage,
+  $service_name            = $mysql::params::server_service_name,
+  $service_provider        = $mysql::params::server_service_provider,
+  # Deprecated parameters
+  $enabled                 = undef,
+  $manage_service          = undef
+) inherits mysql::params {</p>
+
+<p>  ## Puppet goodness goes here
+}</p>
+
+<p>{% endcodeblock %}</p>
 
 <p>If you&rsquo;re not familiar, this is a Puppet class definition for <code>mysql::server</code> that has several parameters
 defined and defaulted to values that come out of the <code>mysql::params</code> class.  The
 <code>mysql::params</code> class looks a bit like this:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>puppetlabs-mysql/manifests/params.pp </span></figcaption>
-<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="kd">class</span> <span class="nc">mysql::params</span> <span class="p">{</span>
-</span><span class='line'>  <span class="kr">case</span> <span class="nv">$::osfamily</span> <span class="p">{</span><span class="err">&lt;/</span><span class="ss">p</span><span class="err">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;</span><span class="ss">pre</span><span class="err">&gt;&lt;</span><span class="ss">code</span><span class="err">&gt;</span><span class="s1">&#39;RedHat&#39;</span><span class="p">:</span> <span class="p">{</span>
-</span><span class='line'>  <span class="kr">if</span> <span class="nv">$::operatingsystem</span> <span class="o">==</span> <span class="s1">&#39;Fedora&#39;</span> <span class="o">and</span> <span class="p">(</span><span class="ss">is_integer</span><span class="p">(</span><span class="nv">$::operatingsystemrelease</span><span class="p">)</span> <span class="o">and</span> <span class="nv">$::operatingsystemrelease</span> <span class="err">&amp;</span><span class="ss">gt</span><span class="err">;=</span> <span class="ss">19</span> <span class="o">or</span> <span class="nv">$::operatingsystemrelease</span> <span class="o">==</span> <span class="s2">&quot;Rawhide&quot;</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>    <span class="nv">$client_package_name</span> <span class="o">=</span> <span class="s1">&#39;mariadb&#39;</span>
-</span><span class='line'>    <span class="nv">$server_package_name</span> <span class="o">=</span> <span class="s1">&#39;mariadb-server&#39;</span>
-</span><span class='line'>  } <span class="kr">else</span> <span class="p">{</span>
-</span><span class='line'>    <span class="nv">$client_package_name</span> <span class="o">=</span> <span class="s1">&#39;mysql&#39;</span>
-</span><span class='line'>    <span class="nv">$server_package_name</span> <span class="o">=</span> <span class="s1">&#39;mysql-server&#39;</span>
-</span><span class='line'>  }
-</span><span class='line'>  <span class="nv">$basedir</span>             <span class="o">=</span> <span class="s1">&#39;/usr&#39;</span>
-</span><span class='line'>  <span class="nv">$config_file</span>         <span class="o">=</span> <span class="s1">&#39;/etc/my.cnf&#39;</span>
-</span><span class='line'>  <span class="nv">$datadir</span>             <span class="o">=</span> <span class="s1">&#39;/var/lib/mysql&#39;</span>
-</span><span class='line'>  <span class="nv">$log_error</span>           <span class="o">=</span> <span class="s1">&#39;/var/log/mysqld.log&#39;</span>
-</span><span class='line'>  <span class="nv">$pidfile</span>             <span class="o">=</span> <span class="s1">&#39;/var/run/mysqld/mysqld.pid&#39;</span>
-</span><span class='line'>  <span class="nv">$root_group</span>          <span class="o">=</span> <span class="s1">&#39;root&#39;</span>
-</span><span class='line'>}
-</span><span class='line'>
-</span><span class='line'><span class="s1">&#39;Debian&#39;</span><span class="p">:</span> <span class="p">{</span><span class="c-Singleline"></span>
-</span><span class='line'><span class="c-Singleline">  ## More parameters defined here</span>
-</span><span class='line'>}
-</span><span class='line'><span class="err">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="ss">pre</span><span class="err">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;</span><span class="ss">p</span><span class="err">&gt;</span>  <span class="p">}</span>
-</span><span class='line'>}<span class="err">&lt;/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;p&gt;</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:puppet puppetlabs-mysql/manifests/params.pp %}
+class mysql::params {
+  case $::osfamily {</p>
+
+<pre><code>'RedHat': {
+  if $::operatingsystem == 'Fedora' and (is_integer($::operatingsystemrelease) and $::operatingsystemrelease &gt;= 19 or $::operatingsystemrelease == "Rawhide") {
+    $client_package_name = 'mariadb'
+    $server_package_name = 'mariadb-server'
+  } else {
+    $client_package_name = 'mysql'
+    $server_package_name = 'mysql-server'
+  }
+  $basedir             = '/usr'
+  $config_file         = '/etc/my.cnf'
+  $datadir             = '/var/lib/mysql'
+  $log_error           = '/var/log/mysqld.log'
+  $pidfile             = '/var/run/mysqld/mysqld.pid'
+  $root_group          = 'root'
+}
+
+'Debian': {
+  ## More parameters defined here
+}
+</code></pre>
+
+<p>  }
+}</p>
+
+<p>{% endcodeblock %}</p>
 
 <p>This pattern puts all conditional logic for all the variables/parameters used
 in the module inside one class &ndash; the <code>mysql::params</code> class.  It&rsquo;s called the
@@ -195,30 +140,18 @@ you could keep all parameter defaults inside Hiera, rid yourself of the
 params class, and then just make Hiera calls out for your data. This
 pattern looks like this:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>puppetlabs-mysql/manifests/server.pp </span></figcaption>
-<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="kd">class</span> <span class="nc">mysql::server</span> <span class="p">(</span>
-</span><span class='line'>  <span class="nv">$config_file</span>             <span class="p">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">mysql</span><span class="err">::</span><span class="ss">params</span><span class="err">::</span><span class="ss">config_file</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">,</span> <span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">default</span> <span class="ss">value</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">),</span>
-</span><span class='line'>  <span class="nv">$manage_config_file</span>      <span class="p">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">mysql</span><span class="err">::</span><span class="ss">params</span><span class="err">::</span><span class="ss">manage_config_file</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">,</span> <span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">default</span> <span class="ss">value</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">),</span>
-</span><span class='line'>  <span class="nv">$old_root_password</span>       <span class="p">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">mysql</span><span class="err">::</span><span class="ss">params</span><span class="err">::</span><span class="ss">old_root_password</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">,</span> <span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">default</span> <span class="ss">value</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">),</span><span class="c-Singleline"></span>
-</span><span class='line'><span class="c-Singleline">  ## Repeat the above pattern</span>
-</span><span class='line'><span class="p">)</span> <span class="p">{</span><span class="err">&lt;/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;p&gt;</span><span class="c-Singleline">  ## Puppet goodness goes here</span>
-</span><span class='line'>}<span class="err">&lt;/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;p&gt;</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:puppet puppetlabs-mysql/manifests/server.pp %}
+class mysql::server (
+  $config_file             = hiera(&lsquo;mysql::params::config_file&rsquo;, &lsquo;default value&rsquo;),
+  $manage_config_file      = hiera(&lsquo;mysql::params::manage_config_file&rsquo;, &lsquo;default value&rsquo;),
+  $old_root_password       = hiera(&lsquo;mysql::params::old_root_password&rsquo;, &lsquo;default value&rsquo;),
+  ## Repeat the above pattern
+) {</p>
+
+<p>  ## Puppet goodness goes here
+}</p>
+
+<p>{% endcodeblock %}</p>
 
 <h4>Pros:</h4>
 
@@ -243,24 +176,15 @@ pattern looks like this:</p>
 combined with the power of Hiera. Because it&rsquo;s a hybrid, there are multiple ways
 that people have set it up.  Here&rsquo;s a general example:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>puppetlabs-mysql/manifests/server.pp </span></figcaption>
-<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="kd">class</span> <span class="nc">mysql::server</span> <span class="p">(</span>
-</span><span class='line'>  <span class="nv">$config_file</span>             <span class="p">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">mysql</span><span class="err">::</span><span class="ss">params</span><span class="err">::</span><span class="ss">config_file</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">,</span> <span class="nv">$mysql::params::config_file</span><span class="p">),</span>
-</span><span class='line'>  <span class="nv">$manage_config_file</span>      <span class="p">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">mysql</span><span class="err">::</span><span class="ss">params</span><span class="err">::</span><span class="ss">manage_config_file</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">,</span> <span class="nv">$mysql::params::manage_config_file</span><span class="p">),</span>
-</span><span class='line'>  <span class="nv">$old_root_password</span>       <span class="p">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">mysql</span><span class="err">::</span><span class="ss">params</span><span class="err">::</span><span class="ss">old_root_password</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">,</span> <span class="nv">$mysql::params::old_root_password</span><span class="p">),</span><span class="c-Singleline"></span>
-</span><span class='line'><span class="c-Singleline">  ## Repeat the above pattern</span>
-</span><span class='line'><span class="p">)</span> <span class="kd">inherits</span> <span class="nc">mysql::params</span> <span class="p">{</span><span class="err">&lt;/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;p&gt;</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:puppet puppetlabs-mysql/manifests/server.pp %}
+class mysql::server (
+  $config_file             = hiera(&lsquo;mysql::params::config_file&rsquo;, $mysql::params::config_file),
+  $manage_config_file      = hiera(&lsquo;mysql::params::manage_config_file&rsquo;, $mysql::params::manage_config_file),
+  $old_root_password       = hiera(&lsquo;mysql::params::old_root_password&rsquo;, $mysql::params::old_root_password),
+  ## Repeat the above pattern
+) inherits mysql::params {</p>
+
+<p>{% endcodeblock %}</p>
 
 <h4>Pros:</h4>
 
@@ -287,31 +211,23 @@ a federated data model automatically incorporating a Hiera lookup. Previously, t
 order that Puppet would use to determine the value of a parameter was to first use
 a value passed with the parameterized class declaration syntax (i.e. the below:).</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>parameterized class declaration </span></figcaption>
-<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="nc">class</span> <span class="p">{</span> <span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">apache</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">:</span>
-</span><span class='line'>  <span class="nt">package_name</span> <span class="p">=&gt;</span> <span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">httpd</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;,</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:puppet parameterized class declaration %}
+class { &lsquo;apache&rsquo;:
+  package_name => &lsquo;httpd&rsquo;,
+}
+{% endcodeblock %}</p>
 
 <p>If a parameter was not passed with the parameterized class syntax (like the &lsquo;package_name&rsquo;
 parameter above'), Puppet would then look for a default value inside the class definition
 (i.e. the below:).</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>parameter default in a class definition </span></figcaption>
-<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="kd">class</span> <span class="nc">ntp</span> <span class="p">(</span>
-</span><span class='line'>  <span class="nv">$ntpserver</span> <span class="p">=</span> <span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">default</span><span class="m">.</span><span class="ss">ntpserver</span><span class="m">.</span><span class="ss">org</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span>
-</span><span class='line'><span class="p">)</span> <span class="p">{</span><span class="c-Singleline"></span>
-</span><span class='line'><span class="c-Singleline">  # Use $ntpserver in a file declaration&amp;hellip;</span>
-</span><span class='line'>}
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:puppet parameter default in a class definition %}
+class ntp (
+  $ntpserver = &lsquo;default.ntpserver.org&rsquo;
+) {
+  # Use $ntpserver in a file declaration&hellip;
+}
+{% endcodeblock %}</p>
 
 <p>If the value of &lsquo;ntpserver&rsquo; wasn&rsquo;t passed with a parameterized class declaration,
 then the value would be set to &lsquo;default.ntpserver.org&rsquo;, since that&rsquo;s the default
@@ -330,110 +246,57 @@ a number of times and is ALSO considered to be &lsquo;a best practice&rsquo; whe
 up your Puppet environment. What roles and profiles gets you is a &lsquo;wrapper
 class&rsquo; that allows you to declare classes within this wrapper class:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>profiles/manifests/wordpress.pp </span></figcaption>
-<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-<span class='line-number'>49</span>
-<span class='line-number'>50</span>
-<span class='line-number'>51</span>
-</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="err">&lt;/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;p&gt;</span><span class="kd">class</span> <span class="nc">profiles::wordpress</span> <span class="p">{</span><span class="c-Singleline"></span>
-</span><span class='line'><span class="c-Singleline">  # Data Lookups</span>
-</span><span class='line'>  <span class="nv">$site_name</span>               <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">profiles</span><span class="err">::</span><span class="ss">wordpress</span><span class="err">::</span><span class="ss">site_name</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span>
-</span><span class='line'>  <span class="nv">$wordpress_user_password</span> <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">profiles</span><span class="err">::</span><span class="ss">wordpress</span><span class="err">::</span><span class="ss">wordpress_user_password</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span>
-</span><span class='line'>  <span class="nv">$mysql_root_password</span>     <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">profiles</span><span class="err">::</span><span class="ss">wordpress</span><span class="err">::</span><span class="ss">mysql_root_password</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span>
-</span><span class='line'>  <span class="nv">$wordpress_db_host</span>       <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">profiles</span><span class="err">::</span><span class="ss">wordpress</span><span class="err">::</span><span class="ss">wordpress_db_host</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span>
-</span><span class='line'>  <span class="nv">$wordpress_db_name</span>       <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">profiles</span><span class="err">::</span><span class="ss">wordpress</span><span class="err">::</span><span class="ss">wordpress_db_name</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span>
-</span><span class='line'>  <span class="nv">$wordpress_db_password</span>   <span class="o">=</span> <span class="nf">hiera</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">profiles</span><span class="err">::</span><span class="ss">wordpress</span><span class="err">::</span><span class="ss">wordpress_db_password</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">)</span><span class="o">&lt;</span><span class="err">/</span><span class="ss">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="ss">p</span><span class="o">&gt;</span>  <span class="c-Singleline">## Create user</span>
-</span><span class='line'>  <span class="nc">group</span> <span class="p">{</span> <span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">wordpress</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">:</span><span class="err">&lt;/</span><span class="ss">p</span><span class="err">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;</span><span class="ss">pre</span><span class="err">&gt;&lt;</span><span class="ss">code</span><span class="err">&gt;</span><span class="ss">ensure</span> <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="ss">present</span><span class="err">,</span>
-</span><span class='line'><span class="err">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="ss">pre</span><span class="err">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;</span><span class="ss">p</span><span class="err">&gt;</span>  <span class="p">}</span>
-</span><span class='line'>  <span class="ss">user</span> <span class="p">{</span> <span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">wordpress</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;:&lt;/</span><span class="ss">p</span><span class="err">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;</span><span class="ss">pre</span><span class="err">&gt;&lt;</span><span class="ss">code</span><span class="err">&gt;</span><span class="ss">ensure</span>   <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="ss">present</span><span class="p">,</span>
-</span><span class='line'><span class="ss">gid</span>      <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="s1">&#39;wordpress&#39;</span><span class="p">,</span>
-</span><span class='line'><span class="ss">password</span> <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="nv">$wordpress_user_password</span><span class="p">,</span>
-</span><span class='line'><span class="ss">home</span>     <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="s1">&#39;/var/www/wordpress&#39;</span><span class="p">,</span>
-</span><span class='line'><span class="err">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="ss">pre</span><span class="err">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;</span><span class="ss">p</span><span class="err">&gt;</span>  <span class="p">}</span><span class="err">&lt;/</span><span class="ss">p</span><span class="err">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;</span><span class="ss">p</span><span class="err">&gt;</span><span class="c-Singleline">  ## Configure mysql</span>
-</span><span class='line'>  <span class="ss">class</span> <span class="p">{</span> <span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">mysql</span><span class="err">::</span><span class="ss">server</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;:&lt;/</span><span class="ss">p</span><span class="err">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;</span><span class="ss">pre</span><span class="err">&gt;&lt;</span><span class="ss">code</span><span class="err">&gt;</span><span class="ss">root_password</span> <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="nv">$wordpress_root_password</span><span class="p">,</span>
-</span><span class='line'><span class="err">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="ss">pre</span><span class="err">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;</span><span class="ss">p</span><span class="err">&gt;</span>  <span class="p">}</span><span class="err">&lt;/</span><span class="ss">p</span><span class="err">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;</span><span class="ss">p</span><span class="err">&gt;</span>  <span class="ss">class</span> <span class="p">{</span> <span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">mysql</span><span class="err">::</span><span class="ss">bindings</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;:&lt;/</span><span class="ss">p</span><span class="err">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;</span><span class="ss">pre</span><span class="err">&gt;&lt;</span><span class="ss">code</span><span class="err">&gt;</span><span class="ss">php_enable</span> <span class="err">=&amp;</span><span class="ss">gt</span><span class="err">;</span> <span class="ss">true</span><span class="p">,</span>
-</span><span class='line'><span class="err">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="ss">pre</span><span class="err">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;</span><span class="ss">p</span><span class="err">&gt;</span>  <span class="p">}</span><span class="err">&lt;/</span><span class="ss">p</span><span class="err">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;</span><span class="ss">p</span><span class="err">&gt;</span><span class="c-Singleline">  ## Configure apache</span>
-</span><span class='line'>  <span class="ss">include</span> <span class="ss">apache</span>
-</span><span class='line'>  <span class="ss">include</span> <span class="ss">apache</span><span class="p">::</span><span class="ss">mod</span><span class="p">::</span><span class="ss">php</span>
-</span><span class='line'><span class="p">}</span><span class="err">&lt;/</span><span class="ss">p</span><span class="err">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;</span><span class="ss">h2</span><span class="err">&gt;</span><span class="ss">Continue</span> <span class="ss">with</span> <span class="ss">declarations</span><span class="err">&amp;</span><span class="ss">hellip</span><span class="err">;&lt;/</span><span class="ss">h2</span><span class="err">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">&lt;</span><span class="ss">p</span><span class="err">&gt;</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:puppet profiles/manifests/wordpress.pp %}</p>
+
+<p>class profiles::wordpress {
+  # Data Lookups
+  $site_name               = hiera(&lsquo;profiles::wordpress::site_name&rsquo;)
+  $wordpress_user_password = hiera(&lsquo;profiles::wordpress::wordpress_user_password&rsquo;)
+  $mysql_root_password     = hiera(&lsquo;profiles::wordpress::mysql_root_password&rsquo;)
+  $wordpress_db_host       = hiera(&lsquo;profiles::wordpress::wordpress_db_host&rsquo;)
+  $wordpress_db_name       = hiera(&lsquo;profiles::wordpress::wordpress_db_name&rsquo;)
+  $wordpress_db_password   = hiera(&lsquo;profiles::wordpress::wordpress_db_password&rsquo;)</p>
+
+<p>  ## Create user
+  group { &lsquo;wordpress&rsquo;:</p>
+
+<pre><code>ensure =&gt; present,
+</code></pre>
+
+<p>  }
+  user { &lsquo;wordpress&rsquo;:</p>
+
+<pre><code>ensure   =&gt; present,
+gid      =&gt; 'wordpress',
+password =&gt; $wordpress_user_password,
+home     =&gt; '/var/www/wordpress',
+</code></pre>
+
+<p>  }</p>
+
+<p>  ## Configure mysql
+  class { &lsquo;mysql::server&rsquo;:</p>
+
+<pre><code>root_password =&gt; $wordpress_root_password,
+</code></pre>
+
+<p>  }</p>
+
+<p>  class { &lsquo;mysql::bindings&rsquo;:</p>
+
+<pre><code>php_enable =&gt; true,
+</code></pre>
+
+<p>  }</p>
+
+<p>  ## Configure apache
+  include apache
+  include apache::mod::php
+}</p>
+
+<h2>Continue with declarations&hellip;</h2>
+
+<p>{% endcodeblock %}</p>
 
 <p>Notice that any variables that might have business specific logic are set with
 Hiera lookups. These Hiera lookups do NOT have default values, which means the
@@ -445,22 +308,15 @@ contain invalid data is enforced with Puppet.</p>
 <p>You then have a &lsquo;Role&rsquo; wrapper class that simply includes many of the &lsquo;Profile&rsquo;
 wrapper classes:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>roles/manifests/frontend.pp </span></figcaption>
-<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="kd">class</span> <span class="nc">roles::frontend</span> <span class="p">{</span>
-</span><span class='line'>  <span class="kn">include</span> <span class="nc">profiles::mysql</span>
-</span><span class='line'>  <span class="kn">include</span> <span class="nc">profiles::apache</span>
-</span><span class='line'>  <span class="kn">include</span> <span class="nc">profiles::java</span>
-</span><span class='line'>  <span class="kn">include</span> <span class="nc">profiles::jboss</span>
-</span><span class='line'><span class="c-Singleline">  # include more profiles&amp;hellip;</span>
-</span><span class='line'>}
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:puppet roles/manifests/frontend.pp %}
+class roles::frontend {
+  include profiles::mysql
+  include profiles::apache
+  include profiles::java
+  include profiles::jboss
+  # include more profiles&hellip;
+}
+{% endcodeblock %}</p>
 
 <p>The idea being that Profiles abstract all the technical bits that need to
 declared to setup a piece of technology, and Roles will abstract all the
@@ -592,51 +448,34 @@ run the <code>puppet config</code> face to determine that:</p>
 (since I&rsquo;m running Puppet Enterprise). Here&rsquo;s the hiera.yaml file
 from the sample mysql module:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>mysql/data/hiera.yaml </span></figcaption>
-<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">:hierarchy</span><span class="p-Indicator">:</span>
-</span><span class='line'>  <span class="nl">&amp;ndash</span><span class="l-Scalar-Plain">; &amp;ldquo;%{::osfamily}&amp;rdquo;</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:yaml mysql/data/hiera.yaml %}
+:hierarchy:
+  &ndash; &ldquo;%{::osfamily}&rdquo;
+{% endcodeblock %}</p>
 
 <p>I&rsquo;ve also included a YAML file for the <code>$osfamily</code> of RedHat:</p>
 
-<h2><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>mysql/data/RedHat.yaml </span></figcaption>
-<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">&lt;/h2&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="l-Scalar-Plain">&lt;p&gt;mysql::config_file</span><span class="p-Indicator">:</span> <span class="nl">&amp;lsquo</span><span class="l-Scalar-Plain">;/path/from/data_in_modules&amp;rsquo;</span>
-</span><span class='line'><span class="l-Scalar-Plain">mysql::manage_config_file</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">true</span>
-</span><span class='line'><span class="l-Scalar-Plain">mysql::old_root_password</span><span class="p-Indicator">:</span> <span class="nl">&amp;lsquo</span><span class="l-Scalar-Plain">;password_from_data_in_modules&amp;rsquo;</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<h2>{% codeblock lang:yaml mysql/data/RedHat.yaml %}</h2>
+
+<p>mysql::config_file: &lsquo;/path/from/data_in_modules&rsquo;
+mysql::manage_config_file: true
+mysql::old_root_password: &lsquo;password_from_data_in_modules&rsquo;
+{% endcodeblock %}</p>
 
 <p>Finally, here&rsquo;s what the mysql class definition looks like from
 <code>manifests/init.pp</code>:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>mysql/manifests/init.pp </span></figcaption>
-<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="kd">class</span> <span class="nc">mysql</span> <span class="p">(</span>
-</span><span class='line'>  <span class="nv">$config_file</span>        <span class="p">=</span> <span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">module_default</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">,</span>
-</span><span class='line'>  <span class="nv">$manage_config_file</span> <span class="p">=</span> <span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">module_default</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">,</span>
-</span><span class='line'>  <span class="nv">$old_root_password</span>  <span class="p">=</span> <span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">module_default</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span>
-</span><span class='line'><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>  <span class="nc">notify</span> <span class="p">{</span> <span class="err">&amp;</span><span class="ss">ldquo</span><span class="err">;</span><span class="ss">The</span> <span class="ss">value</span> <span class="ss">of</span> <span class="ss">config_file</span><span class="p">:</span> <span class="err">$</span><span class="p">{</span><span class="ss">config_file</span><span class="p">}</span><span class="err">&amp;</span><span class="ss">rdquo</span><span class="err">;</span><span class="p">:</span> <span class="p">}</span>
-</span><span class='line'>  <span class="nc">notify</span> <span class="p">{</span> <span class="err">&amp;</span><span class="ss">ldquo</span><span class="err">;</span><span class="ss">The</span> <span class="ss">value</span> <span class="ss">of</span> <span class="ss">manage_config_file</span><span class="p">:</span> <span class="err">$</span><span class="p">{</span><span class="ss">manage_config_file</span><span class="p">}</span><span class="err">&amp;</span><span class="ss">rdquo</span><span class="err">;</span><span class="p">:</span> <span class="p">}</span>
-</span><span class='line'>  <span class="nc">notify</span> <span class="p">{</span> <span class="err">&amp;</span><span class="ss">ldquo</span><span class="err">;</span><span class="ss">The</span> <span class="ss">value</span> <span class="ss">of</span> <span class="ss">old_root_password</span><span class="p">:</span> <span class="err">$</span><span class="p">{</span><span class="ss">old_root_password</span><span class="p">}</span><span class="err">&amp;</span><span class="ss">rdquo</span><span class="err">;</span><span class="p">:</span> <span class="p">}</span>
-</span><span class='line'>}
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:puppet mysql/manifests/init.pp %}
+class mysql (
+  $config_file        = &lsquo;module_default&rsquo;,
+  $manage_config_file = &lsquo;module_default&rsquo;,
+  $old_root_password  = &lsquo;module_default&rsquo;
+) {
+  notify { &ldquo;The value of config_file: ${config_file}&rdquo;: }
+  notify { &ldquo;The value of manage_config_file: ${manage_config_file}&rdquo;: }
+  notify { &ldquo;The value of old_root_password: ${old_root_password}&rdquo;: }
+}
+{% endcodeblock %}</p>
 
 <p>Everything should be setup to notify the value of a couple of parameters.
 Now, to test it out&hellip;</p>
@@ -722,34 +561,20 @@ Hiera datastore because &ldquo;that&rsquo;s the place for Puppet data.&rdquo; Th
 with 15+ levels in their Hiera hierarchies because they&rsquo;re doing things like
 this:</p>
 
-<h2><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>hiera.yaml </span></figcaption>
-<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">&lt;/h2&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="l-Scalar-Plain">&lt;p&gt;:backends</span><span class="p-Indicator">:</span>
-</span><span class='line'>  <span class="nl">&amp;ndash</span><span class="l-Scalar-Plain">; yaml&lt;/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="l-Scalar-Plain">&lt;p&gt;:hierarchy</span><span class="p-Indicator">:</span>
-</span><span class='line'>  <span class="nl">&amp;ndash</span><span class="l-Scalar-Plain">; &amp;ldquo;%{clientcert}&amp;rdquo;</span>
-</span><span class='line'>  <span class="l-Scalar-Plain">&amp;ndash; &amp;ldquo;%{environment}&amp;rdquo;</span>
-</span><span class='line'>  <span class="l-Scalar-Plain">&amp;ndash; &amp;ldquo;%{osfamily}&amp;rdquo;</span>
-</span><span class='line'>  <span class="l-Scalar-Plain">&amp;ndash; &amp;ldquo;%{osfamily}/%{operatingsystem}&amp;rdquo;</span>
-</span><span class='line'>  <span class="l-Scalar-Plain">&amp;ndash; &amp;ldquo;%{osfamily}/%{operatingsystem}/%{os_version_major}&amp;rdquo;</span>
-</span><span class='line'>  <span class="l-Scalar-Plain">&amp;ndash; &amp;ldquo;%{osfamily}/%{operatingsystem}/%{os_version_minor}&amp;rdquo;</span>
-</span><span class='line'>  <span class="l-Scalar-Plain"># Repeat until you have 15 levels of WTF</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<h2>{% codeblock lang:yaml hiera.yaml %}</h2>
+
+<p>:backends:
+  &ndash; yaml</p>
+
+<p>:hierarchy:
+  &ndash; &ldquo;%{clientcert}&rdquo;
+  &ndash; &ldquo;%{environment}&rdquo;
+  &ndash; &ldquo;%{osfamily}&rdquo;
+  &ndash; &ldquo;%{osfamily}/%{operatingsystem}&rdquo;
+  &ndash; &ldquo;%{osfamily}/%{operatingsystem}/%{os_version_major}&rdquo;
+  &ndash; &ldquo;%{osfamily}/%{operatingsystem}/%{os_version_minor}&rdquo;
+  # Repeat until you have 15 levels of WTF
+{% endcodeblock %}</p>
 
 <p>This leads us back again to &ldquo;What does and DOESN&rsquo;T go in Hiera?&rdquo;
 I usually say the following:</p>

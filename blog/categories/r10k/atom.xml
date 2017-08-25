@@ -4,7 +4,7 @@
   <title><![CDATA[Category: r10k | Shit Gary Says]]></title>
   <link href="http://garylarizza.com/blog/categories/r10k/atom.xml" rel="self"/>
   <link href="http://garylarizza.com/"/>
-  <updated>2017-02-07T13:19:51-08:00</updated>
+  <updated>2017-08-24T21:31:59-05:00</updated>
   <id>http://garylarizza.com/</id>
   <author>
     <name><![CDATA[Gary larizza]]></name>
@@ -16,7 +16,7 @@
   <entry>
     <title type="html"><![CDATA[Roles and Profiles in a Control Repo?]]></title>
     <link href="http://garylarizza.com/blog/2017/01/17/roles-and-profiles-in-a-control-repo/"/>
-    <updated>2017-01-17T11:14:36-08:00</updated>
+    <updated>2017-01-17T13:14:36-06:00</updated>
     <id>http://garylarizza.com/blog/2017/01/17/roles-and-profiles-in-a-control-repo</id>
     <content type="html"><![CDATA[<p>In the past, the thing that got me to make a blog post was answering a question
 more than once and not having a good source to point someone to after-the-fact.
@@ -239,7 +239,7 @@ then don&rsquo;t.</p>
   <entry>
     <title type="html"><![CDATA[Workflows Evolved: Even Besterer Practices]]></title>
     <link href="http://garylarizza.com/blog/2015/11/16/workflows-evolved-even-besterer-practices/"/>
-    <updated>2015-11-16T07:00:24-08:00</updated>
+    <updated>2015-11-16T09:00:24-06:00</updated>
     <id>http://garylarizza.com/blog/2015/11/16/workflows-evolved-even-besterer-practices</id>
     <content type="html"><![CDATA[<p>It&rsquo;s nearly been two years since I posted the Puppet Workflow series and
 several things have changed:</p>
@@ -437,8 +437,9 @@ For the purposes of cleanliness, we usually end up putting both roles/profiles
 inside a <code>site</code> folder in the control repo. If you do that, your modulepath
 in <code>environment.conf</code> looks a little something like this:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>modulepath = site:modules:$basemodulepath</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock %}
+modulepath = site:modules:$basemodulepath
+{% endcodeblock %}</p>
 
 <p>This means that Puppet will look for modules first in the &lsquo;site&rsquo; directory of
 its current environment (this is the directory where we put roles/profiles),
@@ -580,43 +581,32 @@ server), that bit of data goes into Hiera (and by &lsquo;that bit of data&rsquo;
 &lsquo;the value of the NTP server&rsquo; or &lsquo;the NTP server&rsquo;s FQDN&rsquo;), which would look
 SOMETHING like this:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">ntpserver</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">pool.ntp.org</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:yaml %}
+ntpserver: pool.ntp.org
+{% endcodeblock %}</p>
 
 <p>What does NOT go into Hiera is a hash-based representation of the Puppet
 resource that would then be passed to create_resources() and used to create
 the resource in the catalog&hellip;which would look something like this:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">ntpfiles</span><span class="p-Indicator">:</span>
-</span><span class='line'>  <span class="nl">&amp;lsquo</span><span class="l-Scalar-Plain">;/etc/ntp/ntpd.conf&amp;rsquo;:&lt;/p&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="l-Scalar-Plain">&lt;pre&gt;&lt;code&gt;ensure</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">file</span>
-</span><span class='line'><span class="l-Scalar-Plain">owner</span><span class="p-Indicator">:</span>  <span class="l-Scalar-Plain">0</span>
-</span><span class='line'><span class="l-Scalar-Plain">group</span><span class="p-Indicator">:</span>  <span class="l-Scalar-Plain">0</span>
-</span><span class='line'><span class="l-Scalar-Plain">mode</span><span class="p-Indicator">:</span>   <span class="l-Scalar-Plain">0644</span>
-</span><span class='line'><span class="l-Scalar-Plain">source</span><span class="p-Indicator">:</span> <span class="s">&#39;puppet:///modules/ntp/ntpd.conf&#39;</span>
-</span><span class='line'><span class="l-Scalar-Plain">&lt;/code&gt;&lt;/pre&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="l-Scalar-Plain">&lt;p&gt;</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:yaml %}
+ntpfiles:
+  &lsquo;/etc/ntp/ntpd.conf&rsquo;:</p>
+
+<pre><code>ensure: file
+owner:  0
+group:  0
+mode:   0644
+source: 'puppet:///modules/ntp/ntpd.conf'
+</code></pre>
+
+<p>{% endcodeblock %}</p>
 
 <p>&hellip;which would then be passed into Puppet like this:</p>
 
-<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="nf">create_resources</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">file</span><span class="err">&amp;</span><span class="ss">rsquo</span><span class="err">;</span><span class="p">,</span> <span class="nf">hiera_hash</span><span class="p">(</span><span class="err">&amp;</span><span class="ss">lsquo</span><span class="err">;</span><span class="ss">ntpfiles</span><span class="p">))</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+<p>{% codeblock lang:puppet %}
+create_resources(&lsquo;file&rsquo;, hiera_hash(&lsquo;ntpfiles))
+{% endcodeblock %}</p>
 
 <p>Yes, this is an exaggeration based on a very narrow use case, but what I&rsquo;m trying
 to highlight is that the &lsquo;data&rsquo; bit in all that above mess is SOLELY an FQDN,
@@ -815,7 +805,7 @@ of less than 8000 people, it&rsquo;s crazy to see where you&rsquo;re &ldquo;reco
   <entry>
     <title type="html"><![CDATA[Puppetconf 2014 Talk - The Refactor Dance]]></title>
     <link href="http://garylarizza.com/blog/2014/10/23/puppetconf-2014-talk/"/>
-    <updated>2014-10-23T06:15:42-07:00</updated>
+    <updated>2014-10-23T08:15:42-05:00</updated>
     <id>http://garylarizza.com/blog/2014/10/23/puppetconf-2014-talk</id>
     <content type="html"><![CDATA[<p>This year at Puppetconf 2014, I presented a 1.5 hour talk entitled &ldquo;The Refactor
 Dance&rdquo; that comprised nearly EVERYTHING that I&rsquo;ve written about in my Puppet
@@ -832,7 +822,7 @@ arms grow in an attractive grey Puppet Labs shirt.  What&rsquo;s not to love?</p
   <entry>
     <title type="html"><![CDATA[R10k + Directory Environments]]></title>
     <link href="http://garylarizza.com/blog/2014/08/31/r10k-plus-directory-environments/"/>
-    <updated>2014-08-31T12:00:00-07:00</updated>
+    <updated>2014-08-31T14:00:00-05:00</updated>
     <id>http://garylarizza.com/blog/2014/08/31/r10k-plus-directory-environments</id>
     <content type="html"><![CDATA[<p>If you&rsquo;ve read anything I&rsquo;ve posted in the past year, you know my feelings about
 the word &lsquo;environments&rsquo; and about how well we tend to name things here at
@@ -1389,7 +1379,7 @@ that comes as unexpected or stops you from using your existing workflow. Cheers!
   <entry>
     <title type="html"><![CDATA[On R10k and 'Environments']]></title>
     <link href="http://garylarizza.com/blog/2014/03/26/random-r10k-workflow-ideas/"/>
-    <updated>2014-03-26T01:00:00-07:00</updated>
+    <updated>2014-03-26T03:00:00-05:00</updated>
     <id>http://garylarizza.com/blog/2014/03/26/random-r10k-workflow-ideas</id>
     <content type="html"><![CDATA[<p>There have been more than a couple of moments where I&rsquo;m on-site with a customer
 who asks a seemingly simple question and I&rsquo;ve gone &ldquo;Oh shit; that&rsquo;s a great
