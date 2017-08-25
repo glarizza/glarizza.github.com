@@ -4,7 +4,7 @@
   <title><![CDATA[Shit Gary Says]]></title>
   <link href="http://garylarizza.com/atom.xml" rel="self"/>
   <link href="http://garylarizza.com/"/>
-  <updated>2017-02-07T12:29:18-08:00</updated>
+  <updated>2017-08-24T21:37:26-05:00</updated>
   <id>http://garylarizza.com/</id>
   <author>
     <name><![CDATA[Gary larizza]]></name>
@@ -14,88 +14,111 @@
 
   
   <entry>
-    <title type="html"><![CDATA[Data Escalation Path: Does It Go in the Profile or Hiera?]]></title>
-    <link href="http://garylarizza.com/blog/2017/02/07/data-escalation-path/"/>
-    <updated>2017-02-07T11:39:13-08:00</updated>
-    <id>http://garylarizza.com/blog/2017/02/07/data-escalation-path</id>
-    <content type="html"><![CDATA[<p><strong>NOTE</strong>: <em>This post is lacking a lot of the humor and playful tone I normally
-use when writing posts because it was originally designed for another purpose.
-I&rsquo;m posting it in its entirety here because I consider the information useful
-and want to get it out to people who ask me about this topic. Insert some Harry
-Potter references if it gets a bit dry&hellip;</em></p>
+    <title type="html"><![CDATA[Profiles and the Path to Hiera Data]]></title>
+    <link href="http://garylarizza.com/blog/2017/08/24/data-escalation-path/"/>
+    <updated>2017-08-24T20:41:25-05:00</updated>
+    <id>http://garylarizza.com/blog/2017/08/24/data-escalation-path</id>
+    <content type="html"><![CDATA[<p><em>This blog post first appeared on the Puppet blog as <a href="https://puppet.com/blog/hiera-data-and-puppet-code-your-path-right-data-decisions">Hiera, data, and Puppet code: your path to the right data decisions</a>, and is published here with permission of the Puppet blog editor.</em></p>
 
-<p>Writing reusable Puppet manifests involves a combination of static and dynamic
-data, but the decision of whether to &ldquo;hardcode data&rdquo;, use a variable, set
-a parameter, do a Hiera lookup, or do a combination of the above is one of the
-most frequently asked questions by Puppet users. This guide will both describe the
-available data lookup methods and advise on when it is best to &ldquo;escalate&rdquo;
-based on the requirements at hand.</p>
+<p>The subject that generates the most questions for me from the Puppet community
+is <a href="https://docs.puppet.com/hiera/">Hiera</a>. Not only do people want to know
+what it is (a data lookup tool) and how to spell it (I before E except after
+C), but even saying the word causes problems (It&rsquo;s HIGH-rah — two syllables,
+with the accent on the first).</p>
 
-<p><strong>IMPORTANT NOTE</strong>: Please read the entire document before reacting to specific
-passages. I&rsquo;ve purposely/intentionally written the document to escalate with
-complexity, so there may be problems that arise in early paragraphs that
-are identified and resolved in later paragraphs.</p>
+<p>I get so many questions about Hiera because it&rsquo;s a tool for storing and
+accessing site-specific data, and it&rsquo;s actually this problem of accessing data
+within reusable code that most people are trying to solve. Many people think
+the ONLY place data can live is within Hiera, but that&rsquo;s not always the case
+(as we will see later with profiles). To help with these problems, I&rsquo;ve
+identified all the ways that data can be expressed within Puppet, listed the
+pros and cons of each, and made recommendations as to when each method should
+be used.</p>
 
-<h2>What is &ldquo;Data&rdquo; and what is &ldquo;Code&rdquo;?</h2>
+<p>For those people who are visual learners, here&rsquo;s a simplified flow chart below,
+detailing the choices you need to make when deciding how to express your
+configuration data.</p>
 
-<p>This issue about what constitutes &ldquo;data&rdquo; is the first wrinkle in devising
-a data escalation path. <a href="https://docs.puppet.com/pe/latest/r_n_p_intro.html">The Puppet docs page on Roles and Profiles</a>
-does a great job of describing the difference between a component module and
-a profile.</p>
+<p><a href="http://garylarizza.com/images/data_escalation_path.png"><img class="left" src="http://garylarizza.com/images/data_escalation_path.png"></a></p>
 
-<p>To quickly summarize: a component module is a general-purpose module
-designed to model the configuration of a piece of technology (e.g. apache,
-tomcat, ntpd), and a profile is an organization-specific Puppet module that
-describes an organization&rsquo;s IMPLEMENTATION of a piece of technology. For
-example, an apache profile that an organization creates might use the official
-Puppet apache module to install and configure apache, but the profile might
-also contain resources for an organization&rsquo;s SSL certificates or credentials that
-would be layered atop of the configuration that the Puppet apache module
-provides. The resource(s) modeling the SSL certificate(s) are ONLY necessary for
-that organization, which is why they don&rsquo;t show up in the official Puppet
-apache module.</p>
+<h2>What is data and what is code?</h2>
 
-<p>By this account the offical Puppet apache module itself represents the &ldquo;code&rdquo;,
-or the generic and re-usable aspect of the configuration (as most good
-component modules would), but the profile contains the
-organizational/site-specific data that is fed TO the component module (or
-&ldquo;code&rdquo;) when that module is declared/used.  This separation &ndash; and the fact that
-data can be represented within the same constructs as as code can &ndash; is
-frequently a source of confusion/frustration for new Puppet users (and
-especially for users with a background in object-oriented programming).</p>
+<p>This issue of what constitutes data is the first wrinkle in devising what I
+call a <strong>data escalation path</strong>. For background reading, the <a href="https://docs.puppet.com/pe/2017.2/r_n_p_intro.html">Puppet docs page
+on roles and profiles</a> does
+a great job of describing the difference between a component module and a
+profile.</p>
 
-<p>Data within a profile can come in different forms &ndash; a value to a parameter when
-a class is declared, a variable assigned within the profile, or even a Hiera
-lookup (explicitly done or through Puppet&rsquo;s automatic parameter lookkup). Since
-it&rsquo;s all data, which method do you use? That&rsquo;s the question this document means
-to answer.</p>
+<p>To quickly summarize: A component module is a general-purpose module designed
+to model the configuration of a piece of technology (e.g., Apache, Tomcat or
+ntpd), and a profile is an organization-specific Puppet module that describes
+an organization&rsquo;s <em>implementation</em> of a piece of technology. (We also use the
+term &ldquo;site-specific&rdquo; to refer to an organization&rsquo;s own particular data.)</p>
 
-<p>A note for clarity: this document specifically covers data escalation paths
-within profiles and NOT component modules. Unless explicitly noted, assume that
-recommendations apply ONLY to profiles and not component modules (since
+<p>For example, an Apache profile that an organization creates for itself might
+use <a href="https://forge.puppet.com/puppetlabs/apache">the official Puppet Apache
+module</a> to install and configure
+Apache. But the profile might also contain resources for an organization&rsquo;s SSL
+certificates or credentials, layered on top of the configuration provided by
+the Puppet Apache module. The resource(s) modeling the SSL certificate(s) are
+necessary <strong>only</strong> for that particular organization, which is why they don&rsquo;t
+show up in the official Puppet Apache module.</p>
+
+<p>In this example, the official Puppet Apache module itself represents the code,
+or the generic and reusable aspect of the configuration (as any good component
+module would). The profile contains the organizational (or site-specific) data
+that is fed to the component module (or code) when that module is used. This
+separation — and the fact that data can be represented within the same
+constructs used to represent code — is frequently a source of confusion or
+frustration for new Puppet users (and especially for users with a background in
+object-oriented programming, which is almost antithetical to the
+<a href="https://en.wikipedia.org/wiki/Declarative_programming">declarative</a> approach
+that is core to Puppet).</p>
+
+<p>Data within a profile can come in different forms:</p>
+
+<ul>
+<li>A variable assigned within the profile.</li>
+<li>A Hiera/data lookup (done explicitly, or by way of the <a href="https://docs.puppet.com/puppet/4.10/hiera_automatic.html">automatic parameter lookup</a>).</li>
+<li>A parameter&rsquo;s value when the profile is declared.</li>
+</ul>
+
+
+<p>With the above items all considered to be data, which option do you choose?
+It&rsquo;s this question that the data escalation path will answer.</p>
+
+<p><strong>NOTE</strong>: This post specifically covers data escalation paths within profiles,
+and NOT within component modules. Unless explicitly noted, assume that
+recommendations apply ONLY to profiles, and not component modules (since
 profiles represent site-specific data).</p>
 
 <h2>Why an escalation path?</h2>
 
-<p>Seldom are things cut-and-dry within Puppet manifests. Instead of focusing on
-whether something is in the &ldquo;right&rdquo; place, it&rsquo;s better to think about the ways
-that complexity can be added to solve problems. You can absolutely put
-everything you would consider data inside Hiera, and that would immediately
-provide you a way to handle most corner cases, but then the legibility of
-your Puppet manifest suffers when you have to jump back to Hiera every time you
-need to retrieve a data value (and currently that&rsquo;s a very labor-intensive
-thing to do if you don&rsquo;t have direct access to the Puppet masters). Consider
-every way to handle data another tool in your Puppet belt, and certain tools
-are better at solving problems that others. This document, then, is a rundown
-on the pros and cons of every tool.</p>
+<p>The decisions you make when writing Puppet manifests will seldom be plain and
+obvious. Instead of focusing on whether something is in the right place, it&rsquo;s
+better to think about the ways that complexity can help you solve problems.</p>
 
-<h2>&ldquo;Hardcoding&rdquo; variables</h2>
+<p>You can absolutely put everything you would consider data inside Hiera, and
+that would immediately provide you a way to handle most use cases. But the
+legibility of your Puppet manifest suffers when you have to jump back to Hiera
+every time you need to retrieve or debug a data value (which is a very
+labor-intensive thing to do if you don&rsquo;t have direct access to the Puppet
+masters). Plus, things like resource dependencies are particularly hard to
+model in Hiera data, as opposed to using resource declarations within a class.</p>
 
-<p>The word hardcoding is wrapped in quotes because traditionally the term evokes
-negative connatations. When we use the word &ldquo;hardcoding&rdquo; we mean
-directly-editing an item within a Puppet manifest without assigning a variable.
-In the below example if you opened up the Puppet manifest and changed the owner from
-&lsquo;root&rsquo; to &lsquo;puppet&rsquo;, then that would be considered hardcoding the value.</p>
+<p>For simpler use cases, putting data into Hiera isn&rsquo;t necessary. But once you
+reach a certain level of complexity, Hiera becomes extremely useful. I&rsquo;m going
+to define those &ldquo;certain levels of complexity&rdquo; explicitly here, as well as both
+the pros and the cons for each method of expressing data within your profiles.</p>
+
+<h2>Hardcoding  variables</h2>
+
+<p>The term &ldquo;hardcoding&rdquo; is wrapped in quotes here because traditionally the term
+has negative connotations. When I refer to hardcoding, I&rsquo;m talking about
+directly editing an item within a Puppet manifest, without assigning a
+variable. In the example below, if you opened up the Puppet manifest and
+changed the owner from &lsquo;root&rsquo; to &lsquo;puppet&rsquo;, that would be considered hardcoding
+the value:</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -114,65 +137,71 @@ In the below example if you opened up the Puppet manifest and changed the owner 
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>Hardcoding has a negative connotation because typically when someone would
-hardcode a value in a shell script it represented a workaround where a data
-item is injected into the code (and mixing data and code means that your code
-is no longer as generic/extensible as it once was).  That concern is still
-valid with Puppet: if you open up the official Puppet apache module and
-change/add a site-specific value within that component module, then you ARE
-mixing data with code. If, instead, you edit the apache profile for your
-organization and change a value there, then you&rsquo;re changing site-specific data
-to something that is already considered site-specific. The difference is that
-the official Puppet apache module is desiged to be extensible and used where
-necessary, but the profile is only meant to be used by your
-organization/site/group.</p>
+<p>Hardcoding has a negative connotation because typically, when someone would
+hardcode a value in a script, it represented a workaround where a data item is
+injected into the code — and mixing data and code means that your code is no
+longer as generic and extensible as it once was.</p>
 
-<p>Hardcoding a value is the easiest &ldquo;tool&rdquo; to understand: something was
-previously set to one value, and now it&rsquo;s set to another value. It&rsquo;s also the
-easiest change to implement: simply change the value and move along. If done
+<p>That concern is still valid for Puppet: If you open up the official Puppet
+Apache module and change or add a site-specific value within that component
+module, then you ARE, in fact, mixing data with code. If instead you edit the
+Apache profile for your organization and change a value in that profile, then
+you&rsquo;re changing site-specific data in something that is already considered
+site-specific. The difference is that the official Puppet Apache module is
+designed to be extensible, and used where necessary, while the profile is meant
+to be used only by your own organization (or site, or group).</p>
+
+<p>Hardcoding a value is the easiest method to understand: Something that was
+previously set to one value is now set to another value. It&rsquo;s also the easiest
+change to implement — you simply change the value and move along. If done
 correctly, someone could change the value without needing to understand the
-Puppet DSL (Domain Specific Language, i.e. the rules governing Puppet code in
+Puppet DSL (domain specific language — i.e. the rules governing Puppet code in
 a Puppet manifest). Finally, because it&rsquo;s simply text, a hardcoded value cannot
-be overridden and the value is the same for all nodes.</p>
+be overridden, and the value is exactly the same for all nodes.</p>
 
 <h3>Pros</h3>
 
 <ul>
-<li>The easiest &lsquo;tool&rsquo; to understand: something was changed from one value to
-another</li>
-<li>The easiest change to implement</li>
+<li>The easiest technique to understand: Something was changed from one value to another.</li>
+<li>The easiest change to implement.</li>
 </ul>
 
 
 <h3>Cons</h3>
 
 <ul>
-<li>If you hardcode the <em>same</em> value in multiple places, then changing that value
-requires multiple individual changes.</li>
+<li>If you hardcode the same value in multiple places, then changing that value requires multiple individual changes.</li>
 </ul>
 
 
 <h3>Recommendations</h3>
 
+<p>You should hardcode a value when:</p>
+
 <ul>
-<li>Hardcode values ONLY when their values apply to EVERY NODE being
-managed by Puppet</li>
-<li>Hardcode values within a manifest that only occur once &ndash; if it occurs more
-than once within a manifest use a variable</li>
+<li>The value applies to EVERY NODE being managed by Puppet.</li>
+<li>The value occurs once. If it occurs more than once within a manifest, use a variable instead.</li>
 </ul>
 
 
 <h2>Assigning a variable</h2>
 
-<p>The next logical progression after hardcoding a value is to create and assign
-a variable within a Puppet manifest. Assigning a variable is useful when a value
-is going to be used in more than one place within a manifest. Because
-variables within the Puppet DSL cannot be reassigned, and because variables
-within a manifest cannot be assigned/changed by Hiera, variables are considered
-private to the implementation and thus can only be changed by users with access
-to change Puppet manifests (versus having Puppet Enterprise Console access or
-access to Hiera data).  More simply: variables assist writers of Puppet code
-versus users of Puppet code.</p>
+<p>The next logical step after hardcoding a value is to assign a variable within a
+Puppet manifest. Assigning a variable is useful when a value is going to be
+used in more than one place within a manifest. Because variables within the
+Puppet DSL cannot be reassigned, and because variables within a manifest cannot
+be assigned or changed by Hiera, variables are considered private to the
+implementation. This means they can be changed only by users with permission to
+change Puppet manifests, not by people who are responsible for using the
+console to pass data to the code written by manifest authors. So variables
+really assist writers of Puppet code more than they assist consumers of Puppet
+code.</p>
+
+<p>Anytime there&rsquo;s a data value that will be expressed more than once within a
+Puppet manifest, it&rsquo;s recommended that you use a variable. In the future, if
+that value needs to be changed, all you need to do is change the variable&rsquo;s
+value, and it will be updated wherever the variable was used.  Below is an
+example of that concept in action:</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -214,43 +243,40 @@ versus users of Puppet code.</p>
 <h3>Pros</h3>
 
 <ul>
-<li>Assigning a variable provides a single point within a manifest where data can
-be assigned/changed. This means if the value of the variable needs to be changed,
-it can be done in ONE place within the manifest (i.e. where the variable has
-been assigned), versus hardcoding which requires you to find and replace for
-all instances within a manifest</li>
-<li>Assigning a variable within the DSL is visible to anyone reviewing the Puppet
-manifest, which means that you don&rsquo;t need to flip back and forth between
-Hiera and Puppet to look up data values</li>
+<li>Assigning a variable provides a single point within a manifest where data can be assigned or changed.</li>
+<li>Assigning a variable within the DSL makes it visible to anyone reviewing the Puppet manifest. This means you don&rsquo;t need to flip back and forth between Hiera and Puppet to look up data values.</li>
 </ul>
 
 
 <h3>Cons</h3>
 
 <ul>
-<li>The value applies to EVERYONE &ndash; it must be changed if a different value is
-desired, and that change applies to everyone</li>
-<li>No ability to override a value</li>
+<li>The value applies to EVERYONE — it must be changed if a different value is desired, and that change applies to everyone.</li>
+<li>No ability to override a value.</li>
 </ul>
 
 
 <h3>Recommendations</h3>
 
+<p>You should assign a variable when:</p>
+
 <ul>
-<li>Assign a variable when a value shows up more than once within a manifest and
-when that value applies to EVERY node</li>
+<li>The data value shows up more than once within a manifest.</li>
+<li>The data value applies to EVERY node.</li>
 </ul>
 
 
-<h2>CONDITIONALLY assigning a variable</h2>
+<h2>Conditionally assigning a variable</h2>
 
-<p>The previous section on assigning a variable recommends that variables are only
-used when a value applies to EVERY node, but there is a way to work around
-that: conditional statements. Conditional statements in the Puppet DSL (such as
-&ldquo;if&rdquo;, &ldquo;unless&rdquo;, &ldquo;case&rdquo;, and the selector operator) allow you to assign
-a variable once, but assign it differently based on some condition. Using the
-previous example of Puppet&rsquo;s configuration directory, let&rsquo;s see how that would
-be assigned differently based on the system&rsquo;s kernel fact:</p>
+<p>In the previous section on assigning a variable, I recommend that variables be
+used only when their value applies to EVERY node. But there is a way to work
+around this: <strong>conditional statements</strong>.</p>
+
+<p>Conditional statements in the Puppet DSL (such as <em>if</em>, <em>unless</em>, <em>case</em>, and
+the selector operator) allow you to assign a variable once, but assign it
+differently based on a specific condition. Using the previous example of
+Puppet&rsquo;s configuration directory, let&rsquo;s see how that would be assigned
+differently, based on the system&rsquo;s kernel fact:</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -272,17 +298,9 @@ be assigned differently based on the system&rsquo;s kernel fact:</p>
 <span class='line-number'>18</span>
 <span class='line-number'>19</span>
 <span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="c-Singleline"># Using the &quot;selector&quot; conditional statement to assign the $confdir variable</span>
-</span><span class='line'><span class="c-Singleline"># based on the kernel fact.  https://docs.puppet.com/puppet/latest/lang_conditional.html#selectors</span>
-</span><span class='line'>
-</span><span class='line'><span class="nv">$confdir</span> <span class="o">=</span> <span class="nv">$facts</span><span class="p">[</span><span class="s1">&#39;kernel&#39;</span><span class="p">]</span> <span class="err">?</span>
-</span><span class='line'>  <span class="err">&#39;linux&#39;</span>   <span class="err">=&gt;</span> <span class="err">&#39;/etc/puppetlabs/puppet&#39;,</span>
+</pre></td><td class='code'><pre><code class='puppet'><span class='line'><span class="nv">$confdir</span> <span class="o">=</span> <span class="nv">$facts</span><span class="p">[</span><span class="s1">&#39;kernel&#39;</span><span class="p">]</span> <span class="err">?</span> <span class="err">{</span>
 </span><span class='line'>  <span class="err">&#39;windows&#39;</span> <span class="err">=&gt;</span> <span class="err">&#39;C:\\ProgramData\\PuppetLabs\\puppet\\etc&#39;,</span>
-</span><span class='line'>  <span class="err">default</span>   <span class="err">=&gt;</span> <span class="nf">fail</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">${facts[&#39;kernel&#39;]}</span><span class="s2"> is not supported&quot;</span><span class="p">)</span><span class="err">,</span>
+</span><span class='line'>  <span class="err">default</span>   <span class="err">=&gt;</span> <span class="err">&#39;/etc/puppetlabs/puppet&#39;,</span>
 </span><span class='line'><span class="err">}</span>
 </span><span class='line'>
 </span><span class='line'><span class="nc">file</span> <span class="p">{</span> <span class="s2">&quot;</span><span class="si">${confdir}</span><span class="s2">/puppet.conf&quot;</span><span class="p">:</span>
@@ -303,66 +321,67 @@ be assigned differently based on the system&rsquo;s kernel fact:</p>
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>The reason conditionally assigning a variable has its own section is because
-when people think about &ldquo;data&rdquo; and &ldquo;choice&rdquo; with Puppet, they USUALLY think
-of Hiera. Hiera is an excellent tool for conditionally assigning a value based
-its internal hierarchy, but what if the conditional logic you need to use
-doesn&rsquo;t follow Hiera&rsquo;s configured hierarchy? Your choices are to edit Hiera&rsquo;s
-hierarchy to add the logic you need (which is disruptive to both your servers
-and, potentially, individual Hiera lookups), or use conditional logic within
-the DSL. Since we&rsquo;re talking about an escalation path, conditionally assigning
-a variable is the next logical progression when complexity arises.</p>
+<p>Conditionally assigning a variable has its own section because when people
+think about the choices they have for expressing data within Puppet, they
+usually think of Hiera. Hiera is an excellent tool for conditionally assigning
+a value, based on its internal hierarchy. But what if the conditional logic you
+need to use doesn&rsquo;t follow Hiera&rsquo;s configured hierarchy? Your choices are to:</p>
+
+<p>Edit Hiera&rsquo;s hierarchy to add the logic you need (which is potentially a
+disruptive change to Hiera that will affect lookups), or Use conditional logic
+within the DSL.</p>
+
+<p>Since we&rsquo;re talking about an escalation path, conditionally assigning a
+variable is the next logical progression when complexity arises.</p>
 
 <h3>Pros</h3>
 
 <ul>
-<li>Values can be assigned based on whatever conditional logic is necessary</li>
-<li>Values are assigned within the Puppet DSL and thus are more visible to Puppet
-code reviewers (versus needing to jump into Hiera)</li>
-<li>Reusability remains &ndash; the variable is assigned once and used throughout the
-manifest</li>
+<li>Values can be assigned based on whatever conditional logic is necessary.</li>
+<li>Values are assigned within the Puppet DSL, and thus are more visible to Puppet code reviewers (versus reviewing Hiera data, which may be located elsewhere).</li>
+<li>Reusability remains intact: The variable is assigned once, and used throughout the manifest.</li>
 </ul>
 
 
 <h3>Cons</h3>
 
 <ul>
-<li>Variables still cannot be reassigned/overridden</li>
-<li>Conditional logic can grow to become &ldquo;stringy&rdquo; and overly-complex if left
-unchecked</li>
-<li>Conditional logic is syntax-heavy and requires knowledge of the Puppet DSL
-(i.e. not something easily done by people who don&rsquo;t know Puppet)</li>
+<li>Variables still cannot be reassigned or overridden.</li>
+<li>Conditional logic can grow to become stringy and overly complex if left unchecked.</li>
+<li>Conditional logic is syntax-heavy, and requires knowledge of the Puppet DSL (i.e., it&rsquo;s not something easily used by people who don&rsquo;t know Puppet).</li>
 </ul>
 
 
 <h3>Recommendations</h3>
 
+<p>You should use conditional logic to assign a value within a profile when:</p>
+
 <ul>
-<li>Use conditional logic to assign a variable when conditional logic is
-necessary to assign the variable, the conditional logic isn&rsquo;t overly complex,
-and the logic is different from the Hiera hierarchy</li>
-<li>Use conditional logic when visibility of the data values within the Puppet
-DSL is a priority</li>
+<li>The conditional logic isn&rsquo;t overly complex.</li>
+<li>The conditional logic is different from the Hiera hierarchy.</li>
+<li>Visibility of the data value within the Puppet DSL is a priority.</li>
 </ul>
 
 
 <h2>Hiera lookups and class parameters</h2>
 
-<p>Puppet&rsquo;s data lookup tool <em>du jour</em> is Hiera, and Hiera is an excellent way to
-model data in a hierarchical manner based on layers of business logic.
-Demonstrating how Hiera works is the easy part, implementing it (and knowing
-when to do Hiera calls) is another story. Before we get there though, it&rsquo;s
-important to understand that Hiera lookups can be done ad-hoc <a href="https://docs.puppet.com/puppet/latest/lookup_quick.html">through the use
-of the <code>hiera()</code> or <code>lookup()</code> functions</a>, or through the <a href="https://docs.puppet.com/hiera/latest/puppet.html#automatic-parameter-lookup">automatic
-class parameter lookup functionality</a>. The link will give you a detailed
-explanation, but, for brevity, if a class is declared and a value is not
-explicitly assigned for any of the class&rsquo;s parameters, Hiera will automatically
-do a lookup for the full parameter name (i.e. if the class is called &lsquo;<code>apache</code>&rsquo;
-and the parameter is called &lsquo;<code>port</code>&rsquo;, then Hiera does an automatic parameter
-lookup for <code>apache::port</code> should the <code>port</code> parameter not be explicitly assigned).</p>
+<p>Puppet&rsquo;s data lookup tool is Hiera, and Hiera is an excellent way to model data
+in a hierarchical manner based on layers of business logic. Demonstrating how
+Hiera works is the easy part; implementing it (and knowing when to do Hiera
+calls) is another story.</p>
+
+<p>Before we get there, it&rsquo;s important to understand that Hiera lookups can be
+done ad hoc <a href="https://docs.puppet.com/puppet/latest/lookup_quick.html">through the use of the <code>hiera()</code> or <code>lookup()</code> functions</a>,
+or through the <a href="https://docs.puppet.com/hiera/latest/puppet.html#automatic-parameter-lookup">automatic class parameter lookup functionality</a>. The
+previous links will give you detailed explanations. Briefly, if a class is
+declared and a value is not explicitly assigned for any of the class&rsquo;s
+parameters, Hiera will automatically do a lookup for the full parameter name.
+For example, if the class is called &lsquo;<code>apache</code>&rsquo; and the parameter is called
+&lsquo;<code>port</code>&rsquo;, then Hiera does an automatic parameter lookup for <code>apache::port</code>.</p>
 
 <p>We&rsquo;ll get back to automatic parameter lookups in a second, but for now let&rsquo;s
-focus on explicit lookups. Here&rsquo;s an example using lookup functions:</p>
+focus on explicit lookups. Here&rsquo;s an example using both the older <code>hiera</code>
+function and the newer <code>lookup</code> function:</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -371,123 +390,162 @@ focus on explicit lookups. Here&rsquo;s an example using lookup functions:</p>
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>Explicit lookups using one of the above functions are easier to see/understand
-when you&rsquo;re new to Puppet because <a href="https://docs.puppet.com/hiera/latest/puppet.html#automatic-parameter-lookup">the automatic parameter lookup</a>
-functionality is relatively hidden to you (should you not be aware of its
-existence). The downside is that you need to search through Puppet manifests to
-find all instances of these explicit lookups.</p>
+<p>Explicit lookups using one of the above functions are easier to see and
+understand when you&rsquo;re new to Puppet, because <a href="https://docs.puppet.com/hiera/latest/puppet.html#automatic-parameter-lookup">the automatic parameter
+lookup</a> functionality is relatively hidden to you (should you not be aware
+of its existence). More importantly, explicit lookups within a Puppet class are
+considered to be private to that class. By &ldquo;private,&rdquo; I mean the
+object-oriented programming definition: The data is limited in scope to this
+implementation, and there&rsquo;s no other external way to override or affect this
+value, short of changing what value Hiera ends up returning. You can&rsquo;t, for
+example, pass in a parameter and have it take precedence over an explicit
+lookup — the result of the lookup stands alone.</p>
 
-<h3>Explicit lookup pros:</h3>
+<p>More than anything, the determining factor for whether you use an explicit
+lookup or expose a class parameter to the profile should be whether the Hiera
+lookup is merely a shorthand for getting a value that others SHOULDN&rsquo;T be able
+to change, or whether this value should be exposed to the profile as part of
+the API. If you don&rsquo;t want people to be able to override this value outside of
+Hiera, then an explicit lookup is the correct choice.</p>
+
+<h3>Explicit lookup pros</h3>
 
 <ul>
-<li>No need for conditional logic since Hiera is configured independently, simply
-do a lookup for a value and assign it to a variable</li>
-<li>Usage of a lookup function is a visible indicator that the data lives outside
-the DSL (in Hiera)</li>
+<li>No need for conditional logic since Hiera is configured independently. Simply do a lookup for a value, and assign it to a variable.</li>
+<li>Using a lookup function is a visible indicator that the data lives outside the DSL (in Hiera).</li>
 </ul>
 
 
-<h3>Explicit lookup cons:</h3>
+<h3>Explicit lookup cons</h3>
 
 <ul>
-<li>Loss of visibility &ndash; the data is inside Hiera&rsquo;s hierarchy and determining the
-value requires invoking Hiera in some manner (as opposed to simply
-observing a value in the DSL)</li>
-<li>If the lookup you want to perform doesn&rsquo;t conform to Hiera&rsquo;s existing
-hierarchy, then Hiera&rsquo;s hierarchy will need to be changed (which is disruptive)</li>
+<li>Loss of visibility: The data is inside Hiera&rsquo;s hierarchy, and determining the value requires invoking Hiera in some manner (as opposed to simply observing a value in the DSL).</li>
+<li>If the lookup you want to perform doesn&rsquo;t conform to Hiera&rsquo;s existing hierarchy, then Hiera&rsquo;s hierarchy will need to be changed, which is disruptive.</li>
 </ul>
 
 
-<h3>Explicit lookup recommendations:</h3>
+<h3>Explicit lookup recommendations</h3>
+
+<p>You should use an explicit data lookup when:</p>
 
 <ul>
-<li>We generally discourage explicit lookups within the implementation of
-a profile in favor of exposing a parameter. If there&rsquo;s a case where you would
-NOT want to expose a parameter and make an API guarantee but you DO want/need
-Hiera, then an explicit lookup is recommended (and be sure to document the
-intent for posterity)</li>
+<li>The data item is private to the implementation of the class (i.e., not exposed as an API to the profile).</li>
+<li>The value from Hiera should not be overridden within the Puppet DSL.</li>
 </ul>
 
 
-<p>There&rsquo;s also one more very important distinction to make&hellip;</p>
+<h3>Class parameters</h3>
 
-<h3>Class parameters and API vs internal logic</h3>
+<h4>API vs. internal logic</h4>
 
-<p>When building a profile, the implementation (i.e. anything between the open and
-closing curly braces {} ) is considered to be private. This means that there
-are really no guarantees around what&rsquo;s happening as long as the technology is
-configured properly in the end. Class parameters are considered to be part of
-the profile&rsquo;s API, and thus there&rsquo;s a guarantee that existing parameters won&rsquo;t
-be removed or have their functionality changed within a major release (if you
-follow semantic versioning). More specifically, exposing a parameter indicates
-to your Puppet code users that this is something that can be set/changed. Think
-of computer hardware and the differentiation between phillips-head screws and
-Torx screws: the phillips-head screws usually mean that customer intervention
-is allowed, much the same way as parameters indicate data values that can be
-changed, and Torx screws usually mean that customer intervention is disallowed,
-much the same way as variables within a profile cannot be reassigned or
-overridden.</p>
+<p>When building a profile, the implementation of the profile (i.e., anything
+between the open and closing curly braces {} of a class definition:  <code>class
+apache { … }</code> ) is considered to be private. This means that there really are
+no guarantees around specific resource declarations as long as the technology
+is configured properly in the end. Class parameters are considered to be part
+of the profile&rsquo;s API, and thus there&rsquo;s a guarantee that existing parameters
+won&rsquo;t be removed or have their functionality changed within a major release (if
+you follow semantic versioning).</p>
 
-<p>One final word on class parameters &ndash; the Puppet Enterprise Console is able to
-discover class parameters and present them visually, and it does this because
-Puppetserver has an API that exposes this data. This means that parameters and
-classes can be queried and enumerated. Explicit Hiera lookups are not
-discoverable in the same way (you will need to search through your codebase
-manually).</p>
+<p>More specifically, exposing a parameter indicates to your Puppet code users
+that this is something that can be set or changed. Think of computer hardware
+and the differentiation between Phillips head screws and Torx screws. The
+Phillips head screws usually mean that customer intervention is allowed, much
+the same way that parameters indicate data values that can be changed, while
+Torx screws usually mean that customer intervention is disallowed, much the
+same way as variables or explicit lookups within a profile cannot be reassigned
+or overridden.</p>
 
-<p>Because these two lookups have two fundamentally different purposes, we&rsquo;re
-treating their usages as separate.</p>
+<p>As referenced in the previous section, <a href="https://docs.puppet.com/hiera/latest/puppet.html#automatic-parameter-lookup">this document on the automatic class
+parameter lookup functionality</a> describes the order of precedence for
+setting class parameters:</p>
 
-<h3>Class parameter lookup pros:</h3>
+<ol>
+<li>Parameter values are explicitly set with a <a href="https://docs.puppet.com/puppet/latest/lang_classes.html#using-resource-like-declarations">resource-like class declaration</a>.</li>
+<li>Puppet performs a Hiera lookup in the style of <code>(CLASS NAME)::(PARAMETER NAME)</code>.</li>
+<li>The default value set in the class definition.</li>
+</ol>
+
+
+<p>By exposing a class parameter to your profile, you allow for the data to be
+entered into Hiera without needing an explicit lookup in the profile.
+Additionally, class parameters can be specified during a resource-like class
+declaration that allows the user to override the Hiera lookup layer and pass in
+their desired value. The user understands that class parameters are Puppet&rsquo;s
+way of allowing input and altering the way Puppet configures the piece of
+technology. In this way, class parameters aren&rsquo;t merely another method for
+performing a Hiera lookup; they&rsquo;re also an invitation for user input.</p>
+
+<h4>Discoverability and extensibility</h4>
+
+<p>One important distinction with class parameters: The Puppet Enterprise console
+is able to discover class parameters and present them visually. It can do this
+because <a href="https://docs.puppet.com/puppetserver/2.4/puppet-api/v3/environment_classes.html">Puppet Server has an API that exposes this data</a>, and that
+means parameters and classes can be queried and enumerated. Explicit Hiera
+lookups are not discoverable in the same way; you will need to search through
+your codebase manually.</p>
+
+<p>Next, class parameters can have their values assigned by an external node
+classifier, or ENC, but explicit Hiera lookups cannot. An ENC is an arbitrary
+script or application that can tell Puppet which classes a node should have.
+(For more information, <a href="https://docs.puppet.com/puppet/5.0/nodes_external.html#what-is-an-enc">refer to this document on ENCs</a>.)  For Puppet
+Enterprise, the Puppet Enterprise console acts as an ENC.</p>
+
+<p>Finally, consider the extensibility of explicit lookups versus class
+parameters. Puppet introduced the <code>lookup()</code> function a while back as a
+replacement for the <code>hiera()</code> function, which means that over time, all
+<code>hiera()</code> function calls will need to be converted to <code>lookup()</code> function
+calls. Class parameters have remained largely unchanged since their
+introduction (with <a href="https://docs.puppet.com/puppet/4.10/lang_data.html">data types being an additional change</a>), so
+people using class parameters and the automatic parameter lookup don&rsquo;t need to
+convert all those explicit lookups. In this case, explicit lookups may require
+more work than class parameters when performing an upgrade.</p>
+
+<p>Because these two lookups have two fundamentally different purposes, I&rsquo;m
+treating their usages separately.</p>
+
+<h3>Class parameter lookup pros</h3>
 
 <ul>
-<li>Signals to users of Puppet code that this data item is configurable</li>
-<li>Allows the value to be assigned either by the Puppet Enterprise Console (or
-other configured ENC) or Hiera</li>
-<li>Classes and parameters are discoverable through Puppetserver API</li>
+<li>Signals to users of Puppet code that this data item is configurable.</li>
+<li>Allows the value to be assigned either by the Puppet Enterprise console (<a href="https://docs.puppet.com/puppet/5.0/nodes_external.html#what-is-an-enc">or other configured ENC</a>) or Hiera.</li>
+<li>Classes and parameters are discoverable through the Puppet Server API.</li>
 </ul>
 
 
-<h3>Class parameter lookup cons:</h3>
+<h3>Class parameter lookup cons</h3>
 
 <ul>
-<li>Automatic parameter lookup is unexepected if you don&rsquo;t know it exists</li>
-<li>Loss of visibility &ndash; the data is inside Hiera&rsquo;s hierarchy and determining the
-value requires invoking Hiera in some manner (as opposed to simply
-observing a value in the DSL)</li>
-<li>Each parameter is unique, so even if multiple profiles expose a parameter of
-the same name that requires the same value, there needs to be a value in
-Hiera for each unique parameter</li>
+<li>Automatic parameter lookup is unexpected if you don&rsquo;t know it exists.</li>
+<li>Loss of visibility: The data is inside Hiera&rsquo;s hierarchy, and determining the value requires invoking Hiera in some manner (as opposed to simply  observing a value in the DSL).</li>
+<li>Each parameter is unique, so even if multiple profiles expose a parameter of the same name that requires the same value, there needs to be a value in Hiera for each unique parameter.</li>
 </ul>
 
 
 <h3>Class parameter recommendations</h3>
 
+<p>You should expose a class parameter when:</p>
+
 <ul>
-<li>Expose a parameter if/when you require the logic in Hiera&rsquo;s hierarchy to determine
-the value of a data item</li>
-<li>Expose a parameter if/when you need to override the value using the Puppet
-Enterprise Console (or other configured ENC)</li>
-<li>Expose a parameter to indicate that this part of the profile is configurable
-to users of Puppet code</li>
+<li>You require the conditional logic within Hiera&rsquo;s hierarchy to determine the value of a data item.</li>
+<li>If or when you need to override the value using the Puppet Enterprise console (or other configured ENC).</li>
+<li>To indicate that this part of the profile is configurable to users of Puppet code.</li>
 </ul>
 
 
 <h2>Summary</h2>
 
-<p>This document was designed to start with the least amount of complexity and
-work its way up. In the end, it&rsquo;s all about choosing the right data mechanism
-for the problem. If you&rsquo;re a more visual learner, the flowchart below will help
-clarify when to use each method:</p>
-
-<p><a href="http://garylarizza.com/images/data/data_escalation_path.png"><img class="left" src="http://garylarizza.com/images/data/data_escalation_path.png"></a></p>
+<p>Writing extensible code and keeping configuration data separate are always in
+the back of every Puppet user&rsquo;s mind, but the mechanics of how to achieve this
+goal can seem daunting. With this post, I hope you now have a clearer path for
+structuring your Puppet code!</p>
 ]]></content>
   </entry>
   
   <entry>
     <title type="html"><![CDATA[Roles and Profiles in a Control Repo?]]></title>
     <link href="http://garylarizza.com/blog/2017/01/17/roles-and-profiles-in-a-control-repo/"/>
-    <updated>2017-01-17T11:14:36-08:00</updated>
+    <updated>2017-01-17T13:14:36-06:00</updated>
     <id>http://garylarizza.com/blog/2017/01/17/roles-and-profiles-in-a-control-repo</id>
     <content type="html"><![CDATA[<p>In the past, the thing that got me to make a blog post was answering a question
 more than once and not having a good source to point someone to after-the-fact.
@@ -710,7 +768,7 @@ then don&rsquo;t.</p>
   <entry>
     <title type="html"><![CDATA[Workflows Evolved: Even Besterer Practices]]></title>
     <link href="http://garylarizza.com/blog/2015/11/16/workflows-evolved-even-besterer-practices/"/>
-    <updated>2015-11-16T07:00:24-08:00</updated>
+    <updated>2015-11-16T09:00:24-06:00</updated>
     <id>http://garylarizza.com/blog/2015/11/16/workflows-evolved-even-besterer-practices</id>
     <content type="html"><![CDATA[<p>It&rsquo;s nearly been two years since I posted the Puppet Workflow series and
 several things have changed:</p>
@@ -1282,7 +1340,7 @@ of less than 8000 people, it&rsquo;s crazy to see where you&rsquo;re &ldquo;reco
   <entry>
     <title type="html"><![CDATA[Puppet Workflows 4: Using Hiera in Anger]]></title>
     <link href="http://garylarizza.com/blog/2014/10/24/puppet-workflows-4-using-hiera-in-anger/"/>
-    <updated>2014-10-24T06:13:49-07:00</updated>
+    <updated>2014-10-24T08:13:49-05:00</updated>
     <id>http://garylarizza.com/blog/2014/10/24/puppet-workflows-4-using-hiera-in-anger</id>
     <content type="html"><![CDATA[<p>Hiera. That thing nobody is REALLY quite sure how to say (FYI: It&rsquo;s pronounced
 &lsquo;hiera&rsquo;), the tool that everyone says you should be using, and the tool that
@@ -1940,7 +1998,7 @@ being authoritative and simply &lsquo;suggesting&rsquo; a classification.</p>
   <entry>
     <title type="html"><![CDATA[Puppetconf 2014 Talk - the Refactor Dance]]></title>
     <link href="http://garylarizza.com/blog/2014/10/23/puppetconf-2014-talk/"/>
-    <updated>2014-10-23T06:15:42-07:00</updated>
+    <updated>2014-10-23T08:15:42-05:00</updated>
     <id>http://garylarizza.com/blog/2014/10/23/puppetconf-2014-talk</id>
     <content type="html"><![CDATA[<p>This year at Puppetconf 2014, I presented a 1.5 hour talk entitled &ldquo;The Refactor
 Dance&rdquo; that comprised nearly EVERYTHING that I&rsquo;ve written about in my Puppet
@@ -1957,7 +2015,7 @@ arms grow in an attractive grey Puppet Labs shirt.  What&rsquo;s not to love?</p
   <entry>
     <title type="html"><![CDATA[On Dependencies and Order]]></title>
     <link href="http://garylarizza.com/blog/2014/10/19/on-dependencies-and-order/"/>
-    <updated>2014-10-19T06:09:53-07:00</updated>
+    <updated>2014-10-19T08:09:53-05:00</updated>
     <id>http://garylarizza.com/blog/2014/10/19/on-dependencies-and-order</id>
     <content type="html"><![CDATA[<p>This blog post was born out of a number of conversations that I&rsquo;ve had about
 Puppet, its dependency model, and why &lsquo;ordering&rsquo; is not necessarily the way to
@@ -2227,7 +2285,7 @@ kids (and by &lsquo;kids&rsquo;, I mean &lsquo;XBox&rsquo;).</p>
   <entry>
     <title type="html"><![CDATA[R10k + Directory Environments]]></title>
     <link href="http://garylarizza.com/blog/2014/08/31/r10k-plus-directory-environments/"/>
-    <updated>2014-08-31T12:00:00-07:00</updated>
+    <updated>2014-08-31T14:00:00-05:00</updated>
     <id>http://garylarizza.com/blog/2014/08/31/r10k-plus-directory-environments</id>
     <content type="html"><![CDATA[<p>If you&rsquo;ve read anything I&rsquo;ve posted in the past year, you know my feelings about
 the word &lsquo;environments&rsquo; and about how well we tend to name things here at
@@ -2954,7 +3012,7 @@ that comes as unexpected or stops you from using your existing workflow. Cheers!
   <entry>
     <title type="html"><![CDATA[On R10k and 'Environments']]></title>
     <link href="http://garylarizza.com/blog/2014/03/26/random-r10k-workflow-ideas/"/>
-    <updated>2014-03-26T01:00:00-07:00</updated>
+    <updated>2014-03-26T03:00:00-05:00</updated>
     <id>http://garylarizza.com/blog/2014/03/26/random-r10k-workflow-ideas</id>
     <content type="html"><![CDATA[<p>There have been more than a couple of moments where I&rsquo;m on-site with a customer
 who asks a seemingly simple question and I&rsquo;ve gone &ldquo;Oh shit; that&rsquo;s a great
@@ -3107,7 +3165,7 @@ free to comment below &ndash; I look forward to making the process better for al
   <entry>
     <title type="html"><![CDATA[When Yellow Ruled the World]]></title>
     <link href="http://garylarizza.com/blog/2014/03/11/when-yellow-ruled-the-world/"/>
-    <updated>2014-03-11T18:04:55-07:00</updated>
+    <updated>2014-03-11T20:04:55-05:00</updated>
     <id>http://garylarizza.com/blog/2014/03/11/when-yellow-ruled-the-world</id>
     <content type="html"><![CDATA[<p><em>&ldquo;The universe (including ourselves) is made up of energy &ndash; it&rsquo;s important to
 keep it positive! Be as wonderful as the world you want to live in!&rdquo;</em></p>
@@ -3964,7 +4022,7 @@ Tanny operated on Tanny Time (I mentioned before that &ldquo;Tanny Time&rdquo; w
   <entry>
     <title type="html"><![CDATA[Building a Functional Puppet Workflow Part 3b: More R10k Madness]]></title>
     <link href="http://garylarizza.com/blog/2014/03/07/puppet-workflow-part-3b/"/>
-    <updated>2014-03-07T08:00:00-08:00</updated>
+    <updated>2014-03-07T10:00:00-06:00</updated>
     <id>http://garylarizza.com/blog/2014/03/07/puppet-workflow-part-3b</id>
     <content type="html"><![CDATA[<p><a href="http://garylarizza.com/blog/2014/02/18/puppet-workflow-part-3/">In the last workflows post,</a> I talked about dynamic Puppet
 environments and introduced R10k, which is an awesome tool for mapping modules
@@ -4796,7 +4854,7 @@ note, and I hope I&rsquo;m providing some good info you can actually use! Cheers
   <entry>
     <title type="html"><![CDATA[Building a Functional Puppet Workflow Part 3: Dynamic Environments With R10k]]></title>
     <link href="http://garylarizza.com/blog/2014/02/18/puppet-workflow-part-3/"/>
-    <updated>2014-02-18T09:48:18-08:00</updated>
+    <updated>2014-02-18T11:48:18-06:00</updated>
     <id>http://garylarizza.com/blog/2014/02/18/puppet-workflow-part-3</id>
     <content type="html"><![CDATA[<p>Workflows are like kickball games: everyone knows the general idea of what&rsquo;s
 going on, there&rsquo;s an orderly progression towards an end-goal, nobody wants to
@@ -6469,7 +6527,7 @@ gig! :)  Cheers!</p>
   <entry>
     <title type="html"><![CDATA[Building a Functional Puppet Workflow Part 2: Roles and Profiles]]></title>
     <link href="http://garylarizza.com/blog/2014/02/17/puppet-workflow-part-2/"/>
-    <updated>2014-02-17T14:01:37-08:00</updated>
+    <updated>2014-02-17T16:01:37-06:00</updated>
     <id>http://garylarizza.com/blog/2014/02/17/puppet-workflow-part-2</id>
     <content type="html"><![CDATA[<p>In my <a href="http://www.garylarizza.com/blog/2014/02/17/puppet-workflow-part-1/">first post</a>, I talked about writing functional component
 modules. Well, I didn&rsquo;t really do much detailing other than pointing out
@@ -6972,7 +7030,7 @@ whatever names you decide to use).</p>
   <entry>
     <title type="html"><![CDATA[Building a Functional Puppet Workflow Part 1: Module Structure]]></title>
     <link href="http://garylarizza.com/blog/2014/02/17/puppet-workflow-part-1/"/>
-    <updated>2014-02-17T14:01:37-08:00</updated>
+    <updated>2014-02-17T16:01:37-06:00</updated>
     <id>http://garylarizza.com/blog/2014/02/17/puppet-workflow-part-1</id>
     <content type="html"><![CDATA[<p>Working as a professional services engineer for <a href="http://www.puppetlabs.com">Puppet Labs</a>,
 my life consists almost entirely of either correcting some of the worst code
@@ -7193,7 +7251,7 @@ that I could be entirely full of shit.</p>
   <entry>
     <title type="html"><![CDATA[Seriously, What Is This Provider Doing?]]></title>
     <link href="http://garylarizza.com/blog/2013/12/15/seriously-what-is-this-provider-doing/"/>
-    <updated>2013-12-15T08:44:17-08:00</updated>
+    <updated>2013-12-15T10:44:17-06:00</updated>
     <id>http://garylarizza.com/blog/2013/12/15/seriously-what-is-this-provider-doing</id>
     <content type="html"><![CDATA[<p>Clarke&rsquo;s third law states: &ldquo;Any sufficiently advanced technology is
 indistinguishable from magic.&rdquo; In the case of Ruby and Puppet provider
@@ -8712,7 +8770,7 @@ providers do their dirty work&hellip;</p>
   <entry>
     <title type="html"><![CDATA[When to Hiera (Aka: How Do I Module?)]]></title>
     <link href="http://garylarizza.com/blog/2013/12/08/when-to-hiera/"/>
-    <updated>2013-12-08T15:31:54-08:00</updated>
+    <updated>2013-12-08T17:31:54-06:00</updated>
     <id>http://garylarizza.com/blog/2013/12/08/when-to-hiera</id>
     <content type="html"><![CDATA[<p>I&rsquo;m convinced that writing Puppet modules is the ultimate exercise in bikeshedding:
 if it works, someone&rsquo;s probably going to tell you that you could have done it better,
@@ -9467,7 +9525,7 @@ in files that AREN&rsquo;T the Puppet DSL (i.e. not inside the code).</p>
   <entry>
     <title type="html"><![CDATA[Who Abstracted My Ruby?]]></title>
     <link href="http://garylarizza.com/blog/2013/11/26/fun-with-providers-part-2/"/>
-    <updated>2013-11-26T16:01:00-08:00</updated>
+    <updated>2013-11-26T16:01:00-06:00</updated>
     <id>http://garylarizza.com/blog/2013/11/26/fun-with-providers-part-2</id>
     <content type="html"><![CDATA[<p>Previously, on Lost, I said a lot of words about Puppet Types;
 <a href="http://garylarizza.com/blog/2013/11/25/fun-with-providers/">you should totally check it out.</a>
@@ -10134,7 +10192,7 @@ get a response. Maybe.)  Cheers!</p>
   <entry>
     <title type="html"><![CDATA[Fun With Puppet Providers - Part 1 of Whatever]]></title>
     <link href="http://garylarizza.com/blog/2013/11/25/fun-with-providers/"/>
-    <updated>2013-11-25T20:47:00-08:00</updated>
+    <updated>2013-11-25T20:47:00-06:00</updated>
     <id>http://garylarizza.com/blog/2013/11/25/fun-with-providers</id>
     <content type="html"><![CDATA[<p>I don&rsquo;t know why I write blog posts &ndash; everybody in open-source software knows
 that the code <em>IS</em> the documentation. If you&rsquo;ve ever tried to write a Puppet
@@ -10580,7 +10638,7 @@ stay tuned for more brain-dumping-goodness&hellip;</p>
   <entry>
     <title type="html"><![CDATA[From the Archive: Using Crankd]]></title>
     <link href="http://garylarizza.com/blog/2013/07/10/from-the-archive-using-crankd/"/>
-    <updated>2013-07-10T09:51:00-07:00</updated>
+    <updated>2013-07-10T09:51:00-05:00</updated>
     <id>http://garylarizza.com/blog/2013/07/10/from-the-archive-using-crankd</id>
     <content type="html"><![CDATA[<p>Supporting laptops in a managed environment is tricky (and doubly so if you allow them to be taken off your corporate network).  While you can be reasonably assured that your desktops will remain on and connected during the workday, it&rsquo;s not uncommon for laptops to go to sleep, change wireless access points, and even change between an Ethernet or AirPort connection several times during the day.  It&rsquo;s important to have a tool that can &ldquo;tweak&rdquo; certain settings in response to these changes.</p>
 
@@ -10677,7 +10735,7 @@ stay tuned for more brain-dumping-goodness&hellip;</p>
   <entry>
     <title type="html"><![CDATA[Puppet + Github = Laptop <3]]></title>
     <link href="http://garylarizza.com/blog/2013/02/15/puppet-plus-github-equals-laptop-love/"/>
-    <updated>2013-02-15T00:00:00-08:00</updated>
+    <updated>2013-02-15T00:00:00-06:00</updated>
     <id>http://garylarizza.com/blog/2013/02/15/puppet-plus-github-equals-laptop-love</id>
     <content type="html"><![CDATA[<p>Everybody wants to be special (I blame our moms). The price of special, when
 it comes to IT, is time. Consider how long you&rsquo;ve spent on just your damn
@@ -11743,7 +11801,7 @@ for more information!</p>
   <entry>
     <title type="html"><![CDATA[Repeatable Puppet Development With Vagrant]]></title>
     <link href="http://garylarizza.com/blog/2013/02/01/repeatable-puppet-development-with-vagrant/"/>
-    <updated>2013-02-01T00:00:00-08:00</updated>
+    <updated>2013-02-01T00:00:00-06:00</updated>
     <id>http://garylarizza.com/blog/2013/02/01/repeatable-puppet-development-with-vagrant</id>
     <content type="html"><![CDATA[<p>I miss testing code in production. In smaller organizations, &lsquo;testing&rsquo; and
 &lsquo;development&rsquo; can sometimes consist of making changes directly on a server,
